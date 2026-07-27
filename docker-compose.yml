@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: imresamu/postgis:17-3.6-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: c1u3
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: c1db3
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - valkey_data:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: development
+    ports:
+      - "127.0.0.1:7700:7700"
+    volumes:
+      - meili_data:/meili_data
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_data:/data
+
+  web:
+    image: node:22-bookworm
+    working_dir: /workspace/apps/web
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    environment:
+      DATABASE_URL: postgresql://ligem:${POSTGRES_PASSWORD}@postgres:5432/ligem
+      REDIS_URL: redis://valkey:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_KEY: ${MEILI_MASTER_KEY}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - .:/workspace
+    ports:
+      - "0.0.0.0:3000:3000"
+    depends_on:
+      - postgres
+      - valkey
+      - meilisearch
+      - minio
+
+volumes:
+  postgres_data:
+  valkey_data:
+  meili_data:
+  minio_data:
