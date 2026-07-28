@@ -1,0 +1,416 @@
+// Ligem data model.
+// Design decisions behind this schema are captured in project memory
+// (ligem_positioning, ligem_roles_and_content_model, ligem_trust_legal_business,
+// ligem_tech_and_design) and in ../../CLAUDE.md.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [postgis]
+}
+
+// --- Auth (Auth.js / NextAuth-compatible shape) ---------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  roles UserRoleAssignment[]
+
+  accounts Account[]
+  sessions Session[]
+
+  ownedOrganizations Organization[]     @relation("OrganizationOwner")
+  createdListings    Listing[]          @relation("ListingCreatedBy")
+  moderatedListings  Listing[]          @relation("ListingModeratedBy")
+  media              Media[]           @relation("MediaUploadedBy")
+  createdEvents      Event[]            @relation("EventCreatedBy")
+  savedSearches       SavedSearch[]
+  reportsFiled        Report[]          @relation("ReportReporter")
+  reportsReviewed     Report[]          @relation("ReportReviewedBy")
+  contactRequestsSent ContactRequest[]  @relation("ContactRequestSender")
+  appointmentsHosted  Appointment[]     @relation("AppointmentHost")
+  appointmentsBooked  Appointment[]     @relation("AppointmentRequestedBy")
+}
+
+enum UserRole {
+  SUCHENDE
+  ANBIETER
+  MODERATOR
+  ADMIN
+}
+
+// A user can hold several roles at once (e.g. Suchende + Anbieter simultaneously).
+model UserRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      UserRole
+  createdAt DateTime @default(now())
+
+  @@unique([userId, role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Organizations ---------------------------------------------------------
+
+// Gemeinwohlorientierte Organisationen/Vereine/Genossenschaften - a first-class
+// actor distinct from a plain User, can own several listings/locations.
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  website     String?
+  ownerId     String
+  owner       User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  listings Listing[]
+  events   Event[]
+}
+
+// --- Listing taxonomy (freely extensible, DB-backed, no hardcoded enum) ---
+
+model ListingCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  nameEn      String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  listings ListingCategoryAssignment[]
+}
+
+model ListingCategoryAssignment {
+  listingId  String
+  listing    Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ListingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, categoryId])
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+// A Wohnprojekt/WG listing. Only projectName + owner are required. Structural
+// fields needed for search/map/browsing (location, group size, cost,
+// availability) are real columns; open-ended categorical filters (Projekt Typ,
+// Grundwerte, Wohnlage, Zielgruppe, ...) go through the generic
+// AttributeGroup/AttributeOption system below instead of one column each, so
+// new filter values — or whole new filter groups — can be added as rows,
+// without a migration.
+model Listing {
+  id        String        @id @default(cuid())
+  status    ListingStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  publishedAt DateTime?
+
+  // Required
+  projectName String
+  createdById String
+  createdBy   User   @relation("ListingCreatedBy", fields: [createdById], references: [id])
+  motto       String? // kurzer Claim/Untertitel
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  moderatedById String?
+  moderatedBy   User?   @relation("ListingModeratedBy", fields: [moderatedById], references: [id])
+  moderationNote String?
+
+  // Structured free-text fields explicitly called for in the requirements
+  howWeLive       String? // "So leben wir"
+  whoWeAreLooking String? // "Wen wir suchen"
+
+  // Standort: strukturiert für Filter/Anzeige, plus eine unspezifische Angabe
+  // ("Großraum Allgäu") für Projekte ohne genaue Adresse. `location` ist ein
+  // PostGIS-Punkt für Karte/Umkreissuche; Prisma kann Geometrie-Spalten nicht
+  // typisiert lesen/schreiben, dafür $queryRaw/$executeRaw verwenden.
+  country           String?
+  state             String? // Bundesland
+  city              String? // Ort
+  street            String?
+  houseNumber       String?
+  regionDescription String? // z. B. "Großraum Allgäu"
+  location          Unsupported("geometry(Point, 4326)")?
+
+  // Ansprechperson vor Ort (kann von createdBy abweichen, z. B. bei Organisationen)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+
+  // Availability / temporary offers (Probewohnen, Retreat, Zwischennutzung)
+  isTemporary  Boolean   @default(false)
+  moveInDate   DateTime?
+  minStayDays  Int?
+  maxStayDays  Int?
+
+  // Aktueller Suchzeitraum (Zeitraum, in dem aktiv gesucht wird)
+  searchPeriodStart DateTime?
+  searchPeriodEnd   DateTime?
+
+  // Gruppengröße
+  groupSizeCurrent Int? // aktuelle Gruppengröße
+  groupSizePlanned Int? // geplante/Ziel-Gruppengröße
+  freeSpots        Int?
+
+  // Gewünschte Altersspanne der gesuchten Mitbewohner:innen
+  desiredAgeMin Int?
+  desiredAgeMax Int?
+
+  // Kosten in EUR
+  costOneTime Int? // einmalig, z. B. Genossenschaftsanteile/Kaution
+  costMonthly Int? // monatlich
+
+  categories        ListingCategoryAssignment[]
+  attributeOptions  ListingAttributeOption[]
+  media             Media[]
+  events            Event[]
+  reports           Report[]           @relation("ReportOnListing")
+  contactRequests   ContactRequest[]
+  appointments      Appointment[]
+
+  @@index([status])
+  @@index([organizationId])
+}
+
+// --- Generic filter-attribute system (Projekt Typ, Projekt Status,
+// Geschlechterverteilung, Organisationsform, Grundwerte, Wohnlage,
+// Zielgruppe, ...) ----------------------------------------------------------
+//
+// One reusable group/option/assignment system instead of a bespoke table per
+// filter category (which is what ListingCategory above already is for "Art
+// des Projektinserates" — kept separate since it shipped first and changing
+// it would be pure churn). New filter groups or values are just rows here,
+// never a migration. `allowMultiple` is a UI hint (radio vs. checkboxes) —
+// the underlying relation is many-to-many either way.
+model AttributeGroup {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  nameEn        String?
+  allowMultiple Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  options AttributeOption[]
+}
+
+model AttributeOption {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     AttributeGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String
+  nameEn    String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  listings ListingAttributeOption[]
+
+  @@unique([groupId, slug])
+}
+
+model ListingAttributeOption {
+  listingId String
+  listing   Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    AttributeOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, optionId])
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+  DOCUMENT
+  FLOORPLAN
+}
+
+model Media {
+  id           String    @id @default(cuid())
+  listingId    String
+  listing      Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  type         MediaType
+  storageKey   String // MinIO/S3 object key
+  caption      String?
+  position     Int       @default(0)
+  uploadedById String
+  uploadedBy   User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
+  createdAt    DateTime  @default(now())
+}
+
+// --- Calendar: events, info sessions, Besuchstage --------------------------
+
+model Event {
+  id        String        @id @default(cuid())
+  status    ListingStatus @default(DRAFT)
+  title     String
+  description String?
+  startAt   DateTime
+  endAt     DateTime?
+  addressText String?
+  location    Unsupported("geometry(Point, 4326)")?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  listingId      String?
+  listing        Listing?      @relation(fields: [listingId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports Report[] @relation("ReportOnEvent")
+
+  @@index([startAt])
+  @@index([status])
+}
+
+// --- Saved searches ---------------------------------------------------------
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  filters   Json
+  createdAt DateTime @default(now())
+}
+
+// --- Contact & appointment requests (no chat, no matching) ----------------
+
+enum ContactRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+// A contact-form submission. Contact details of the listing owner are only
+// revealed to the sender once status becomes ACCEPTED.
+model ContactRequest {
+  id          String                @id @default(cuid())
+  listingId   String
+  listing     Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  senderUserId String?
+  senderUser   User?                @relation("ContactRequestSender", fields: [senderUserId], references: [id])
+  senderName  String
+  senderEmail String
+  message     String
+  status      ContactRequestStatus  @default(PENDING)
+  createdAt   DateTime              @default(now())
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  DECLINED
+  CANCELLED
+}
+
+// Besichtigungstermin / visiting-day scheduling between a searcher and a listing.
+model Appointment {
+  id                String            @id @default(cuid())
+  listingId         String
+  listing           Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  hostUserId        String
+  hostUser          User              @relation("AppointmentHost", fields: [hostUserId], references: [id])
+  requestedByUserId String?
+  requestedByUser   User?             @relation("AppointmentRequestedBy", fields: [requestedByUserId], references: [id])
+  requesterName     String?
+  requesterEmail    String?
+  proposedAt        DateTime
+  message           String?
+  status            AppointmentStatus @default(REQUESTED)
+  createdAt         DateTime          @default(now())
+}
+
+// --- Trust & safety ---------------------------------------------------------
+
+enum ReportTargetType {
+  LISTING
+  EVENT
+  ORGANIZATION
+  USER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+model Report {
+  id             String           @id @default(cuid())
+  targetType     ReportTargetType
+  listingId      String?
+  listing        Listing?         @relation("ReportOnListing", fields: [listingId], references: [id])
+  eventId        String?
+  event          Event?           @relation("ReportOnEvent", fields: [eventId], references: [id])
+  reporterId     String?
+  reporter       User?            @relation("ReportReporter", fields: [reporterId], references: [id])
+  reporterIp     String? // fallback for guest reports / fake-listing IP blocking
+  reason         String
+  message        String?
+  status         ReportStatus     @default(OPEN)
+  reviewedById   String?
+  reviewedBy     User?            @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  createdAt      DateTime         @default(now())
+}

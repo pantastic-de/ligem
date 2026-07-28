@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# Deploy LiGem to a server over SSH: pulls the latest code, rebuilds and
+# restarts the Docker Compose stack in production mode, and applies pending
+# Prisma migrations.
+#
+# This script is not executed automatically anywhere — it needs a real
+# target server and is meant to be reviewed and run by hand (or wired into
+# your own CI job) once you've filled in the variables below.
+#
+# Usage:
+#   DEPLOY_HOST=your.server.tld \
+#   DEPLOY_USER=deploy \
+#   DEPLOY_PATH=/srv/ligem \
+#   scripts/deploy.sh
+#
+# Optional:
+#   DEPLOY_SSH_KEY=~/.ssh/id_ligem_deploy   # defaults to your default SSH key
+#   DEPLOY_BRANCH=main                       # defaults to main
+
+set -euo pipefail
+
+: "${DEPLOY_HOST:?Set DEPLOY_HOST to the server's hostname or IP}"
+: "${DEPLOY_USER:?Set DEPLOY_USER to the SSH user on the server}"
+: "${DEPLOY_PATH:?Set DEPLOY_PATH to the absolute path of the repo on the server}"
+DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
+
+SSH_OPTS=()
+if [ -n "${DEPLOY_SSH_KEY:-}" ]; then
+  SSH_OPTS+=(-i "$DEPLOY_SSH_KEY")
+fi
+
+echo "Deploying branch '$DEPLOY_BRANCH' to $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH"
+
+ssh "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_PATH" "$DEPLOY_BRANCH" <<'REMOTE'
+set -euo pipefail
+DEPLOY_PATH="$1"
+DEPLOY_BRANCH="$2"
+
+cd "$DEPLOY_PATH"
+
+git fetch origin
+git checkout "$DEPLOY_BRANCH"
+git reset --hard "origin/$DEPLOY_BRANCH"
+
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# Wait for the web container to actually be up before running migrations.
+for _ in $(seq 1 30); do
+  if docker compose exec -T web true 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+
+docker compose exec -T web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
+
+echo "Deploy complete."
+REMOTE

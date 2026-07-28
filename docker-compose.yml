@@ -48,13 +48,16 @@ services:
     working_dir: /workspace/apps/web
     command: sh -c "corepack enable && pnpm install && pnpm dev"
     environment:
-      DATABASE_URL: postgresql://ligem:${POSTGRES_PASSWORD}@postgres:5432/ligem
+      DATABASE_URL: postgresql://c1u3:${POSTGRES_PASSWORD}@postgres:5432/c1db3
       REDIS_URL: redis://valkey:6379
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_KEY: ${MEILI_MASTER_KEY}
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${MINIO_ROOT_USER}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      AUTH_SECRET: ${AUTH_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
     volumes:
       - .:/workspace
     ports:
