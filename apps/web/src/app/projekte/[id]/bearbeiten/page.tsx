@@ -52,7 +52,7 @@ export default async function ProjektBearbeitenPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Projekt bearbeiten</h1>
       <p className="mt-2 text-text-muted">
         Nach dem Speichern wird euer Projekt erneut geprüft, bevor die
@@ -79,7 +79,7 @@ export default async function ProjektBearbeitenPage({
         </p>
       ) : null}
 
-      <section className="mt-8 rounded-2xl bg-surface p-6 shadow-sm">
+      <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Fotos</h2>
         <p className="mt-1 text-sm text-text-muted">
           Das erste Foto wird als Vorschaubild in der Projektliste verwendet.

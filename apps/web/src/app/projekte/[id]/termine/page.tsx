@@ -40,7 +40,7 @@ export default async function TerminePage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Termine</h1>
@@ -55,7 +55,7 @@ export default async function TerminePage({
       </div>
 
       {events.length === 0 ? (
-        <p className="mt-10 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-10 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Noch keine Termine eingetragen.
         </p>
       ) : (
@@ -63,7 +63,7 @@ export default async function TerminePage({
           {events.map((event) => (
             <li
               key={event.id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-6 shadow-sm"
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
             >
               <div>
                 <h2 className="font-semibold">{event.title}</h2>

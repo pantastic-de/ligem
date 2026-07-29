@@ -2,3 +2,18 @@ services:
   web:
     command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm build && pnpm start"
     restart: unless-stopped
+    # Production uses the server's native PostgreSQL/PostGIS install instead
+    # of the Dockerized `postgres` service (that one is dev-only). DATABASE_URL
+    # comes from the server's .env — see DEPLOYMENT.md — and must point at
+    # `host.docker.internal` (not `postgres`), since there is no `postgres`
+    # container to resolve that hostname against in production.
+    #
+    # Note: `postgres` is NOT removed from depends_on here — Compose merges
+    # depends_on lists across -f files rather than replacing them, so it
+    # would still auto-start regardless of what's listed in this override.
+    # The `up` command must be run with `--no-deps` instead (see
+    # DEPLOYMENT.md / scripts/deploy.sh) to actually keep it from starting.
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

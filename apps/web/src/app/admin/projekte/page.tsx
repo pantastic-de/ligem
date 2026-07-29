@@ -44,7 +44,7 @@ export default async function AdminProjektePage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-16">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Projekte prüfen</h1>
       <p className="mt-2 text-text-muted">
         Neue und geänderte Projekte landen hier zur Prüfung, bevor sie auf{" "}
@@ -69,7 +69,7 @@ export default async function AdminProjektePage({
       </nav>
 
       {listings.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Keine Projekte mit diesem Status.
         </p>
       ) : (
@@ -77,7 +77,7 @@ export default async function AdminProjektePage({
           {listings.map((listing) => {
             const projectType = listing.attributeOptions[0]?.option.name;
             return (
-              <li key={listing.id} className="rounded-2xl bg-surface p-6 shadow-sm">
+              <li key={listing.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-semibold">

@@ -40,7 +40,7 @@ export function ProjekteSearchForm({
       ref={formRef}
       onChange={handleChange}
       onSubmit={(e) => e.preventDefault()}
-      className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-6 shadow-sm"
+      className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
     >
       {projektTyp ? (
         <div className="flex flex-col gap-1.5">

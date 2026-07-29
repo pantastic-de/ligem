@@ -29,9 +29,9 @@ export default async function TerminEintragenEinstiegPage() {
 
   if (listings.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-6 py-16">
+      <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
         <h1 className="text-3xl font-bold">Termin eintragen</h1>
-        <p className="mt-4 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-4 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Termine gehören immer zu einem Projekt. Du hast noch kein eigenes
           Projekt —{" "}
           <Link href="/projekte/neu" className="text-primary">
@@ -48,7 +48,7 @@ export default async function TerminEintragenEinstiegPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Termin eintragen</h1>
       <p className="mt-2 text-text-muted">Für welches Projekt?</p>
 
@@ -57,7 +57,7 @@ export default async function TerminEintragenEinstiegPage() {
           <li key={listing.id}>
             <Link
               href={`/projekte/${listing.id}/termine/neu`}
-              className="flex items-center justify-between gap-4 rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"
+              className="flex items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
             >
               <span className="font-semibold">{listing.projectName}</span>
               <span className="text-sm text-text-muted">

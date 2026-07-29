@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HilfeRegistrierungPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <Link href="/hilfe" className="text-sm font-medium text-primary">
         ← Zur Hilfe-Übersicht
       </Link>

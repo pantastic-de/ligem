@@ -1,5 +1,6 @@
 node_modules/
 .next/
 .env
+scripts/deploy.env
 .turbo/
 .pnpm-store/

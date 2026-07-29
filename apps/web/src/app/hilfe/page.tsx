@@ -35,7 +35,7 @@ const themen = [
 
 export default function HilfePage() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-16">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Hilfe</h1>
       <p className="mt-2 text-text-muted">
         Kurze Erklärungen zu allen Funktionen von LiGem.
@@ -46,7 +46,7 @@ export default function HilfePage() {
           <Link
             key={thema.href}
             href={thema.href}
-            className="rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"
+            className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
           >
             <h2 className="text-lg font-semibold">{thema.title}</h2>
             <p className="mt-1 text-text-muted">{thema.text}</p>

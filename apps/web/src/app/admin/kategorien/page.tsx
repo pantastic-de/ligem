@@ -11,7 +11,7 @@ export default async function AdminKategorienPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Kategorien</h1>
       <p className="mt-2 text-text-muted">
         &bdquo;Art des Projektinserates&ldquo; — die Taxonomie, der ein
@@ -45,7 +45,7 @@ export default async function AdminKategorienPage() {
 
       <form
         action={addCategory}
-        className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-6 shadow-sm"
+        className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
       >
         <h2 className="text-lg font-semibold">Neue Kategorie</h2>
         <div className="flex flex-col gap-1.5">

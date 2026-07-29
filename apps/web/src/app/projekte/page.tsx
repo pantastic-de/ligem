@@ -125,7 +125,7 @@ export default async function ProjektePage({
     }));
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-16">
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Wohnprojekte</h1>
       <p className="mt-2 text-text-muted">
         Veröffentlichte Wohngemeinschaften und Projekte auf LiGem.
@@ -148,11 +148,11 @@ export default async function ProjektePage({
       />
 
       {radiusSearchActive && listings.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
         </p>
       ) : listings.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Keine Projekte gefunden. Trag als Erste:r euer Projekt ein, oder
           passe die Suche an!
         </p>
@@ -166,7 +166,7 @@ export default async function ProjektePage({
               <li key={listing.id}>
                 <Link
                   href={`/projekte/${listing.id}`}
-                  className="flex gap-4 rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"
+                  className="flex gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
                 >
                   {thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object

@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Datenschutzerklärung - LiGem" };
 
 export default function DatenschutzPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Datenschutzerklärung</h1>
 
       <p className="mt-6 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">

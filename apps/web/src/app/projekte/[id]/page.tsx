@@ -106,7 +106,7 @@ export default async function ProjektDetailPage({
   const locationLine = formatLocation(listing);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       {eingereicht ? (
         <p className="mb-6 rounded-xl bg-success/10 px-4 py-3 text-success">
           Dein Projekt wurde eingereicht und wird jetzt geprüft.
@@ -322,7 +322,7 @@ export default async function ProjektDetailPage({
       ) : null}
 
       {canManage && (listing.contactName || listing.contactEmail || listing.contactPhone) ? (
-        <section className="mt-8 rounded-2xl bg-surface p-6 shadow-sm">
+        <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Ansprechperson (nur für dich sichtbar)</h2>
           <p className="mt-1 text-text-muted">
             {[listing.contactName, listing.contactEmail, listing.contactPhone]
@@ -333,7 +333,7 @@ export default async function ProjektDetailPage({
       ) : null}
 
       {listing.status === "PUBLISHED" && !canManage ? (
-        <section className="mt-12 rounded-2xl bg-surface p-6 shadow-sm">
+        <section className="mt-12 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Kontakt aufnehmen</h2>
           <p className="mt-1 text-text-muted">
             Deine Kontaktdaten werden erst geteilt, wenn{" "}

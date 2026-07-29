@@ -18,7 +18,7 @@ export default async function AdminNutzerPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-16">
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Nutzerverwaltung</h1>
       <p className="mt-2 text-text-muted">
         Rollen bestimmen, was jemand tun darf. Ein Nutzer kann mehrere Rollen
@@ -29,7 +29,7 @@ export default async function AdminNutzerPage() {
         {users.map((user) => {
           const activeRoles = new Set(user.roles.map((r) => r.role));
           return (
-            <li key={user.id} className="rounded-2xl bg-surface p-6 shadow-sm">
+            <li key={user.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold">
                   {user.name ?? "(kein Name)"}

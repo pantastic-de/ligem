@@ -109,7 +109,7 @@ export default async function KalenderPage({
     }));
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-16">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Kalender</h1>
       <p className="mt-2 text-text-muted">
         Anstehende Infotage, Besuchstage und Veranstaltungen aller Projekte.
@@ -131,11 +131,11 @@ export default async function KalenderPage({
       />
 
       {radiusSearchActive && events.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Keine Termine mit Standortdaten in diesem Umkreis gefunden.
         </p>
       ) : events.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Keine anstehenden Termine gefunden.
         </p>
       ) : (
@@ -146,7 +146,7 @@ export default async function KalenderPage({
               <li key={event.id}>
                 <Link
                   href={`/termine/${event.id}`}
-                  className="flex gap-4 rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"
+                  className="flex gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
                 >
                   {thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object

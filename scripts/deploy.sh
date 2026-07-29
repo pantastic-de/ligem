@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-: "${DEPLOY_HOST:?Set DEPLOY_HOST to the server's hostname or IP}"
+: "${DEPLOY_HOST:?Set DEPLOY_HOST to the target server hostname or IP}"
 : "${DEPLOY_USER:?Set DEPLOY_USER to the SSH user on the server}"
 : "${DEPLOY_PATH:?Set DEPLOY_PATH to the absolute path of the repo on the server}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
@@ -32,7 +32,7 @@ fi
 
 echo "Deploying branch '$DEPLOY_BRANCH' to $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH"
 
-ssh "${SSH_OPTS[@]}" "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_PATH" "$DEPLOY_BRANCH" <<'REMOTE'
+ssh "${SSH_OPTS[@]+"${SSH_OPTS[@]}"}" "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_PATH" "$DEPLOY_BRANCH" <<'REMOTE'
 set -euo pipefail
 DEPLOY_PATH="$1"
 DEPLOY_BRANCH="$2"
@@ -43,7 +43,12 @@ git fetch origin
 git checkout "$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Production uses the server's native PostgreSQL/PostGIS (see DEPLOYMENT.md),
+# not the Dockerized `postgres` service — that one is dev-only. --no-deps is
+# required here, not just omitting "postgres" from the service list: Compose
+# merges depends_on across -f files rather than replacing it, so `web` still
+# depends_on postgres in the merged config and would auto-start it otherwise.
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
 
 # Wait for the web container to actually be up before running migrations.
 for _ in $(seq 1 30); do

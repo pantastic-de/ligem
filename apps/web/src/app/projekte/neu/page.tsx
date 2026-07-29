@@ -21,7 +21,7 @@ export default async function NeuesProjektPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Projekt eintragen</h1>
       <p className="mt-2 text-text-muted">
         Dein Eintrag wird vor der Veröffentlichung geprüft. Nur der

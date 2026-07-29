@@ -50,16 +50,16 @@ const zielgruppen = [
 export default function Home() {
   return (
     <>
-      <section className="mx-auto max-w-4xl px-6 py-16 text-center sm:py-24">
-        <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+      <section className="mx-auto max-w-4xl px-4 py-10 text-center sm:px-6 sm:py-24">
+        <h1 className="text-3xl font-bold leading-tight sm:text-5xl">
           Leben in Gemeinschaft
         </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-text-muted">
+        <p className="mx-auto mt-4 max-w-2xl text-base text-text-muted sm:mt-6 sm:text-lg">
           LiGem bringt Wohngemeinschaften, Menschen auf der Suche nach einem
           Zuhause und gemeinwohlorientierte Organisationen zusammen – zum
           Informieren, Vernetzen und Veranstalten. Kostenlos und frei.
         </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
           <Link
             href="/projekte"
             className="flex min-h-12 w-full items-center justify-center rounded-full bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover sm:w-auto"
@@ -75,16 +75,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="zielgruppen" className="px-6 py-16 sm:py-20">
+      <section id="zielgruppen" className="px-4 py-10 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-4xl">
-          <h2 className="text-center text-2xl font-bold sm:text-3xl">
+          <h2 className="text-center text-xl font-bold sm:text-3xl">
             Für wen ist LiGem?
           </h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:mt-10 sm:gap-6 sm:grid-cols-2">
             {zielgruppen.map((gruppe) => (
               <div
                 key={gruppe.title}
-                className="flex gap-4 rounded-2xl bg-surface p-6 shadow-sm"
+                className="flex gap-4 rounded-2xl bg-surface p-4 shadow-sm sm:p-6"
               >
                 <svg
                   aria-hidden="true"

@@ -16,7 +16,7 @@ function GroupCard({ group, countKey }: { group: GroupWithOptions; countKey: "li
   const unitLabel = countKey === "listings" ? "Projekt(e)" : "Termin(e)";
 
   return (
-    <section className="rounded-2xl bg-surface p-6 shadow-sm">
+    <section className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-lg font-semibold">{group.name}</h3>
@@ -104,7 +104,7 @@ export default async function AdminAttributePage() {
   const eventGroups = allGroups.filter((g) => g.appliesTo === "EVENT");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Attribute &amp; Filter</h1>
       <p className="mt-2 text-text-muted">
         Jede Gruppe ist ein Filter (z. B. Projekt Typ, Grundwerte, oder
@@ -128,7 +128,7 @@ export default async function AdminAttributePage() {
 
       <form
         action={addGroup}
-        className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-6 shadow-sm"
+        className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
       >
         <h2 className="text-lg font-semibold">Neue Attributgruppe</h2>
         <div className="flex flex-col gap-1.5">

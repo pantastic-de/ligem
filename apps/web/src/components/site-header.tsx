@@ -9,18 +9,18 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-text/10">
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-y-2 px-6 py-3">
-        <Link href="/" className="py-2">
+      <div className="mx-auto flex max-w-4xl flex-row flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:flex-col sm:gap-y-3 sm:px-6 sm:py-3">
+        <Link href="/" className="shrink-0">
           <Image
             src="/logo.png"
             alt="LiGem - Leben in Gemeinschaft"
             width={1280}
             height={460}
             priority
-            className="h-20 w-auto mix-blend-multiply sm:h-24"
+            className="h-9 w-auto mix-blend-multiply sm:h-20 md:h-24"
           />
         </Link>
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium">
+        <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">
           <Link href="/projekte" className="inline-flex min-h-11 items-center">
             Projekte
           </Link>

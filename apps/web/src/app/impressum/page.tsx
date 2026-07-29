@@ -4,7 +4,7 @@ export const metadata: Metadata = { title: "Impressum - LiGem" };
 
 export default function ImpressumPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Impressum</h1>
 
       <section className="mt-8">

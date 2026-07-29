@@ -38,7 +38,7 @@ export default async function AnmeldungenPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <Link
         href={`/projekte/${listingId}/termine`}
         className="text-sm font-medium text-primary"
@@ -54,13 +54,13 @@ export default async function AnmeldungenPage({
       </p>
 
       {event.registrations.length === 0 ? (
-        <p className="mt-10 rounded-2xl bg-surface p-6 text-text-muted">
+        <p className="mt-10 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Noch keine Anmeldungen oder Nachrichten.
         </p>
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
           {event.registrations.map((registration) => (
-            <li key={registration.id} className="rounded-2xl bg-surface p-6 shadow-sm">
+            <li key={registration.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold">{registration.name}</span>
                 <span className="text-sm text-text-muted">

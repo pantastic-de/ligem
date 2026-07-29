@@ -38,7 +38,7 @@ export default async function TerminDetailPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-16">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       {angemeldet ? (
         <p className="mb-6 rounded-xl bg-success/10 px-4 py-3 text-success">
           Danke! Deine Anmeldung bzw. Nachricht wurde verschickt.
@@ -118,7 +118,7 @@ export default async function TerminDetailPage({
         </p>
       ) : null}
 
-      <section className="mt-12 rounded-2xl bg-surface p-6 shadow-sm">
+      <section className="mt-12 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">
           {event.registrationRequired
             ? "Anmelden"

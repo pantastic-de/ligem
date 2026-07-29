@@ -1,9 +1,12 @@
 # Deployment
 
-How to install LiGem on a server. The project runs entirely via Docker
-Compose (Next.js app + Postgres/PostGIS + Valkey + Meilisearch + MinIO), so
-there is no separate language/runtime setup needed on the server — only
-Docker.
+How to install LiGem on a server. Most of the stack runs via Docker Compose
+(Next.js app + Valkey + Meilisearch + MinIO), so there is no separate
+language/runtime setup needed for those — only Docker. **PostgreSQL/PostGIS
+is the one exception**: production connects to a native install on the
+server itself rather than the Dockerized `postgres` service dev uses (see
+step 2) — manage its backups/upgrades at the OS level like any other
+production database.
 
 ## Prerequisites
 
@@ -26,12 +29,46 @@ cd ligem
 (See `scripts/github-init.sh` for pushing this repo to GitHub in the first
 place, if you haven't already.)
 
-## 2. Configure secrets
+## 2. Set up native PostgreSQL/PostGIS
+
+Production deliberately does **not** use the Dockerized `postgres` service
+from `docker-compose.yml` (that one is dev-only, for a zero-setup local
+experience) — it connects to a PostgreSQL/PostGIS instance installed directly
+on the server instead. This avoids running the database's storage inside a
+container on a machine where you'd rather manage backups/upgrades at the OS
+level.
+
+1. Install PostgreSQL and the PostGIS extension package for it via your
+   distro's package manager (e.g. on Debian/Ubuntu:
+   `apt install postgresql postgresql-<version>-postgis-3`).
+2. Create the database/user the app will use, and enable PostGIS in that
+   database:
+   ```bash
+   sudo -u postgres psql -c "CREATE USER ligem WITH PASSWORD '<strong password>';"
+   sudo -u postgres psql -c "CREATE DATABASE ligem OWNER ligem;"
+   sudo -u postgres psql -d ligem -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+   ```
+3. Make it reachable from the `web` container. The `web` service in
+   `docker-compose.prod.yml` is configured with
+   `extra_hosts: ["host.docker.internal:host-gateway"]`, so from inside the
+   container the host is reachable as `host.docker.internal` — but Postgres
+   itself needs to accept that connection:
+   - `postgresql.conf`: `listen_addresses = '*'` (or specifically the Docker
+     bridge gateway IP, if you'd rather not listen on all interfaces).
+   - `pg_hba.conf`: allow the Docker network's subnet, e.g. (find the actual
+     subnet via `docker network inspect ligem_default | grep -A2 IPAM`):
+     ```
+     host    ligem    ligem    172.20.0.0/16    scram-sha-256
+     ```
+   - `sudo systemctl reload postgresql` to apply.
+
+## 3. Configure secrets
 
 Create a root `.env` (this file is gitignored — never commit it):
 
 ```bash
-POSTGRES_PASSWORD=<generate a strong password>
+DATABASE_URL=postgresql://ligem:<strong password>@host.docker.internal:5432/ligem
+POSTGRES_PASSWORD=<unused in production, but keep set to something — see note below>
 MEILI_MASTER_KEY=<generate a strong key>
 MINIO_ROOT_USER=<choose a username>
 MINIO_ROOT_PASSWORD=<generate a strong password>
@@ -40,32 +77,37 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```
 
+`DATABASE_URL` must use the user/database/password from step 2, and the host
+must be `host.docker.internal` (not `localhost` — from inside the `web`
+container, `localhost` refers to the container itself, not the server).
+
+`POSTGRES_PASSWORD` is only read by the Dockerized `postgres` service, which
+production never starts (see step 4) — it's still referenced by the shared
+base `docker-compose.yml`, so Compose needs *some* value present to not warn
+about a missing variable, but its actual value doesn't matter in production.
+
 `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` can stay empty — Google login is
 simply not offered until both are set (see `src/lib/auth.ts`).
 
 **Never reuse the values from local development.** Generate fresh secrets for
 the server.
 
-## 3. Run the app in production mode
+## 4. Run the app in production mode
 
-The default `docker-compose.yml` runs `pnpm dev` for local development. For a
-server, override the `web` service to build and run in production mode
-instead. Create `docker-compose.prod.yml`:
-
-```yaml
-services:
-  web:
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm build && pnpm start"
-    restart: unless-stopped
-```
-
-Then start everything:
+The default `docker-compose.yml` runs `pnpm dev` for local development and
+defines a Dockerized `postgres` service. `docker-compose.prod.yml` (committed
+in the repo) overrides `web` to build and run in production mode instead, and
+points it at the native PostgreSQL from step 2 rather than the `postgres`
+service. Start everything, **explicitly excluding `postgres`** so it's never
+started in production:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
 ```
 
-## 4. Run migrations (and, optionally, the seed)
+`scripts/deploy.sh` already does this (see step 7).
+
+## 5. Run migrations (and, optionally, the seed)
 
 ```bash
 docker compose exec web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
@@ -89,15 +131,15 @@ its fixed-password local dev admin account when `NODE_ENV=production` (see
 account through the site, then promote it directly in the database:
 
 ```bash
-docker compose exec postgres psql -U <POSTGRES_USER> -d <POSTGRES_DB> -c \
+sudo -u postgres psql -d <your db> -c \
   "INSERT INTO \"UserRoleAssignment\" (id, \"userId\", role, \"createdAt\") \
    SELECT gen_random_uuid()::text, id, 'ADMIN', now() FROM \"User\" WHERE email = 'you@example.com';"
 ```
 
-(`POSTGRES_USER`/`POSTGRES_DB` are whatever you set in `docker-compose.yml` —
-check the `postgres` service's `environment:` block.)
+(Run this directly on the server against the native PostgreSQL — there is no
+`postgres` container in production to `docker compose exec` into.)
 
-## 5. Put a reverse proxy with TLS in front
+## 6. Put a reverse proxy with TLS in front
 
 The `web` container listens on port 3000 but isn't exposed with TLS itself.
 The simplest option is [Caddy](https://caddyserver.com/), which gets
@@ -113,27 +155,38 @@ Run Caddy directly on the host (or as another container on the same Docker
 network, proxying to `web:3000`). Nginx + certbot works equally well if
 that's already your standard setup.
 
-## 6. Updating
+## 7. Updating
 
 ```bash
 git pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
 docker compose exec web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
 ```
 
-## 7. Backups
+(Or just run `scripts/deploy.sh`, which wraps exactly this over SSH.)
+
+## 8. Backups
 
 - **Database:**
   ```bash
-  docker compose exec postgres pg_dump -U <POSTGRES_USER> <POSTGRES_DB> > backup-$(date +%F).sql
+  pg_dump -U <your db user> <your db> > backup-$(date +%F).sql
   ```
+  (run natively on the server, not via `docker compose exec` — there is no
+  `postgres` container in production)
 - **Uploaded files (MinIO):** back up the `minio_data` Docker volume (holds
   photos/documents attached to listings, once media upload is wired up).
 
 ## Automated deploy
 
-`scripts/deploy.sh` wraps steps 3–4 above over SSH, for redeploying after a
+`scripts/deploy.sh` wraps step 7 above over SSH, for redeploying after a
 `git push`. See the comment header in that file for required environment
-variables — it isn't run as part of building this feature, since that would
-mean pushing to a real GitHub repo and deploying to a real server, neither of
-which this session has access to.
+variables (`scripts/deploy.env` is a gitignored template you can `source`
+before running it) — it is never run automatically by Claude, since that
+means connecting to and modifying a real production server.
+
+**Note on `git reset --hard`:** the script does this to guarantee the server
+matches `origin` exactly. That means any *uncommitted* local edits to tracked
+files (e.g. hand-editing `docker-compose.prod.yml` directly on the server)
+are silently discarded on the next deploy. If you need a server-specific
+override, commit it (as this file's native-Postgres settings now are) rather
+than editing it only on the server.
