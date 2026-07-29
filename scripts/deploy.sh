@@ -48,6 +48,13 @@ git reset --hard "origin/$DEPLOY_BRANCH"
 # required here, not just omitting "postgres" from the service list: Compose
 # merges depends_on across -f files rather than replacing it, so `web` still
 # depends_on postgres in the merged config and would auto-start it otherwise.
+#
+# Stop the targeted services explicitly before recreating them: Compose's
+# in-place recreate (stop old container, then immediately bind the new one to
+# the same port) can lose the race and fail with "address already in use" if
+# the old container hasn't fully released its port yet. `|| true` because on
+# the very first deploy there's nothing running yet to stop.
+docker compose -f docker-compose.yml -f docker-compose.prod.yml stop web valkey meilisearch minio || true
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
 
 # Wait for the web container to actually be up before running migrations.
