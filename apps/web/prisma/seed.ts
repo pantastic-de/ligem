@@ -31,6 +31,7 @@ const attributeGroups: {
   slug: string;
   name: string;
   nameEn?: string;
+  appliesTo?: "LISTING" | "EVENT";
   allowMultiple: boolean;
   sortOrder: number;
   options: { slug: string; name: string; nameEn?: string }[];
@@ -130,6 +131,48 @@ const attributeGroups: {
       { slug: "singles", name: "Singles" },
     ],
   },
+  // Event-Attribute (Kalender)
+  {
+    slug: "veranstaltungsart",
+    name: "Veranstaltungsart",
+    appliesTo: "EVENT",
+    allowMultiple: false,
+    sortOrder: 100,
+    options: [
+      { slug: "infotag", name: "Infotag" },
+      { slug: "besuchstag", name: "Besuchstag" },
+      { slug: "workshop", name: "Workshop" },
+      { slug: "vortrag", name: "Vortrag" },
+      { slug: "fest", name: "Fest/Feier" },
+      { slug: "mitmachtag", name: "Mitmachtag/Arbeitseinsatz" },
+      { slug: "online", name: "Online-Veranstaltung" },
+    ],
+  },
+  {
+    slug: "veranstaltung-zielgruppe",
+    name: "Zielgruppe",
+    appliesTo: "EVENT",
+    allowMultiple: true,
+    sortOrder: 110,
+    options: [
+      { slug: "alle-willkommen", name: "Alle willkommen" },
+      { slug: "familien-mit-kindern", name: "Familien mit Kindern" },
+      { slug: "nur-mitglieder", name: "Nur Mitglieder/Interessent:innen" },
+      { slug: "fachpublikum", name: "Fachpublikum" },
+    ],
+  },
+  {
+    slug: "veranstaltung-merkmale",
+    name: "Merkmale",
+    appliesTo: "EVENT",
+    allowMultiple: true,
+    sortOrder: 120,
+    options: [
+      { slug: "barrierefrei", name: "Barrierefrei zugänglich" },
+      { slug: "kostenlos", name: "Kostenlos" },
+      { slug: "kinderfreundlich", name: "Kinderfreundlich" },
+    ],
+  },
 ];
 
 async function main() {
@@ -143,11 +186,12 @@ async function main() {
   console.log(`Seeded ${categories.length} listing categories.`);
 
   for (const group of attributeGroups) {
-    const { options, ...groupData } = group;
+    const { options, appliesTo, ...groupData } = group;
+    const data = { ...groupData, appliesTo: appliesTo ?? "LISTING" } as const;
     const savedGroup = await prisma.attributeGroup.upsert({
       where: { slug: group.slug },
-      update: groupData,
-      create: groupData,
+      update: data,
+      create: data,
     });
 
     for (const [index, option] of options.entries()) {

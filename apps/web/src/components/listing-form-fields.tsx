@@ -3,6 +3,7 @@ import type {
   AttributeOption,
   ListingCategory,
 } from "@/generated/prisma/client";
+import { AddressFields } from "@/components/address-fields";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -14,10 +15,13 @@ export type ListingFormDefaults = {
   motto?: string;
   country?: string;
   state?: string;
+  postalCode?: string;
   city?: string;
   street?: string;
   houseNumber?: string;
   regionDescription?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -170,88 +174,20 @@ export function ListingFormFields({
             Allgäu&ldquo; — beides ist möglich.
           </p>
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="country" className="font-medium">
-              Land
-            </label>
-            <input
-              id="country"
-              name="country"
-              type="text"
-              defaultValue={defaults.country}
-              className={inputClass}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="state" className="font-medium">
-              Bundesland
-            </label>
-            <input
-              id="state"
-              name="state"
-              type="text"
-              defaultValue={defaults.state}
-              className={inputClass}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-1 flex flex-col gap-1.5">
-            <label htmlFor="city" className="font-medium">
-              Ort
-            </label>
-            <input
-              id="city"
-              name="city"
-              type="text"
-              defaultValue={defaults.city}
-              className={inputClass}
-            />
-          </div>
-          <div className="col-span-1 grid grid-cols-3 gap-2">
-            <div className="col-span-2 flex flex-col gap-1.5">
-              <label htmlFor="street" className="font-medium">
-                Straße
-              </label>
-              <input
-                id="street"
-                name="street"
-                type="text"
-                defaultValue={defaults.street}
-                className={inputClass}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="houseNumber" className="font-medium">
-                Nr.
-              </label>
-              <input
-                id="houseNumber"
-                name="houseNumber"
-                type="text"
-                defaultValue={defaults.houseNumber}
-                className={inputClass}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="regionDescription" className="font-medium">
-            Unspezifische Ortsangabe
-          </label>
-          <input
-            id="regionDescription"
-            name="regionDescription"
-            type="text"
-            placeholder="z. B. Großraum Allgäu"
-            defaultValue={defaults.regionDescription}
-            className={inputClass}
-          />
-        </div>
+        <AddressFields
+          showRegionDescription
+          defaults={{
+            country: defaults.country,
+            state: defaults.state,
+            postalCode: defaults.postalCode,
+            city: defaults.city,
+            street: defaults.street,
+            houseNumber: defaults.houseNumber,
+            regionDescription: defaults.regionDescription,
+            latitude: defaults.latitude,
+            longitude: defaults.longitude,
+          }}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-4">

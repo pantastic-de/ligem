@@ -14,6 +14,7 @@ export default async function NeuesProjektPage() {
   const [categories, attributeGroups] = await Promise.all([
     prisma.listingCategory.findMany({ orderBy: { name: "asc" } }),
     prisma.attributeGroup.findMany({
+      where: { appliesTo: "LISTING" },
       orderBy: { sortOrder: "asc" },
       include: { options: { orderBy: { sortOrder: "asc" } } },
     }),

@@ -2,10 +2,10 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
+import { EventFormFields } from "@/components/event-form-fields";
 import { deleteEvent, updateEvent } from "../../actions";
-
-const inputClass =
-  "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
+import { deleteEventMedia, uploadEventMedia } from "../../event-media-actions";
 
 function toDateTimeLocal(date: Date | null): string | undefined {
   if (!date) return undefined;
@@ -16,10 +16,13 @@ function toDateTimeLocal(date: Date | null): string | undefined {
 
 export default async function TerminBearbeitenPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; eventId: string }>;
+  searchParams: Promise<{ error?: string; fotos?: string; uebersprungen?: string }>;
 }) {
   const { id: listingId, eventId } = await params;
+  const { error, fotos, uebersprungen } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
@@ -27,96 +30,151 @@ export default async function TerminBearbeitenPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { createdById: true, projectName: true },
+    select: { projectName: true },
   });
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id) {
-    notFound();
-  }
 
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      attributeOptions: true,
+      media: { orderBy: { position: "asc" } },
+    },
+  });
   if (!event || event.listingId !== listingId) {
     notFound();
   }
+  const userIsAdmin = await isAdmin(session.user.id);
+  if (event.createdById !== session.user.id && !userIsAdmin) {
+    notFound();
+  }
+
+  const attributeGroups = await prisma.attributeGroup.findMany({
+    where: { appliesTo: "EVENT" },
+    orderBy: { sortOrder: "asc" },
+    include: { options: { orderBy: { sortOrder: "asc" } } },
+  });
 
   return (
     <div className="mx-auto w-full max-w-xl px-6 py-16">
       <h1 className="text-3xl font-bold">Termin bearbeiten</h1>
       <p className="mt-2 text-text-muted">für {listing.projectName}</p>
 
-      <form action={updateEvent} className="mt-8 flex flex-col gap-5">
+      {fotos ? (
+        <p className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          Fotos aktualisiert.
+          {uebersprungen
+            ? ` ${uebersprungen} Datei(en) wurden übersprungen, weil sie größer als 8 MB waren.`
+            : ""}
+        </p>
+      ) : null}
+      {error === "1" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Bitte Titel und Beginn-Datum angeben.
+        </p>
+      ) : null}
+      {error === "enddatum" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Das Enddatum muss nach dem Beginn liegen.
+        </p>
+      ) : null}
+      {error === "nofile" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Bitte wähle mindestens ein Bild aus.
+        </p>
+      ) : null}
+      {error === "toobig" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Alle ausgewählten Bilder waren größer als 8 MB. Bitte kleinere
+          Dateien wählen.
+        </p>
+      ) : null}
+
+      <section className="mt-8 rounded-2xl bg-surface p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Fotos</h2>
+        <p className="mt-1 text-sm text-text-muted">
+          Maximal 8 MB pro Bild.
+        </p>
+
+        {event.media.length > 0 ? (
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {event.media.map((item) => (
+              <div key={item.id} className="flex flex-col gap-2">
+                <div className="aspect-square overflow-hidden rounded-xl bg-bg">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset */}
+                  <img
+                    src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
+                    alt={item.caption ?? ""}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <form action={deleteEventMedia}>
+                  <input type="hidden" name="listingId" value={listingId} />
+                  <input type="hidden" name="eventId" value={event.id} />
+                  <input type="hidden" name="mediaId" value={item.id} />
+                  <button
+                    type="submit"
+                    className="min-h-9 w-full rounded-full border border-error/40 text-sm font-medium text-error transition-colors hover:bg-error/10"
+                  >
+                    Entfernen
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <form
+          action={uploadEventMedia}
+          className="mt-4 flex flex-wrap items-center gap-3"
+        >
+          <input type="hidden" name="listingId" value={listingId} />
+          <input type="hidden" name="eventId" value={event.id} />
+          <input
+            type="file"
+            name="photos"
+            accept="image/*"
+            multiple
+            required
+            className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
+          >
+            Hochladen
+          </button>
+        </form>
+      </section>
+
+      <form action={updateEvent} className="mt-10 flex flex-col gap-5">
         <input type="hidden" name="listingId" value={listingId} />
         <input type="hidden" name="eventId" value={event.id} />
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="title" className="font-medium">
-            Titel *
-          </label>
-          <input
-            id="title"
-            name="title"
-            type="text"
-            required
-            defaultValue={event.title}
-            className={inputClass}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="startAt" className="font-medium">
-              Beginn *
-            </label>
-            <input
-              id="startAt"
-              name="startAt"
-              type="datetime-local"
-              required
-              defaultValue={toDateTimeLocal(event.startAt)}
-              className={inputClass}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="endAt" className="font-medium">
-              Ende
-            </label>
-            <input
-              id="endAt"
-              name="endAt"
-              type="datetime-local"
-              defaultValue={toDateTimeLocal(event.endAt)}
-              className={inputClass}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="addressText" className="font-medium">
-            Ort
-          </label>
-          <input
-            id="addressText"
-            name="addressText"
-            type="text"
-            defaultValue={event.addressText ?? undefined}
-            className={inputClass}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="description" className="font-medium">
-            Beschreibung
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={4}
-            defaultValue={event.description ?? undefined}
-            className="rounded-xl border border-text/20 bg-surface px-4 py-3 text-text"
-          />
-        </div>
+        <EventFormFields
+          attributeGroups={attributeGroups}
+          defaults={{
+            title: event.title,
+            description: event.description ?? undefined,
+            startAt: toDateTimeLocal(event.startAt),
+            endAt: toDateTimeLocal(event.endAt),
+            addressText: event.addressText ?? undefined,
+            country: event.country ?? undefined,
+            state: event.state ?? undefined,
+            postalCode: event.postalCode ?? undefined,
+            city: event.city ?? undefined,
+            street: event.street ?? undefined,
+            houseNumber: event.houseNumber ?? undefined,
+            latitude: event.latitude,
+            longitude: event.longitude,
+            websiteUrl: event.websiteUrl ?? undefined,
+            cost: event.cost,
+            maxParticipants: event.maxParticipants,
+            registrationRequired: event.registrationRequired,
+            selectedOptionIds: event.attributeOptions.map((a) => a.optionId),
+          }}
+        />
 
         <button
           type="submit"

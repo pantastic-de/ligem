@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
 import { submitContactRequest } from "./actions";
 
 const statusLabels: Record<string, string> = {
@@ -67,6 +68,7 @@ export default async function ProjektDetailPage({
       categories: { include: { category: true } },
       attributeOptions: { include: { option: { include: { group: true } } } },
       createdBy: { select: { id: true, name: true } },
+      media: { orderBy: { position: "asc" } },
     },
   });
 
@@ -76,8 +78,10 @@ export default async function ProjektDetailPage({
 
   const session = await auth();
   const isOwner = session?.user?.id === listing.createdById;
+  const viewerIsAdmin = session?.user?.id ? await isAdmin(session.user.id) : false;
+  const canManage = isOwner || viewerIsAdmin;
 
-  if (listing.status !== "PUBLISHED" && !isOwner) {
+  if (listing.status !== "PUBLISHED" && !canManage) {
     notFound();
   }
 
@@ -122,11 +126,19 @@ export default async function ProjektDetailPage({
       {listing.status !== "PUBLISHED" ? (
         <p className="mb-6 rounded-xl bg-warning/10 px-4 py-3 text-warning">
           Status: {statusLabels[listing.status] ?? listing.status} — nur für
-          dich als Ersteller:in sichtbar.
+          {isOwner ? " dich als Ersteller:in" : " Admins"} sichtbar.
+          {viewerIsAdmin ? (
+            <>
+              {" "}
+              <Link href="/admin/projekte" className="underline">
+                Zur Prüfung
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
 
-      {isOwner ? (
+      {canManage ? (
         <div className="mb-6 flex flex-wrap gap-3">
           <Link
             href={`/projekte/${listing.id}/bearbeiten`}
@@ -149,6 +161,20 @@ export default async function ProjektDetailPage({
       ) : null}
       {locationLine ? (
         <p className="mt-2 text-text-muted">{locationLine}</p>
+      ) : null}
+
+      {listing.media.length > 0 ? (
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {listing.media.map((item) => (
+            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+            <img
+              key={item.id}
+              src={`/api/media/${item.storageKey}`}
+              alt={item.caption ?? ""}
+              className="aspect-square w-full rounded-xl object-cover"
+            />
+          ))}
+        </div>
       ) : null}
 
       {listing.categories.length > 0 ? (
@@ -295,7 +321,7 @@ export default async function ProjektDetailPage({
         </section>
       ) : null}
 
-      {isOwner && (listing.contactName || listing.contactEmail || listing.contactPhone) ? (
+      {canManage && (listing.contactName || listing.contactEmail || listing.contactPhone) ? (
         <section className="mt-8 rounded-2xl bg-surface p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Ansprechperson (nur für dich sichtbar)</h2>
           <p className="mt-1 text-text-muted">
@@ -306,7 +332,7 @@ export default async function ProjektDetailPage({
         </section>
       ) : null}
 
-      {listing.status === "PUBLISHED" && !isOwner ? (
+      {listing.status === "PUBLISHED" && !canManage ? (
         <section className="mt-12 rounded-2xl bg-surface p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Kontakt aufnehmen</h2>
           <p className="mt-1 text-text-muted">

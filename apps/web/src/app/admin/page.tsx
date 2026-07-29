@@ -1,9 +1,14 @@
 import Link from "next/link";
 
+import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 
 export default async function AdminPage() {
   await requireAdminPage();
+
+  const pendingCount = await prisma.listing.count({
+    where: { status: "PENDING_REVIEW" },
+  });
 
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-16">
@@ -11,6 +16,22 @@ export default async function AdminPage() {
       <p className="mt-2 text-text-muted">Verwaltung für LiGem.</p>
 
       <div className="mt-8 flex flex-col gap-4">
+        <Link
+          href="/admin/projekte"
+          className="rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"
+        >
+          <h2 className="text-lg font-semibold">
+            Projekte prüfen
+            {pendingCount > 0 ? (
+              <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-sm font-semibold text-white">
+                {pendingCount}
+              </span>
+            ) : null}
+          </h2>
+          <p className="mt-1 text-text-muted">
+            Eingereichte Projekte freigeben, ablehnen oder archivieren.
+          </p>
+        </Link>
         <Link
           href="/admin/nutzer"
           className="rounded-2xl bg-surface p-6 shadow-sm transition-colors hover:bg-bg"

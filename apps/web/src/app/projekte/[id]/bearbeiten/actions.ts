@@ -4,10 +4,18 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
+import { setListingLocation } from "@/lib/geo";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
   const parsed = Number.parseInt(value.toString(), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseOptionalFloat(value: FormDataEntryValue | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value.toString());
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -38,7 +46,7 @@ export async function updateListing(formData: FormData): Promise<void> {
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id) {
+  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
     notFound();
   }
 
@@ -49,6 +57,7 @@ export async function updateListing(formData: FormData): Promise<void> {
 
   const categoryIds = formData.getAll("categoryIds").map(String);
   const attributeGroups = await prisma.attributeGroup.findMany({
+    where: { appliesTo: "LISTING" },
     select: { slug: true },
   });
   const attributeOptionIds = attributeGroups.flatMap((group) =>
@@ -68,6 +77,7 @@ export async function updateListing(formData: FormData): Promise<void> {
 
         country: optionalString(formData.get("country")),
         state: optionalString(formData.get("state")),
+        postalCode: optionalString(formData.get("postalCode")),
         city: optionalString(formData.get("city")),
         street: optionalString(formData.get("street")),
         houseNumber: optionalString(formData.get("houseNumber")),
@@ -103,6 +113,12 @@ export async function updateListing(formData: FormData): Promise<void> {
       },
     }),
   ]);
+
+  await setListingLocation(
+    listingId,
+    parseOptionalFloat(formData.get("latitude")),
+    parseOptionalFloat(formData.get("longitude")),
+  );
 
   redirect(`/projekte/${listingId}?aktualisiert=1`);
 }

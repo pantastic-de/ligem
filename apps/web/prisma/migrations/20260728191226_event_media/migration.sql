@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Media" ADD COLUMN     "eventId" TEXT,
+ALTER COLUMN "listingId" DROP NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "Media" ADD CONSTRAINT "Media_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;

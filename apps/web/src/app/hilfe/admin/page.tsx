@@ -14,6 +14,21 @@ export default function HilfeAdminPage() {
       </p>
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold">Projekte prüfen</h2>
+        <p className="mt-2 text-text-muted">
+          Unter{" "}
+          <Link href="/admin/projekte" className="text-primary">/admin/projekte</Link>{" "}
+          siehst du alle eingereichten Projekte (Reiter für &bdquo;Wird
+          geprüft&ldquo;, &bdquo;Veröffentlicht&ldquo;, &bdquo;Abgelehnt&ldquo;,
+          &bdquo;Archiviert&ldquo;) mit Beschreibung, Ansprechperson-Angaben
+          und Kategorien. Buttons &bdquo;Freigeben&ldquo;, &bdquo;Ablehnen&ldquo;
+          (mit optionalem Grund) und &bdquo;Archivieren&ldquo; ändern den Status
+          sofort — die Startseite unter <Link href="/admin" className="text-primary">/admin</Link>{" "}
+          zeigt, wie viele Projekte gerade auf Prüfung warten.
+        </p>
+      </section>
+
+      <section className="mt-8">
         <h2 className="text-lg font-semibold">Nutzerverwaltung</h2>
         <p className="mt-2 text-text-muted">
           Unter{" "}
@@ -47,14 +62,6 @@ export default function HilfeAdminPage() {
         </p>
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Projekte freischalten</h2>
-        <p className="mt-2 text-text-muted">
-          Eine eigene Moderationsoberfläche für die Freigabe eingereichter
-          Projekte gibt es noch nicht — das erfolgt aktuell direkt in der
-          Datenbank (z. B. über <code>pnpm db:studio</code>).
-        </p>
-      </section>
     </div>
   );
 }

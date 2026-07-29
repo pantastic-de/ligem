@@ -29,6 +29,7 @@ export async function addGroup(formData: FormData): Promise<void> {
   const name = formData.get("name")?.toString().trim();
   const nameEn = formData.get("nameEn")?.toString().trim() || null;
   const allowMultiple = formData.get("allowMultiple") === "on";
+  const appliesTo = formData.get("appliesTo")?.toString() === "EVENT" ? "EVENT" : "LISTING";
   if (!name) return;
 
   const maxSortOrder = await prisma.attributeGroup.aggregate({
@@ -40,6 +41,7 @@ export async function addGroup(formData: FormData): Promise<void> {
       name,
       nameEn,
       allowMultiple,
+      appliesTo,
       slug: await uniqueGroupSlug(slugify(name)),
       sortOrder: (maxSortOrder._max.sortOrder ?? 0) + 10,
     },

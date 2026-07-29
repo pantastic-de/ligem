@@ -42,6 +42,7 @@ model User {
   contactRequestsSent ContactRequest[]  @relation("ContactRequestSender")
   appointmentsHosted  Appointment[]     @relation("AppointmentHost")
   appointmentsBooked  Appointment[]     @relation("AppointmentRequestedBy")
+  eventRegistrations  EventRegistration[] @relation("EventRegistrationSender")
 }
 
 enum UserRole {
@@ -176,15 +177,23 @@ model Listing {
   whoWeAreLooking String? // "Wen wir suchen"
 
   // Standort: strukturiert für Filter/Anzeige, plus eine unspezifische Angabe
-  // ("Großraum Allgäu") für Projekte ohne genaue Adresse. `location` ist ein
-  // PostGIS-Punkt für Karte/Umkreissuche; Prisma kann Geometrie-Spalten nicht
-  // typisiert lesen/schreiben, dafür $queryRaw/$executeRaw verwenden.
+  // ("Großraum Allgäu") für Projekte ohne genaue Adresse. Land/Bundesland
+  // werden im Formular aus der PLZ automatisch vorbelegt (Client-seitiges
+  // Geocoding, siehe src/components/address-fields.tsx). `latitude`/
+  // `longitude` sind normale Spalten (Ergebnis des Geocodings, mit Fallback
+  // auf den Ort, falls die Straße nicht gefunden wird); `location` ist der
+  // daraus abgeleitete PostGIS-Punkt für Umkreissuche — Prisma kann
+  // Geometrie-Spalten nicht typisiert lesen/schreiben, dafür
+  // $queryRaw/$executeRaw verwenden.
   country           String?
   state             String? // Bundesland
+  postalCode        String?
   city              String? // Ort
   street            String?
   houseNumber       String?
   regionDescription String? // z. B. "Großraum Allgäu"
+  latitude          Float?
+  longitude         Float?
   location          Unsupported("geometry(Point, 4326)")?
 
   // Ansprechperson vor Ort (kann von createdBy abweichen, z. B. bei Organisationen)
@@ -236,15 +245,22 @@ model Listing {
 // des Projektinserates" — kept separate since it shipped first and changing
 // it would be pure churn). New filter groups or values are just rows here,
 // never a migration. `allowMultiple` is a UI hint (radio vs. checkboxes) —
-// the underlying relation is many-to-many either way.
+// the underlying relation is many-to-many either way. `appliesTo` scopes a
+// group to Listings or Events, since both now use this same system.
+enum AttributeTargetType {
+  LISTING
+  EVENT
+}
+
 model AttributeGroup {
-  id            String   @id @default(cuid())
-  slug          String   @unique
+  id            String              @id @default(cuid())
+  slug          String              @unique
   name          String
   nameEn        String?
-  allowMultiple Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
+  appliesTo     AttributeTargetType @default(LISTING)
+  allowMultiple Boolean             @default(true)
+  sortOrder     Int                 @default(0)
+  createdAt     DateTime            @default(now())
 
   options AttributeOption[]
 }
@@ -260,6 +276,7 @@ model AttributeOption {
   createdAt DateTime @default(now())
 
   listings ListingAttributeOption[]
+  events   EventAttributeOption[]
 
   @@unique([groupId, slug])
 }
@@ -273,6 +290,15 @@ model ListingAttributeOption {
   @@id([listingId, optionId])
 }
 
+model EventAttributeOption {
+  eventId  String
+  event    Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  optionId String
+  option   AttributeOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, optionId])
+}
+
 enum MediaType {
   PHOTO
   VIDEO
@@ -280,17 +306,23 @@ enum MediaType {
   FLOORPLAN
 }
 
+// Belongs to exactly one of Listing or Event (enforced in application code,
+// not the DB — both are optional so the same table/upload pipeline serves
+// both galleries).
 model Media {
-  id           String    @id @default(cuid())
-  listingId    String
-  listing      Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  type         MediaType
-  storageKey   String // MinIO/S3 object key
-  caption      String?
-  position     Int       @default(0)
-  uploadedById String
-  uploadedBy   User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
-  createdAt    DateTime  @default(now())
+  id            String    @id @default(cuid())
+  listingId     String?
+  listing       Listing?  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  eventId       String?
+  event         Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  type          MediaType
+  storageKey    String // MinIO/S3 object key (display-sized image)
+  thumbnailKey  String? // downscaled at upload time; position 0's thumbnail is used as the listing's/event's list-view thumbnail
+  caption       String?
+  position      Int       @default(0)
+  uploadedById  String
+  uploadedBy    User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
+  createdAt     DateTime  @default(now())
 }
 
 // --- Calendar: events, info sessions, Besuchstage --------------------------
@@ -302,8 +334,25 @@ model Event {
   description String?
   startAt   DateTime
   endAt     DateTime?
-  addressText String?
+  addressText String? // zusätzliche Ortsangabe (z. B. Gebäude-/Raumname), kein Ersatz für die Adresse unten
+  country     String?
+  state       String? // Bundesland
+  postalCode  String?
+  city        String?
+  street      String?
+  houseNumber String?
+  // `location` (PostGIS point) drives radius search via $queryRaw
+  // (ST_DWithin); `latitude`/`longitude` are plain columns kept in sync with
+  // it so the app can read/prefill coordinates with normal Prisma queries,
+  // since Prisma can't read Unsupported columns directly.
   location    Unsupported("geometry(Point, 4326)")?
+  latitude    Float?
+  longitude   Float?
+
+  websiteUrl           String?
+  cost                 Int? // EUR, null = kostenlos/unbekannt
+  maxParticipants      Int?
+  registrationRequired Boolean @default(false)
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -316,10 +365,29 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  reports Report[] @relation("ReportOnEvent")
+  attributeOptions EventAttributeOption[]
+  registrations    EventRegistration[]
+  media            Media[]
+  reports          Report[]               @relation("ReportOnEvent")
 
   @@index([startAt])
   @@index([status])
+}
+
+// A message to the organizer, or a headcount signup ("X Teilnehmer
+// anmelden") when the event requires registration. No accept/decline
+// workflow (unlike ContactRequest) — the organizer just sees who's coming.
+model EventRegistration {
+  id               String   @id @default(cuid())
+  eventId          String
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?    @relation("EventRegistrationSender", fields: [userId], references: [id])
+  name             String
+  email            String
+  participantCount Int      @default(1)
+  message          String?
+  createdAt        DateTime @default(now())
 }
 
 // --- Saved searches ---------------------------------------------------------

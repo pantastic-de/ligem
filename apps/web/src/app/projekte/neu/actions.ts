@@ -4,10 +4,17 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { setListingLocation } from "@/lib/geo";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
   const parsed = Number.parseInt(value.toString(), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseOptionalFloat(value: FormDataEntryValue | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value.toString());
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -36,6 +43,7 @@ export async function createListing(formData: FormData): Promise<void> {
   const categoryIds = formData.getAll("categoryIds").map(String);
 
   const attributeGroups = await prisma.attributeGroup.findMany({
+    where: { appliesTo: "LISTING" },
     select: { slug: true },
   });
   const attributeOptionIds = attributeGroups.flatMap((group) =>
@@ -52,10 +60,13 @@ export async function createListing(formData: FormData): Promise<void> {
 
       country: optionalString(formData.get("country")),
       state: optionalString(formData.get("state")),
+      postalCode: optionalString(formData.get("postalCode")),
       city: optionalString(formData.get("city")),
       street: optionalString(formData.get("street")),
       houseNumber: optionalString(formData.get("houseNumber")),
       regionDescription: optionalString(formData.get("regionDescription")),
+      latitude: parseOptionalFloat(formData.get("latitude")),
+      longitude: parseOptionalFloat(formData.get("longitude")),
 
       contactName: optionalString(formData.get("contactName")),
       contactEmail: optionalString(formData.get("contactEmail")),
@@ -86,6 +97,12 @@ export async function createListing(formData: FormData): Promise<void> {
       },
     },
   });
+
+  await setListingLocation(
+    listing.id,
+    parseOptionalFloat(formData.get("latitude")),
+    parseOptionalFloat(formData.get("longitude")),
+  );
 
   redirect(`/projekte/${listing.id}?eingereicht=1`);
 }

@@ -9,7 +9,7 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-text/10">
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-3">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-y-2 px-6 py-3">
         <Link href="/" className="py-2">
           <Image
             src="/logo.png"
@@ -17,12 +17,15 @@ export async function SiteHeader() {
             width={1280}
             height={460}
             priority
-            className="h-10 w-auto mix-blend-multiply sm:h-12"
+            className="h-20 w-auto mix-blend-multiply sm:h-24"
           />
         </Link>
-        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium">
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium">
           <Link href="/projekte" className="inline-flex min-h-11 items-center">
             Projekte
+          </Link>
+          <Link href="/termine" className="inline-flex min-h-11 items-center">
+            Kalender
           </Link>
           {session?.user ? (
             <>
@@ -31,6 +34,12 @@ export async function SiteHeader() {
                 className="inline-flex min-h-11 items-center"
               >
                 Projekt eintragen
+              </Link>
+              <Link
+                href="/termine/neu"
+                className="inline-flex min-h-11 items-center"
+              >
+                Termin eintragen
               </Link>
               <Link
                 href="/meine-projekte"

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
 import { deleteEvent } from "./actions";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
@@ -28,13 +29,14 @@ export default async function TerminePage({
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id) {
+  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
     notFound();
   }
 
   const events = await prisma.event.findMany({
     where: { listingId },
     orderBy: { startAt: "asc" },
+    include: { _count: { select: { registrations: true } } },
   });
 
   return (
@@ -71,6 +73,12 @@ export default async function TerminePage({
                 </p>
               </div>
               <div className="flex gap-3">
+                <Link
+                  href={`/projekte/${listingId}/termine/${event.id}/anmeldungen`}
+                  className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+                >
+                  Anmeldungen ({event._count.registrations})
+                </Link>
                 <Link
                   href={`/projekte/${listingId}/termine/${event.id}/bearbeiten`}
                   className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
