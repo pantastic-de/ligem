@@ -1,6 +1,7 @@
 "use server";
 
 import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -92,4 +93,35 @@ export async function deleteEventMedia(formData: FormData): Promise<void> {
   }
 
   redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1`);
+}
+
+/**
+ * Persists a new photo order (called directly from the client — see
+ * ReorderablePhotoGallery — not via a <form>, so this doesn't redirect).
+ * `orderedMediaIds` must be exactly the event's current media ids, just
+ * reordered; anything else is ignored rather than partially applied.
+ */
+export async function reorderEventMedia(
+  eventId: string,
+  orderedMediaIds: string[],
+): Promise<void> {
+  const { listingId } = await requireEventAccess(eventId);
+
+  const existing = await prisma.media.findMany({
+    where: { eventId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((m) => m.id));
+  const isValidPermutation =
+    orderedMediaIds.length === existingIds.size &&
+    orderedMediaIds.every((id) => existingIds.has(id));
+  if (!isValidPermutation) return;
+
+  await prisma.$transaction(
+    orderedMediaIds.map((id, index) =>
+      prisma.media.update({ where: { id }, data: { position: index } }),
+    ),
+  );
+
+  revalidatePath(`/projekte/${listingId}/termine/${eventId}/bearbeiten`);
 }

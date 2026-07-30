@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { DemoDataRibbon } from "@/components/demo-data-ribbon";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -23,10 +24,14 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${nunito.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-bg text-text">
+        <DemoDataRibbon />
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
         <footer className="border-t border-text/10 px-6 py-8 text-center text-sm text-text-muted">
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Link href="/ueber-uns" className="hover:text-text">
+              Über uns
+            </Link>
             <Link href="/hilfe" className="hover:text-text">
               Hilfe
             </Link>

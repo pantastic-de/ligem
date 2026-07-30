@@ -118,3 +118,26 @@ input[type="range"].ligem-radius-slider::-moz-range-thumb {
   box-shadow: 0 1px 3px rgba(58, 46, 39, 0.35);
   cursor: pointer;
 }
+
+/* Diagonal corner ribbon marking this as a pre-launch preview running on
+   generated demo data (see layout.tsx). Fixed to the viewport (not the
+   document), so it stays put while scrolling; pointer-events none so it
+   never blocks clicks on whatever sits underneath its corner. */
+.ligem-demo-ribbon {
+  position: fixed;
+  top: 28px;
+  right: -76px;
+  z-index: 9999;
+  width: 260px;
+  padding: 6px 0;
+  transform: rotate(45deg);
+  background: var(--color-error);
+  color: #fff;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}

@@ -64,3 +64,47 @@ export async function archiveListing(formData: FormData): Promise<void> {
 
   redirectBack(formData);
 }
+
+function selectedIds(formData: FormData): string[] {
+  return formData
+    .getAll("listingIds")
+    .map((v) => v.toString())
+    .filter(Boolean);
+}
+
+export async function bulkRejectListings(formData: FormData): Promise<void> {
+  const session = await requireAdminAction();
+  const ids = selectedIds(formData);
+  if (ids.length === 0) redirectBack(formData);
+  const note = formData.get("moderationNote")?.toString().trim() || null;
+
+  await prisma.listing.updateMany({
+    where: { id: { in: ids } },
+    data: { status: "REJECTED", moderatedById: session.user.id, moderationNote: note },
+  });
+
+  redirectBack(formData);
+}
+
+export async function bulkArchiveListings(formData: FormData): Promise<void> {
+  const session = await requireAdminAction();
+  const ids = selectedIds(formData);
+  if (ids.length === 0) redirectBack(formData);
+
+  await prisma.listing.updateMany({
+    where: { id: { in: ids } },
+    data: { status: "ARCHIVED", moderatedById: session.user.id },
+  });
+
+  redirectBack(formData);
+}
+
+export async function bulkDeleteListings(formData: FormData): Promise<void> {
+  await requireAdminAction();
+  const ids = selectedIds(formData);
+  if (ids.length === 0) redirectBack(formData);
+
+  await prisma.listing.deleteMany({ where: { id: { in: ids } } });
+
+  redirectBack(formData);
+}

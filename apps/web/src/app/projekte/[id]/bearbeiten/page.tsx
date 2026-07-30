@@ -4,8 +4,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { ListingFormFields } from "@/components/listing-form-fields";
+import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { updateListing } from "./actions";
-import { deleteListingMedia, uploadListingMedia } from "../media-actions";
+import { deleteListingMedia, reorderListingMedia, uploadListingMedia } from "../media-actions";
 
 function toDateInputValue(date: Date | null): string | undefined {
   return date ? date.toISOString().slice(0, 10) : undefined;
@@ -83,39 +84,17 @@ export default async function ProjektBearbeitenPage({
         <h2 className="text-lg font-semibold">Fotos</h2>
         <p className="mt-1 text-sm text-text-muted">
           Das erste Foto wird als Vorschaubild in der Projektliste verwendet.
-          Maximal 8 MB pro Bild.
+          Per Drag &amp; Drop oder den Pfeilen ein Foto an die erste Stelle
+          schieben, um es als Vorschaubild festzulegen. Maximal 8 MB pro Bild.
         </p>
 
         {listing.media.length > 0 ? (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {listing.media.map((item, index) => (
-              <div key={item.id} className="flex flex-col gap-2">
-                <div className="relative aspect-square overflow-hidden rounded-xl bg-bg">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset */}
-                  <img
-                    src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
-                    alt={item.caption ?? ""}
-                    className="h-full w-full object-cover"
-                  />
-                  {index === 0 ? (
-                    <span className="absolute left-1 top-1 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">
-                      Vorschau
-                    </span>
-                  ) : null}
-                </div>
-                <form action={deleteListingMedia}>
-                  <input type="hidden" name="listingId" value={listing.id} />
-                  <input type="hidden" name="mediaId" value={item.id} />
-                  <button
-                    type="submit"
-                    className="min-h-9 w-full rounded-full border border-error/40 text-sm font-medium text-error transition-colors hover:bg-error/10"
-                  >
-                    Entfernen
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
+          <ReorderablePhotoGallery
+            media={listing.media}
+            reorderAction={reorderListingMedia.bind(null, listing.id)}
+            deleteAction={deleteListingMedia}
+            hiddenFields={{ listingId: listing.id }}
+          />
         ) : null}
 
         <form

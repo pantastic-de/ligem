@@ -159,6 +159,11 @@ model Listing {
   updatedAt DateTime      @updatedAt
   publishedAt DateTime?
 
+  // True for synthetic listings created by the /admin/demo-daten generator
+  // (never set anywhere else) — lets the moderation queue flag them and
+  // supports bulk-cleaning them back out again.
+  isDemo Boolean @default(false)
+
   // Required
   projectName String
   createdById String
@@ -234,6 +239,7 @@ model Listing {
 
   @@index([status])
   @@index([organizationId])
+  @@index([isDemo])
 }
 
 // --- Generic filter-attribute system (Projekt Typ, Projekt Status,

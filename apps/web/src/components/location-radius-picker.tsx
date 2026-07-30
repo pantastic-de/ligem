@@ -7,12 +7,20 @@ import { useEffect, useRef, useState } from "react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
 
-const RADIUS_STEPS: (number | null)[] = [1, 5, 10, 20, 50, 75, 100, null];
+const RADIUS_STEPS: (number | null)[] = [1, 5, 10, 20, 50, 75, 100, 150, 200, 300, null];
 
-const PIN_SVG = `<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
-  <path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="#b14f24" stroke="#7a3116" stroke-width="1.5"/>
-  <circle cx="15" cy="15" r="6" fill="#fff"/>
-</svg>`;
+function pinSvg(fill: string, stroke: string): string {
+  return `<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15 0C6.716 0 0 6.716 0 15c0 11.25 15 27 15 27s15-15.75 15-27C30 6.716 23.284 0 15 0z" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+    <circle cx="15" cy="15" r="6" fill="#fff"/>
+  </svg>`;
+}
+
+const PIN_SVG = pinSvg("#b14f24", "#7a3116");
+// Bigger and in the theme's secondary (green) color, so the "selected result"
+// pin reads as clearly distinct from both the small result dots and the
+// primary-colored "search from" origin pin above.
+const SELECTED_PIN_SVG = pinSvg("#61703f", "#3d4a27");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createPinIcon(L: any) {
@@ -25,11 +33,23 @@ function createPinIcon(L: any) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createSelectedPinIcon(L: any) {
+  return L.divIcon({
+    html: SELECTED_PIN_SVG,
+    className: "",
+    iconSize: [38, 53],
+    iconAnchor: [19, 53],
+    popupAnchor: [0, -48],
+  });
+}
+
 export function LocationRadiusPicker({
   defaultLat,
   defaultLng,
   defaultRadius,
   resultItems,
+  selectedId,
   onChange,
 }: {
   defaultLat?: string;
@@ -38,6 +58,13 @@ export function LocationRadiusPicker({
   // When provided, search results are rendered as clustered markers in this
   // same map instead of a separate ResultsMap below the form.
   resultItems?: MapResultItem[];
+  // Id (matching a resultItems entry) of the listing/event currently shown
+  // in the detail pane, if any — rendered as its own distinct, larger pin
+  // (see createSelectedPinIcon) directly on the map rather than inside the
+  // marker-cluster group, so it's never hidden inside a cluster bubble and
+  // always reads as visually distinct from both the plain result dots and
+  // the origin/"search from" pin.
+  selectedId?: string;
   // Called whenever lat/lng/radius change due to user interaction (map
   // click, place search, geolocation, or the radius slider) — lets a parent
   // search form auto-apply filters without a submit button.
@@ -72,8 +99,32 @@ export function LocationRadiusPicker({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resultsLayerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selectedMarkerRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
   const skipFirstChange = useRef(true);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function renderSelectedMarker(L: any, map: any) {
+    if (selectedMarkerRef.current) {
+      map.removeLayer(selectedMarkerRef.current);
+      selectedMarkerRef.current = null;
+    }
+    const item = selectedId ? resultItems?.find((i) => i.id === selectedId) : undefined;
+    if (!item) return;
+    const marker = L.marker([item.latitude, item.longitude], {
+      icon: createSelectedPinIcon(L),
+      zIndexOffset: 1000,
+    });
+    marker.bindTooltip(`<strong>${escapeHtml(item.label)}</strong>`, {
+      permanent: true,
+      direction: "top",
+      offset: [0, -50],
+      className: "ligem-event-label",
+    });
+    marker.addTo(map);
+    selectedMarkerRef.current = marker;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -150,6 +201,8 @@ export function LocationRadiusPicker({
         if (lat != null && lng != null) points.push([lat, lng]);
         map.fitBounds(L.latLngBounds(points), { padding: [24, 24], maxZoom: 13 });
       }
+
+      renderSelectedMarker(L, map);
     });
     return () => {
       cancelled = true;
@@ -160,6 +213,18 @@ export function LocationRadiusPicker({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A separate, targeted effect (rather than folding this into the
+  // mount-only effect above) because `selectedId` — unlike `resultItems` —
+  // is a plain string that legitimately changes value across soft
+  // navigations within the same page (clicking from one result's detail to
+  // another's), so a dependent effect here does re-fire correctly.
+  useEffect(() => {
+    const map = mapInstance.current;
+    const L = leafletRef.current;
+    if (map && L) renderSelectedMarker(L, map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   useEffect(() => {
     const map = mapInstance.current;

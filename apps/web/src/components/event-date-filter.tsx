@@ -101,19 +101,6 @@ export function EventDateFilter({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="font-medium">Zeitraum</span>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => applyPreset(7)} className={buttonClass}>
-          Nächste 7 Tage
-        </button>
-        <button type="button" onClick={() => applyPreset(30)} className={buttonClass}>
-          Nächste 30 Tage
-        </button>
-        <button type="button" onClick={clearRange} className={buttonClass}>
-          Alle anstehenden
-        </button>
-      </div>
-
       <div className="flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
         <div className="flex items-center justify-between">
           <button
@@ -221,6 +208,19 @@ export function EventDateFilter({
               : "Beginn gewählt — jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
             : "Alle anstehenden Termine — zum Eingrenzen einen Beginn-Tag anklicken."}
         </p>
+      </div>
+
+      <span className="font-medium">Zeitraum</span>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => applyPreset(7)} className={buttonClass}>
+          Nächste 7 Tage
+        </button>
+        <button type="button" onClick={() => applyPreset(30)} className={buttonClass}>
+          Nächste 30 Tage
+        </button>
+        <button type="button" onClick={clearRange} className={buttonClass}>
+          Alle anstehenden
+        </button>
       </div>
 
       <input type="hidden" name="von" value={startDate} />

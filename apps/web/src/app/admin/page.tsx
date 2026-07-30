@@ -33,6 +33,15 @@ export default async function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/admin/termine"
+          className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+        >
+          <h2 className="text-lg font-semibold">Termine prüfen</h2>
+          <p className="mt-1 text-text-muted">
+            Veröffentlichte Termine nachträglich ablehnen, archivieren oder löschen.
+          </p>
+        </Link>
+        <Link
           href="/admin/nutzer"
           className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
         >
@@ -55,6 +64,15 @@ export default async function AdminPage() {
           <h2 className="text-lg font-semibold">Attribute &amp; Filter</h2>
           <p className="mt-1 text-text-muted">
             Projekt Typ, Grundwerte, Wohnlage und weitere Filtergruppen.
+          </p>
+        </Link>
+        <Link
+          href="/admin/demo-daten"
+          className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+        >
+          <h2 className="text-lg font-semibold">Demo-Daten</h2>
+          <p className="mt-1 text-text-muted">
+            Synthetische Projekte und Termine zum Testen erzeugen oder löschen.
           </p>
         </Link>
       </div>

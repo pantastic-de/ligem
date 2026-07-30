@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
+import { isAdmin } from "@/lib/authz";
+import type { Event, Prisma } from "@/generated/prisma/client";
 import { ProjekteSearchForm } from "@/components/projekte-search-form";
+import { ListingDetail, type ListingDetailData } from "@/components/listing-detail";
 
 function formatShortLocation(listing: {
   city: string | null;
@@ -22,6 +25,35 @@ function paramValues(
   const value = params[key];
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
+}
+
+// Builds a /projekte?... query string from the current search params, with
+// `overrides` applied on top (a value of undefined removes that key). Used
+// so result cards/markers link to the SAME search (filters, map position,
+// ...) plus a `projekt=<id>` selection, instead of navigating away from it —
+// see the `selectedListing` handling below for why.
+function buildProjekteHref(
+  params: Record<string, string | string[] | undefined>,
+  overrides: Record<string, string | undefined>,
+): string {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) qs.append(key, v);
+    } else {
+      qs.set(key, value);
+    }
+  }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) {
+      qs.delete(key);
+    } else {
+      qs.set(key, value);
+    }
+  }
+  const query = qs.toString();
+  return query ? `/projekte?${query}` : "/projekte";
 }
 
 export default async function ProjektePage({
@@ -121,8 +153,53 @@ export default async function ProjektePage({
       sublabel: formatShortLocation(l) ?? undefined,
       latitude: l.latitude,
       longitude: l.longitude,
-      href: `/projekte/${l.id}`,
+      href: buildProjekteHref(params, { projekt: l.id, kontakt: undefined }),
     }));
+
+  // Clicking a result loads its detail inline in this same right-hand
+  // column (via ?projekt=<id>) instead of navigating to /projekte/<id> away
+  // from the search — that way the filters/map in the sidebar stay put. A
+  // stale/invalid/inaccessible id is treated as if no selection was made
+  // (falls back to the results list) rather than erroring the whole page.
+  const selectedId = typeof params.projekt === "string" ? params.projekt : undefined;
+  let selectedListing: ListingDetailData | null = null;
+  let selectedUpcomingEvents: Event[] = [];
+  let selectedCanManage = false;
+  let selectedIsOwner = false;
+  let selectedViewerIsAdmin = false;
+
+  if (selectedId) {
+    const listing = await prisma.listing.findUnique({
+      where: { id: selectedId },
+      include: {
+        categories: { include: { category: true } },
+        attributeOptions: { include: { option: { include: { group: true } } } },
+        createdBy: { select: { id: true, name: true } },
+        media: { orderBy: { position: "asc" } },
+      },
+    });
+
+    if (listing) {
+      const session = await auth();
+      const isOwner = session?.user?.id === listing.createdById;
+      const viewerIsAdmin = session?.user?.id ? await isAdmin(session.user.id) : false;
+      const canManage = isOwner || viewerIsAdmin;
+
+      if (listing.status === "PUBLISHED" || canManage) {
+        selectedListing = listing;
+        selectedIsOwner = isOwner;
+        selectedViewerIsAdmin = viewerIsAdmin;
+        selectedCanManage = canManage;
+        selectedUpcomingEvents =
+          listing.status === "PUBLISHED"
+            ? await prisma.event.findMany({
+                where: { listingId: listing.id, status: "PUBLISHED", startAt: { gte: new Date() } },
+                orderBy: { startAt: "asc" },
+              })
+            : [];
+      }
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
@@ -147,11 +224,25 @@ export default async function ProjektePage({
               attrSelected,
             }}
             resultItems={listingMapItems}
+            selectedId={selectedId}
           />
         </div>
 
         <div className="min-w-0 flex-1">
-          {radiusSearchActive && listings.length === 0 ? (
+          {selectedListing ? (
+            <div className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+              <ListingDetail
+                listing={selectedListing}
+                upcomingEvents={selectedUpcomingEvents}
+                canManage={selectedCanManage}
+                isOwner={selectedIsOwner}
+                viewerIsAdmin={selectedViewerIsAdmin}
+                returnTo={buildProjekteHref(params, {})}
+                backHref={buildProjekteHref(params, { projekt: undefined, kontakt: undefined })}
+                kontaktSuccess={Boolean(params.kontakt)}
+              />
+            </div>
+          ) : radiusSearchActive && listings.length === 0 ? (
             <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
               Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
             </p>
@@ -169,7 +260,7 @@ export default async function ProjektePage({
                 return (
                   <li key={listing.id}>
                     <Link
-                      href={`/projekte/${listing.id}`}
+                      href={buildProjekteHref(params, { projekt: listing.id, kontakt: undefined })}
                       className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
                     >
                       {thumbnail ? (

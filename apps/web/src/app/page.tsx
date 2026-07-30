@@ -3,7 +3,8 @@ import Link from "next/link";
 const zielgruppen = [
   {
     title: "Wohngemeinschaften",
-    text: "Präsentiert euer Projekt, sucht neue Mitbewohner:innen oder den Austausch mit anderen Gemeinschaften.",
+    text: "Präsentiert euer Wohnprojekt, sucht neue Mitbewohner:innen oder tauscht euch mit anderen Gemeinschaften aus.",
+    href: "/ueber-uns#wohnprojekte",
     icon: (
       <path
         strokeLinecap="round"
@@ -14,7 +15,8 @@ const zielgruppen = [
   },
   {
     title: "Organisationen",
-    text: "Gemeinwohlorientierte Vereine und Genossenschaften rund ums Thema Wohngemeinschaften, die sich vernetzen wollen.",
+    text: "Vereine, Genossenschaften und andere gemeinwohlorientierte Initiativen rund ums Thema gemeinschaftliches Wohnen, die sich vernetzen möchten.",
+    href: "/ueber-uns#organisationen",
     icon: (
       <path
         strokeLinecap="round"
@@ -25,7 +27,8 @@ const zielgruppen = [
   },
   {
     title: "Interessierte",
-    text: "Ihr wollt euch einfach über das Leben in Gemeinschaft informieren – ganz gleich, ob mit oder ohne Suchabsicht.",
+    text: "Ihr wollt euch einfach über das Leben in Gemeinschaft informieren, ganz gleich ob mit oder ohne Suchabsicht.",
+    href: "/ueber-uns#suchende",
     icon: (
       <path
         strokeLinecap="round"
@@ -36,7 +39,8 @@ const zielgruppen = [
   },
   {
     title: "Veranstalter:innen",
-    text: "Tragt Infotage, Besuchstage oder Veranstaltungen in den gemeinsamen Kalender ein.",
+    text: "Tragt Infotage, Besuchstage oder andere Veranstaltungen in den gemeinsamen Kalender ein und schafft Gelegenheiten zum Kennenlernen.",
+    href: "/ueber-uns#veranstalter",
     icon: (
       <path
         strokeLinecap="round"
@@ -56,7 +60,7 @@ export default function Home() {
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-base text-text-muted sm:mt-6 sm:text-lg">
           LiGem bringt Wohngemeinschaften, Menschen auf der Suche nach einem
-          Zuhause und gemeinwohlorientierte Organisationen zusammen – zum
+          Zuhause und gemeinwohlorientierte Organisationen zusammen: zum
           Informieren, Vernetzen und Veranstalten. Kostenlos und frei.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
@@ -82,9 +86,10 @@ export default function Home() {
           </h2>
           <div className="mt-6 grid gap-4 sm:mt-10 sm:gap-6 sm:grid-cols-2">
             {zielgruppen.map((gruppe) => (
-              <div
+              <Link
                 key={gruppe.title}
-                className="flex gap-4 rounded-2xl bg-surface p-4 shadow-sm sm:p-6"
+                href={gruppe.href}
+                className="flex gap-4 rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg sm:p-6"
               >
                 <svg
                   aria-hidden="true"
@@ -99,10 +104,18 @@ export default function Home() {
                 <div>
                   <h3 className="text-lg font-semibold">{gruppe.title}</h3>
                   <p className="mt-1 text-text-muted">{gruppe.text}</p>
+                  <span className="mt-2 inline-block text-sm font-medium text-primary">
+                    Mehr erfahren
+                  </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
+          <p className="mt-6 text-center sm:mt-10">
+            <Link href="/ueber-uns" className="font-medium text-primary hover:underline">
+              Mehr über die Idee hinter LiGem erfahren
+            </Link>
+          </p>
         </div>
       </section>
     </>

@@ -4,8 +4,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
+import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { deleteEvent, updateEvent } from "../../actions";
-import { deleteEventMedia, uploadEventMedia } from "../../event-media-actions";
+import { deleteEventMedia, reorderEventMedia, uploadEventMedia } from "../../event-media-actions";
 
 function toDateTimeLocal(date: Date | null): string | undefined {
   if (!date) return undefined;
@@ -95,35 +96,18 @@ export default async function TerminBearbeitenPage({
       <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Fotos</h2>
         <p className="mt-1 text-sm text-text-muted">
-          Maximal 8 MB pro Bild.
+          Das erste Foto wird als Vorschaubild für diesen Termin verwendet.
+          Per Drag &amp; Drop oder den Pfeilen ein Foto an die erste Stelle
+          schieben, um es als Vorschaubild festzulegen. Maximal 8 MB pro Bild.
         </p>
 
         {event.media.length > 0 ? (
-          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {event.media.map((item) => (
-              <div key={item.id} className="flex flex-col gap-2">
-                <div className="aspect-square overflow-hidden rounded-xl bg-bg">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset */}
-                  <img
-                    src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
-                    alt={item.caption ?? ""}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <form action={deleteEventMedia}>
-                  <input type="hidden" name="listingId" value={listingId} />
-                  <input type="hidden" name="eventId" value={event.id} />
-                  <input type="hidden" name="mediaId" value={item.id} />
-                  <button
-                    type="submit"
-                    className="min-h-9 w-full rounded-full border border-error/40 text-sm font-medium text-error transition-colors hover:bg-error/10"
-                  >
-                    Entfernen
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
+          <ReorderablePhotoGallery
+            media={event.media}
+            reorderAction={reorderEventMedia.bind(null, event.id)}
+            deleteAction={deleteEventMedia}
+            hiddenFields={{ listingId, eventId: event.id }}
+          />
         ) : null}
 
         <form

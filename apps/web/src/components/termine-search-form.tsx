@@ -15,6 +15,7 @@ export function TermineSearchForm({
   defaults,
   resultItems,
   eventDayColors,
+  selectedId,
 }: {
   veranstaltungsart: GroupWithOptions | null;
   zielgruppe: GroupWithOptions | null;
@@ -31,6 +32,9 @@ export function TermineSearchForm({
   // Date (YYYY-MM-DD) -> distinct event-type colors found on that day, for
   // the calendar's small day-cell dots.
   eventDayColors: Record<string, string[]>;
+  // Id of the event currently shown in the detail pane, if any — see
+  // LocationRadiusPicker's selectedId prop.
+  selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
   const legend =
@@ -87,21 +91,24 @@ export function TermineSearchForm({
         </fieldset>
       ) : null}
 
-      <EventDateFilter
-        defaultVon={defaults.von}
-        defaultBis={defaults.bis}
-        onChange={submitNow}
-        eventDayColors={eventDayColors}
-        legend={legend}
-      />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <EventDateFilter
+          defaultVon={defaults.von}
+          defaultBis={defaults.bis}
+          onChange={submitNow}
+          eventDayColors={eventDayColors}
+          legend={legend}
+        />
 
-      <LocationRadiusPicker
-        defaultLat={defaults.lat}
-        defaultLng={defaults.lng}
-        defaultRadius={defaults.radius}
-        resultItems={resultItems}
-        onChange={submitNow}
-      />
+        <LocationRadiusPicker
+          defaultLat={defaults.lat}
+          defaultLng={defaults.lng}
+          defaultRadius={defaults.radius}
+          resultItems={resultItems}
+          selectedId={selectedId}
+          onChange={submitNow}
+        />
+      </div>
 
       <p aria-live="polite" className="text-sm text-text-muted">
         {isPending ? "Ergebnisse werden aktualisiert…" : ""}

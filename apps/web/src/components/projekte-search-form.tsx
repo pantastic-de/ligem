@@ -18,6 +18,7 @@ export function ProjekteSearchForm({
   defaults,
   anyAdvancedFilterActive,
   resultItems,
+  selectedId,
 }: {
   categories: ListingCategory[];
   projektTyp: GroupWithOptions | undefined;
@@ -32,6 +33,9 @@ export function ProjekteSearchForm({
   };
   anyAdvancedFilterActive: boolean;
   resultItems: MapResultItem[];
+  // Id of the listing currently shown in the detail pane, if any — see
+  // LocationRadiusPicker's selectedId prop.
+  selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
 
@@ -68,6 +72,7 @@ export function ProjekteSearchForm({
         defaultLng={defaults.lng}
         defaultRadius={defaults.radius}
         resultItems={resultItems}
+        selectedId={selectedId}
         onChange={submitNow}
       />
 
