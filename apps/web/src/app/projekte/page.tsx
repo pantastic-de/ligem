@@ -125,91 +125,97 @@ export default async function ProjektePage({
     }));
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
+    <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <h1 className="text-3xl font-bold">Wohnprojekte</h1>
       <p className="mt-2 text-text-muted">
         Veröffentlichte Wohngemeinschaften und Projekte auf LiGem.
       </p>
 
-      <ProjekteSearchForm
-        categories={categories}
-        projektTyp={projektTyp}
-        advancedGroups={advancedGroups}
-        anyAdvancedFilterActive={anyAdvancedFilterActive}
-        defaults={{
-          typId,
-          kategorieIds,
-          lat: typeof params.lat === "string" ? params.lat : undefined,
-          lng: typeof params.lng === "string" ? params.lng : undefined,
-          radius: typeof params.radius === "string" ? params.radius : undefined,
-          attrSelected,
-        }}
-        resultItems={listingMapItems}
-      />
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        <div className="lg:w-[380px] lg:shrink-0">
+          <ProjekteSearchForm
+            categories={categories}
+            projektTyp={projektTyp}
+            advancedGroups={advancedGroups}
+            anyAdvancedFilterActive={anyAdvancedFilterActive}
+            defaults={{
+              typId,
+              kategorieIds,
+              lat: typeof params.lat === "string" ? params.lat : undefined,
+              lng: typeof params.lng === "string" ? params.lng : undefined,
+              radius: typeof params.radius === "string" ? params.radius : undefined,
+              attrSelected,
+            }}
+            resultItems={listingMapItems}
+          />
+        </div>
 
-      {radiusSearchActive && listings.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
-        </p>
-      ) : listings.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine Projekte gefunden. Trag als Erste:r euer Projekt ein, oder
-          passe die Suche an!
-        </p>
-      ) : (
-        <ul className="mt-8 flex flex-col gap-4">
-          {listings.map((listing) => {
-            const location = formatShortLocation(listing);
-            const projectType = listing.attributeOptions[0]?.option.name;
-            const thumbnail = listing.media[0];
-            return (
-              <li key={listing.id}>
-                <Link
-                  href={`/projekte/${listing.id}`}
-                  className="flex gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
-                >
-                  {thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
-                    <img
-                      src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
-                      alt=""
-                      className="h-24 w-24 shrink-0 rounded-xl object-cover"
-                    />
-                  ) : null}
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-semibold">
-                      {listing.projectName}
-                    </h2>
-                    {listing.motto ? (
-                      <p className="mt-1 text-text-muted">{listing.motto}</p>
-                    ) : null}
-                    {location ? (
-                      <p className="mt-1 text-sm text-text-muted">{location}</p>
-                    ) : null}
-                    {listing.categories.length > 0 || projectType ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {projectType ? (
-                          <span className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium text-text">
-                            {projectType}
-                          </span>
+        <div className="min-w-0 flex-1">
+          {radiusSearchActive && listings.length === 0 ? (
+            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+              Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
+            </p>
+          ) : listings.length === 0 ? (
+            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+              Keine Projekte gefunden. Trag als Erste:r euer Projekt ein, oder
+              passe die Suche an!
+            </p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {listings.map((listing) => {
+                const location = formatShortLocation(listing);
+                const projectType = listing.attributeOptions[0]?.option.name;
+                const thumbnail = listing.media[0];
+                return (
+                  <li key={listing.id}>
+                    <Link
+                      href={`/projekte/${listing.id}`}
+                      className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+                    >
+                      {thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+                        <img
+                          src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
+                          alt=""
+                          className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <h2 className="text-lg font-semibold">
+                          {listing.projectName}
+                        </h2>
+                        {listing.motto ? (
+                          <p className="mt-1 text-text-muted">{listing.motto}</p>
                         ) : null}
-                        {listing.categories.map(({ category }) => (
-                          <span
-                            key={category.id}
-                            className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
-                          >
-                            {category.name}
-                          </span>
-                        ))}
+                        {location ? (
+                          <p className="mt-1 text-sm text-text-muted">{location}</p>
+                        ) : null}
+                        {listing.categories.length > 0 || projectType ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {projectType ? (
+                              <span className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium text-text">
+                                {projectType}
+                              </span>
+                            ) : null}
+                            {listing.categories.map(({ category }) => (
+                              <span
+                                key={category.id}
+                                className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
+                              >
+                                {category.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

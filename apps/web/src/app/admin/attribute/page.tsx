@@ -146,7 +146,7 @@ export default async function AdminAttributePage() {
 
         <fieldset className="flex flex-col gap-2">
           <legend className="font-medium">Gilt für</legend>
-          <label className="flex min-h-11 items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm">
             <input
               type="radio"
               name="appliesTo"
@@ -156,13 +156,13 @@ export default async function AdminAttributePage() {
             />
             Projekte
           </label>
-          <label className="flex min-h-11 items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm">
             <input type="radio" name="appliesTo" value="EVENT" className="h-5 w-5" />
             Termine (Kalender)
           </label>
         </fieldset>
 
-        <label className="flex min-h-11 items-center gap-2">
+        <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="allowMultiple"

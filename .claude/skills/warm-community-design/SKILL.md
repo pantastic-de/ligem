@@ -70,7 +70,7 @@ Kein separates Dark-Theme erzwingen, solange es nicht explizit gefordert wird �
 ## Typografie
 
 - Humanistische, gut lesbare Sans-Serif (z. B. system-ui-Stack oder eine warme Schrift wie "Nunito"/"Work Sans") statt der Standard-Geist-Fonts, die eher technisch wirken.
-- Basis-Schriftgröße **18px** statt 16px – die Zielgruppe liest lieber größer.
+- Basis-Schriftgröße **14.4px** (`body { font-size: 14.4px }` in `globals.css`, ~20 % kleiner als der ursprüngliche 18px-Wert dieses Skills — bewusste spätere Nutzerentscheidung, überschreibt die vorherige "lieber größer"-Empfehlung). Tailwinds `--text-*`-Skala (`xs` bis `5xl`) ist im selben `@theme`-Block proportional um denselben Faktor herunterskaliert, damit Fließtext und Utility-Klassen (`text-sm`, `text-lg`, Überschriften, ...) konsistent bleiben — die Spacing-Skala (`p-*`, `gap-*`, ...) ist davon bewusst unberührt.
 - Zeilenhöhe ≥ 1.5, Zeilenlänge max. ~70 Zeichen für Fließtext.
 - Keine dünnen Schriftschnitte (< 400) für Fließtext, keine reinen Großbuchstaben-Label (schlecht für Screenreader und Lesbarkeit).
 
@@ -88,8 +88,8 @@ Kein separates Dark-Theme erzwingen, solange es nicht explizit gefordert wird �
 ## Mobile-First
 
 - Layout immer zuerst für schmale Screens entwerfen, einspaltig, dann für größere Breakpoints erweitern.
-- Tap-Ziele mind. 48×48px, Mindestabstand 8px zwischen klickbaren Elementen.
-- Eingabefelder mit Schriftgröße ≥ 16px (verhindert Auto-Zoom in iOS Safari).
+- Tap-Ziele mind. 48×48px, Mindestabstand 8px zwischen klickbaren Elementen. **Abweichung:** Formularfelder und die Kalender-Tageszellen sind seit der globalen `--spacing`-Reduktion in `globals.css` (0.19rem statt 0.25rem, spätere explizite Nutzerentscheidung) deutlich kleiner als 48px (`min-h-12` ≈ 36.5px, `min-h-11` ≈ 33.4px, Checkboxen/Radios `h-5` ≈ 15.2px) — das unterschreitet sowohl dieses 48px-Ziel als auch die WCAG-AA-Mindestgröße von 44×44px für Formularfelder/Tap-Ziele.
+- Eingabefelder mit Schriftgröße ≥ 16px (verhindert Auto-Zoom in iOS Safari). **Abweichung:** Die meisten Eingabefelder haben keine eigene Textgrößen-Klasse und erben die Basis-Schriftgröße (aktuell 14.4px) — das liegt unter 16px, iOS Safari zoomt beim Fokussieren eines solchen Feldes also automatisch hinein. Falls das in der Praxis stört, gezielt `text-base` (oder größer) auf die betroffenen `<input>`/`<select>`/`<textarea>` setzen, unabhängig von der globalen Skala.
 - Navigation nicht hinter einem reinen Hamburger-Icon verstecken – sichtbare Labels (z. B. Bottom-Navigation mit Icon **und** Text) sind für nicht-technische Nutzer:innen auffindbarer.
 - Primäre Aktion (z. B. "WG-Zimmer inserieren", "Termin eintragen") als gut erreichbarer, daumenfreundlicher Button im unteren Bildschirmbereich platzieren.
 - Keine Interaktionen, die nur per Hover funktionieren (Touch hat kein Hover).

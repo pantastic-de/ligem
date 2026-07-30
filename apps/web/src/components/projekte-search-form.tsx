@@ -81,7 +81,7 @@ export function ProjekteSearchForm({
               <legend className="font-medium">Art des Projektinserates</legend>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {categories.map((category) => (
-                  <label key={category.id} className="flex min-h-11 items-center gap-2">
+                  <label key={category.id} className="flex min-h-11 items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       name="kategorie"
@@ -104,7 +104,7 @@ export function ProjekteSearchForm({
                 {group.allowMultiple ? (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {group.options.map((option) => (
-                      <label key={option.id} className="flex min-h-11 items-center gap-2">
+                      <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                         <input
                           type="checkbox"
                           name={`attr-${group.slug}`}

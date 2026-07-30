@@ -3,11 +3,16 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
+import { colorForCategory } from "@/lib/category-color";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
   timeStyle: "short",
 });
+
+function toDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export default async function KalenderPage({
   searchParams,
@@ -94,6 +99,22 @@ export default async function KalenderPage({
     },
   });
 
+  const eventDayColorSets = new Map<string, Set<string>>();
+  for (const event of events) {
+    const key = toDateKey(event.startAt);
+    const typeOption = event.attributeOptions.find(
+      ({ option }) => option.groupId === veranstaltungsart?.id,
+    );
+    const color = typeOption
+      ? colorForCategory(typeOption.option.id)
+      : "#6B5C4F";
+    if (!eventDayColorSets.has(key)) eventDayColorSets.set(key, new Set());
+    eventDayColorSets.get(key)?.add(color);
+  }
+  const eventDayColors: Record<string, string[]> = Object.fromEntries(
+    Array.from(eventDayColorSets, ([key, colors]) => [key, Array.from(colors)]),
+  );
+
   const eventMapItems = events
     .filter(
       (e): e is typeof e & { latitude: number; longitude: number } =>
@@ -109,83 +130,90 @@ export default async function KalenderPage({
     }));
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
+    <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <h1 className="text-3xl font-bold">Kalender</h1>
       <p className="mt-2 text-text-muted">
         Anstehende Infotage, Besuchstage und Veranstaltungen aller Projekte.
       </p>
 
-      <TermineSearchForm
-        veranstaltungsart={veranstaltungsart}
-        zielgruppe={zielgruppe}
-        resultItems={eventMapItems}
-        defaults={{
-          art: params.art,
-          zielgruppeIds,
-          lat: params.lat,
-          lng: params.lng,
-          radius: params.radius,
-          von: params.von,
-          bis: params.bis,
-        }}
-      />
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        <div className="lg:w-[380px] lg:shrink-0">
+          <TermineSearchForm
+            veranstaltungsart={veranstaltungsart}
+            zielgruppe={zielgruppe}
+            resultItems={eventMapItems}
+            eventDayColors={eventDayColors}
+            defaults={{
+              art: params.art,
+              zielgruppeIds,
+              lat: params.lat,
+              lng: params.lng,
+              radius: params.radius,
+              von: params.von,
+              bis: params.bis,
+            }}
+          />
+        </div>
 
-      {radiusSearchActive && events.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine Termine mit Standortdaten in diesem Umkreis gefunden.
-        </p>
-      ) : events.length === 0 ? (
-        <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine anstehenden Termine gefunden.
-        </p>
-      ) : (
-        <ul className="mt-8 flex flex-col gap-4">
-          {events.map((event) => {
-            const thumbnail = event.media[0];
-            return (
-              <li key={event.id}>
-                <Link
-                  href={`/termine/${event.id}`}
-                  className="flex gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
-                >
-                  {thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
-                    <img
-                      src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
-                      alt=""
-                      className="h-24 w-24 shrink-0 rounded-xl object-cover"
-                    />
-                  ) : null}
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-semibold">{event.title}</h2>
-                    <p className="mt-1 text-text-muted">
-                      {dateTimeFormat.format(event.startAt)}
-                      {event.addressText ? ` · ${event.addressText}` : ""}
-                    </p>
-                    {event.listing ? (
-                      <p className="mt-1 text-sm text-text-muted">
-                        von {event.listing.projectName}
-                      </p>
-                    ) : null}
-                    {event.attributeOptions.length > 0 ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {event.attributeOptions.map(({ option }) => (
-                          <span
-                            key={option.id}
-                            className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
-                          >
-                            {option.name}
-                          </span>
-                        ))}
+        <div className="min-w-0 flex-1">
+          {radiusSearchActive && events.length === 0 ? (
+            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+              Keine Termine mit Standortdaten in diesem Umkreis gefunden.
+            </p>
+          ) : events.length === 0 ? (
+            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+              Keine anstehenden Termine gefunden.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {events.map((event) => {
+                const thumbnail = event.media[0];
+                return (
+                  <li key={event.id}>
+                    <Link
+                      href={`/termine/${event.id}`}
+                      className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+                    >
+                      {thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+                        <img
+                          src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
+                          alt=""
+                          className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <h2 className="text-lg font-semibold">{event.title}</h2>
+                        <p className="mt-1 text-text-muted">
+                          {dateTimeFormat.format(event.startAt)}
+                          {event.addressText ? ` · ${event.addressText}` : ""}
+                        </p>
+                        {event.listing ? (
+                          <p className="mt-1 text-sm text-text-muted">
+                            von {event.listing.projectName}
+                          </p>
+                        ) : null}
+                        {event.attributeOptions.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {event.attributeOptions.map(({ option }) => (
+                              <span
+                                key={option.id}
+                                className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
+                              >
+                                {option.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

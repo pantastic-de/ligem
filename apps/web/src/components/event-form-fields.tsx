@@ -65,7 +65,7 @@ export function EventFormFields({
           <span className="font-medium">{veranstaltungsart.name}</span>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {veranstaltungsart.options.map((option) => (
-              <label key={option.id} className="flex min-h-11 items-center gap-2">
+              <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                 <input
                   type="radio"
                   name={`attr-${veranstaltungsart.slug}`}
@@ -157,7 +157,7 @@ export function EventFormFields({
         </div>
       </div>
 
-      <label className="flex min-h-11 items-center gap-2">
+      <label className="flex min-h-11 items-center gap-2 text-sm">
         <input
           type="checkbox"
           name="registrationRequired"
@@ -185,7 +185,7 @@ export function EventFormFields({
           <span className="font-medium">{group.name}</span>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {group.options.map((option) => (
-              <label key={option.id} className="flex min-h-11 items-center gap-2">
+              <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   name={`attr-${group.slug}`}

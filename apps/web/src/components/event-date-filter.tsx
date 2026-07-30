@@ -25,6 +25,8 @@ export function EventDateFilter({
   defaultVon,
   defaultBis,
   onChange,
+  eventDayColors,
+  legend,
 }: {
   defaultVon?: string;
   defaultBis?: string;
@@ -32,6 +34,12 @@ export function EventDateFilter({
   // (calendar click or preset button) — lets a parent search form auto-apply
   // filters without a submit button.
   onChange?: () => void;
+  // Date (YYYY-MM-DD) -> distinct event-type colors found that day, shown as
+  // small dots on the matching calendar cell.
+  eventDayColors?: Record<string, string[]>;
+  // Name + color for each event type, shown as a small legend so the dots'
+  // colors carry meaning rather than being purely decorative.
+  legend?: { name: string; color: string }[];
 }) {
   const [startDate, setStartDate] = useState(defaultVon ?? "");
   const [endDate, setEndDate] = useState(defaultBis ?? "");
@@ -154,24 +162,57 @@ export function EventDateFilter({
             const inRange = Boolean(
               startDate && endDate && key > startDate && key < endDate,
             );
+            const dayColors = eventDayColors?.[key] ?? [];
+            const selected = isStart || isEnd;
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => selectDay(day)}
-                aria-pressed={isStart || isEnd}
-                aria-label={dateLabelFormat.format(day)}
+                aria-pressed={selected}
+                aria-label={
+                  dayColors.length > 0
+                    ? `${dateLabelFormat.format(day)} — ${dayColors.length} Termin${dayColors.length > 1 ? "e" : ""}`
+                    : dateLabelFormat.format(day)
+                }
                 className={[
-                  "min-h-9 rounded-lg text-sm transition-colors hover:bg-bg",
-                  isStart || isEnd ? "bg-primary text-white hover:bg-primary" : "",
-                  inRange && !isStart && !isEnd ? "bg-primary/15" : "",
+                  "flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg text-sm transition-colors hover:bg-bg",
+                  selected ? "bg-primary text-white hover:bg-primary" : "",
+                  inRange && !selected ? "bg-primary/15" : "",
                 ].join(" ")}
               >
-                {day.getDate()}
+                <span>{day.getDate()}</span>
+                {dayColors.length > 0 ? (
+                  <span className="flex gap-0.5">
+                    {dayColors.slice(0, 3).map((color, idx) => (
+                      <span
+                        key={idx}
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: selected ? "#fff" : color }}
+                      />
+                    ))}
+                  </span>
+                ) : null}
               </button>
             );
           })}
         </div>
+
+        {legend && legend.length > 0 && eventDayColors && Object.keys(eventDayColors).length > 0 ? (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-text/10 pt-3 text-xs text-text-muted">
+            {legend.map((entry) => (
+              <span key={entry.name} className="inline-flex items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                {entry.name}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         <p className="text-sm text-text-muted">
           {startDate

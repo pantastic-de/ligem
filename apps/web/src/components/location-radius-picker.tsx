@@ -60,6 +60,7 @@ export function LocationRadiusPicker({
   })();
   const [radiusIndex, setRadiusIndex] = useState(initialRadiusIndex);
   const radiusValue = RADIUS_STEPS[radiusIndex];
+  const [mapVisible, setMapVisible] = useState(true);
 
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,7 +81,7 @@ export function LocationRadiusPicker({
       if (cancelled || !mapRef.current || mapInstance.current) return;
       const startLat = lat ?? 51.1657;
       const startLng = lng ?? 10.4515;
-      const map = L.map(mapRef.current).setView(
+      const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView(
         [startLat, startLng],
         lat != null ? 11 : 6,
       );
@@ -195,6 +196,14 @@ export function LocationRadiusPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, radiusValue]);
 
+  // Leaflet doesn't notice its container resizing while hidden (display:
+  // none), so it needs a nudge once it becomes visible again.
+  useEffect(() => {
+    if (mapVisible && mapInstance.current) {
+      requestAnimationFrame(() => mapInstance.current?.invalidateSize());
+    }
+  }, [mapVisible]);
+
   function moveTo(newLat: number, newLng: number, zoom = 12) {
     setLat(newLat);
     setLng(newLng);
@@ -274,13 +283,39 @@ export function LocationRadiusPicker({
       </div>
       {message ? <p className="text-sm text-error">{message}</p> : null}
 
-      <div
-        ref={mapRef}
-        className={`w-full overflow-hidden rounded-xl ${resultItems ? "h-80" : "h-56"}`}
-      />
-      <p className="-mt-1 text-sm text-text-muted">
-        Auf die Karte klicken, um den Ausgangspunkt der Suche zu setzen.
-      </p>
+      <div className="relative">
+        <div
+          ref={mapRef}
+          className={
+            mapVisible
+              ? `w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
+              : "hidden"
+          }
+        />
+        {mapVisible ? (
+          <button
+            type="button"
+            onClick={() => setMapVisible(false)}
+            aria-label="Karte ausblenden"
+            className="absolute right-2 top-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+      {mapVisible ? (
+        <p className="-mt-1 text-sm text-text-muted">
+          Auf die Karte klicken, um den Ausgangspunkt der Suche zu setzen.
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setMapVisible(true)}
+          className="-mt-1 inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+        >
+          👁️ Karte einblenden
+        </button>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="radiusSlider" className="text-sm font-medium">
@@ -294,7 +329,7 @@ export function LocationRadiusPicker({
           step={1}
           value={radiusIndex}
           onChange={(e) => setRadiusIndex(Number(e.target.value))}
-          className="w-full"
+          className="ligem-radius-slider w-full"
         />
       </div>
 

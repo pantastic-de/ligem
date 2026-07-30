@@ -110,8 +110,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps 
 ## 5. Run migrations (and, optionally, the seed)
 
 ```bash
-docker compose exec web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
+docker compose exec web sh -c "pnpm exec prisma migrate deploy"
 ```
+
+(No `cd apps/web` needed — the `web` service's `working_dir` is already
+`/workspace/apps/web`, see `docker-compose.yml`.)
 
 `migrate deploy` (not `migrate dev`) applies existing migrations without
 prompting or generating new ones — the right command for production.
@@ -122,7 +125,7 @@ to exist for the "Projekt eintragen" form to render properly:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -e NODE_ENV=production web sh -c "cd apps/web && pnpm exec prisma db seed"
+  exec -e NODE_ENV=production web sh -c "pnpm exec prisma db seed"
 ```
 
 Setting `NODE_ENV=production` here matters: the seed script skips creating
@@ -160,7 +163,7 @@ that's already your standard setup.
 ```bash
 git pull
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
-docker compose exec web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
+docker compose exec web sh -c "pnpm exec prisma migrate deploy"
 ```
 
 (Or just run `scripts/deploy.sh`, which wraps exactly this over SSH.)

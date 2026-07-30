@@ -29,13 +29,36 @@
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --font-sans: var(--font-nunito);
+
+  /* Global font size, ~20% smaller than Tailwind's defaults (line-height
+     ratios are unitless multipliers, so they stay correct without needing
+     their own overrides). */
+  --text-xs: 0.6rem;
+  --text-sm: 0.7rem;
+  --text-base: 0.8rem;
+  --text-lg: 0.9rem;
+  --text-xl: 1rem;
+  --text-2xl: 1.2rem;
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.8rem;
+  --text-5xl: 2.4rem;
+
+  /* Global spacing scale, ~24% smaller than Tailwind's default 0.25rem base
+     (a bit more than the text-size reduction above). Every numeric utility
+     (p-*, m-*, gap-*, h-*, w-*, min-h-*, ...) is `calc(var(--spacing) * N)`
+     in Tailwind v4, so this one variable is what actually shrinks
+     checkboxes/radios (h-5 w-5), the calendar grid (gap-1, min-h-11 day
+     cells), form-control heights (min-h-11/min-h-12), card padding, etc. all
+     at once — replaces the old select/textarea/input/button[type=submit]
+     !important override, which only covered form controls and not these. */
+  --spacing: 0.19rem;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 18px;
+  font-size: 14.4px; /* was 18px — same ~20% reduction as the Tailwind text-* scale above */
 }
 
 *:focus-visible {
@@ -58,4 +81,40 @@ body {
 }
 .ligem-event-label::before {
   border-top-color: var(--color-primary);
+}
+
+/* Larger, easier-to-grab thumb for the Umkreissuche radius slider — the
+   browser default is too small to hit reliably on a touchscreen. */
+input[type="range"].ligem-radius-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(58, 46, 39, 0.15);
+}
+input[type="range"].ligem-radius-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(58, 46, 39, 0.35);
+  cursor: pointer;
+}
+input[type="range"].ligem-radius-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(58, 46, 39, 0.15);
+}
+input[type="range"].ligem-radius-slider::-moz-range-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  border: 3px solid var(--color-surface);
+  box-shadow: 0 1px 3px rgba(58, 46, 39, 0.35);
+  cursor: pointer;
 }

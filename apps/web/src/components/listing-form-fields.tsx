@@ -100,7 +100,7 @@ export function ListingFormFields({
             <span className="font-medium">{projektTyp.name}</span>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {projektTyp.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2">
+                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name={`attr-${projektTyp.slug}`}
@@ -120,7 +120,7 @@ export function ListingFormFields({
             <span className="font-medium">{projektStatus.name}</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {projektStatus.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2">
+                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name={`attr-${projektStatus.slug}`}
@@ -140,7 +140,7 @@ export function ListingFormFields({
             <span className="font-medium">Art des Projektinserates</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {categories.map((category) => (
-                <label key={category.id} className="flex min-h-11 items-center gap-2">
+                <label key={category.id} className="flex min-h-11 items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     name="categoryIds"
@@ -155,7 +155,7 @@ export function ListingFormFields({
           </div>
         ) : null}
 
-        <label className="flex min-h-11 items-center gap-2">
+        <label className="flex min-h-11 items-center gap-2 text-sm">
           <input
             type="checkbox"
             name="isTemporary"
@@ -349,7 +349,7 @@ export function ListingFormFields({
             <span className="font-medium">{geschlechterverteilung.name}</span>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {geschlechterverteilung.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2">
+                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                   <input
                     type="radio"
                     name={`attr-${geschlechterverteilung.slug}`}
@@ -434,7 +434,7 @@ export function ListingFormFields({
               <span className="font-medium">{group.name}</span>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {group.options.map((option) => (
-                  <label key={option.id} className="flex min-h-11 items-center gap-2">
+                  <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       name={`attr-${group.slug}`}

@@ -65,7 +65,9 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
-docker compose exec -T web sh -c "cd apps/web && pnpm exec prisma migrate deploy"
+# No "cd apps/web" needed: the web service's working_dir is already
+# /workspace/apps/web (see docker-compose.yml).
+docker compose exec -T web sh -c "pnpm exec prisma migrate deploy"
 
 echo "Deploy complete."
 REMOTE

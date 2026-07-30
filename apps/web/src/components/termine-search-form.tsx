@@ -5,6 +5,7 @@ import { EventDateFilter } from "@/components/event-date-filter";
 import { LocationRadiusPicker } from "@/components/location-radius-picker";
 import { type MapResultItem } from "@/lib/map-result-item";
 import { useAutoSubmitForm } from "@/lib/use-auto-submit-form";
+import { colorForCategory } from "@/lib/category-color";
 
 type GroupWithOptions = AttributeGroup & { options: AttributeOption[] };
 
@@ -13,6 +14,7 @@ export function TermineSearchForm({
   zielgruppe,
   defaults,
   resultItems,
+  eventDayColors,
 }: {
   veranstaltungsart: GroupWithOptions | null;
   zielgruppe: GroupWithOptions | null;
@@ -26,8 +28,16 @@ export function TermineSearchForm({
     bis?: string;
   };
   resultItems: MapResultItem[];
+  // Date (YYYY-MM-DD) -> distinct event-type colors found on that day, for
+  // the calendar's small day-cell dots.
+  eventDayColors: Record<string, string[]>;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+  const legend =
+    veranstaltungsart?.options.map((option) => ({
+      name: option.name,
+      color: colorForCategory(option.id),
+    })) ?? [];
 
   return (
     <form
@@ -62,7 +72,7 @@ export function TermineSearchForm({
           <legend className="font-medium">Zielgruppe</legend>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {zielgruppe.options.map((option) => (
-              <label key={option.id} className="flex min-h-11 items-center gap-2">
+              <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   name="zielgruppe"
@@ -81,6 +91,8 @@ export function TermineSearchForm({
         defaultVon={defaults.von}
         defaultBis={defaults.bis}
         onChange={submitNow}
+        eventDayColors={eventDayColors}
+        legend={legend}
       />
 
       <LocationRadiusPicker

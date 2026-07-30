@@ -77,11 +77,11 @@ export default async function RegistrierenPage({
 
         <fieldset className="flex flex-col gap-2">
           <legend className="font-medium">Ich möchte (optional):</legend>
-          <label className="flex min-h-11 items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm">
             <input type="checkbox" name="role-suchende" className="h-5 w-5" />
             eine Wohngemeinschaft finden
           </label>
-          <label className="flex min-h-11 items-center gap-2">
+          <label className="flex min-h-11 items-center gap-2 text-sm">
             <input type="checkbox" name="role-anbieter" className="h-5 w-5" />
             ein Projekt präsentieren
           </label>
