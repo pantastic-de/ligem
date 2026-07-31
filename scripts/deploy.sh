@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 #
 # Deploy LiGem to a server over SSH: pulls the latest code, rebuilds and
-# restarts the Docker Compose stack in production mode, and applies pending
-# Prisma migrations.
+# restarts the Docker Compose stack in production mode. Prisma migrations
+# run automatically as part of the `web` container's own start command (see
+# docker-compose.prod.yml) — always right after a successful build and
+# right before the app starts serving requests, never as a separate step
+# here racing against that build.
 #
 # This script is not executed automatically anywhere — it needs a real
 # target server and is meant to be reviewed and run by hand (or wired into
@@ -43,6 +46,8 @@ git fetch origin
 git checkout "$DEPLOY_BRANCH"
 git reset --hard "origin/$DEPLOY_BRANCH"
 
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
+
 # Production uses the server's native PostgreSQL/PostGIS (see DEPLOYMENT.md),
 # not the Dockerized `postgres` service — that one is dev-only. --no-deps is
 # required here, not just omitting "postgres" from the service list: Compose
@@ -54,20 +59,30 @@ git reset --hard "origin/$DEPLOY_BRANCH"
 # the same port) can lose the race and fail with "address already in use" if
 # the old container hasn't fully released its port yet. `|| true` because on
 # the very first deploy there's nothing running yet to stop.
-docker compose -f docker-compose.yml -f docker-compose.prod.yml stop web valkey meilisearch minio || true
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
+"${COMPOSE[@]}" stop web valkey meilisearch minio || true
+"${COMPOSE[@]}" up -d --no-deps --build web valkey meilisearch minio
 
-# Wait for the web container to actually be up before running migrations.
-for _ in $(seq 1 30); do
-  if docker compose exec -T web true 2>/dev/null; then
+# Poll for the app actually answering, rather than declaring success as soon
+# as the container merely exists: `restart: unless-stopped` means a
+# container whose build or migration fails still shows as running moments
+# after `up -d` returns, right up until it crashes and gets restarted (see
+# the incident this replaced — a build error crash-looped silently for
+# several deploys in a row because nothing here ever checked readiness).
+echo "Waiting for web to become ready..."
+ready=""
+for _ in $(seq 1 60); do
+  if curl -sf -o /dev/null http://localhost:3000; then
+    ready=1
     break
   fi
-  sleep 2
+  sleep 3
 done
 
-# No "cd apps/web" needed: the web service's working_dir is already
-# /workspace/apps/web (see docker-compose.yml).
-docker compose exec -T web sh -c "pnpm exec prisma migrate deploy"
+if [ -z "$ready" ]; then
+  echo "web did not become ready within 3 minutes — check:" >&2
+  echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=100 web" >&2
+  exit 1
+fi
 
 echo "Deploy complete."
 REMOTE

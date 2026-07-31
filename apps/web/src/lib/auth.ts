@@ -12,6 +12,12 @@ const hasGoogleOAuth = Boolean(
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Required behind a reverse proxy (Caddy/Nginx in production, see
+  // DEPLOYMENT.md) — without it Auth.js rejects the request's Host header
+  // ("UntrustedHost") since it can't verify the proxy forwarded it honestly.
+  // The app isn't reachable directly from the internet (only via the proxy
+  // in front of it), so trusting the Host header here is safe.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/anmelden",

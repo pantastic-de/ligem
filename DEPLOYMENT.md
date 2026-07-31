@@ -107,17 +107,25 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps 
 
 `scripts/deploy.sh` already does this (see step 7).
 
-## 5. Run migrations (and, optionally, the seed)
+## 5. Migrations (and, optionally, the seed)
+
+`docker-compose.prod.yml`'s `web` command already runs `prisma migrate
+deploy` itself — right after a successful `next build`, right before `pnpm
+start` — so migrations apply automatically on every container start/restart,
+including every deploy via `scripts/deploy.sh`. You don't need to run it by
+hand as a separate step. If you ever do want to trigger it manually (e.g. to
+apply a migration without restarting the app):
 
 ```bash
-docker compose exec web sh -c "pnpm exec prisma migrate deploy"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T web sh -c "pnpm exec prisma migrate deploy"
 ```
 
 (No `cd apps/web` needed — the `web` service's `working_dir` is already
 `/workspace/apps/web`, see `docker-compose.yml`.)
 
 `migrate deploy` (not `migrate dev`) applies existing migrations without
-prompting or generating new ones — the right command for production.
+prompting or generating new ones — the right command for production — and is
+idempotent, so running it again when nothing's pending is a harmless no-op.
 
 The seed script (`pnpm db:seed`) fills in the listing-taxonomy categories and
 filter-attribute groups (Projekt Typ, Grundwerte, ...), which the app expects
@@ -163,10 +171,14 @@ that's already your standard setup.
 ```bash
 git pull
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
-docker compose exec web sh -c "pnpm exec prisma migrate deploy"
 ```
 
-(Or just run `scripts/deploy.sh`, which wraps exactly this over SSH.)
+Migrations run automatically as part of `web`'s own start command (see step
+5) — no separate migrate step needed here.
+
+(Or just run `scripts/deploy.sh`, which wraps exactly this over SSH, plus a
+readiness check that waits for the app to actually answer before reporting
+success — see the comment header in that file for why that check matters.)
 
 ## 8. Backups
 

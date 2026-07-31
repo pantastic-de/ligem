@@ -9,7 +9,21 @@ services:
     # build`'s type-check then fails on any field Prisma Client doesn't know
     # about yet, and the container crash-loops (restart: unless-stopped
     # keeps retrying the same broken build forever).
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm build && pnpm start"
+    #
+    # `prisma migrate deploy` is listed here too, deliberately *after* the
+    # build and *before* `pnpm start` — not as a separate `docker compose
+    # exec` step from scripts/deploy.sh. That used to run migrations as an
+    # independent command racing against this same sequence (started as
+    # soon as the container had *any* shell, not once install/build had
+    # actually finished), which could silently no-op if it lost that race.
+    # Chaining it here with `&&` guarantees migrations only run once this
+    # exact code has already built successfully, and only once, right before
+    # the app that depends on them starts serving requests. `migrate deploy`
+    # is idempotent (no-ops when nothing's pending), so re-running it on
+    # every container start/restart is harmless — including plain crash
+    # restarts, which is a nice side effect: a missed migration self-heals
+    # on the very next restart instead of staying missed.
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm build && pnpm exec prisma migrate deploy && pnpm start"
     restart: unless-stopped
     # Production uses the server's native PostgreSQL/PostGIS install instead
     # of the Dockerized `postgres` service (that one is dev-only). DATABASE_URL
