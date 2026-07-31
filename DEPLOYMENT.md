@@ -107,39 +107,37 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps 
 
 `scripts/deploy.sh` already does this (see step 7).
 
-## 5. Migrations (and, optionally, the seed)
+## 5. Migrations and seed
 
-`docker-compose.prod.yml`'s `web` command already runs `prisma migrate
-deploy` itself — right after a successful `next build`, right before `pnpm
-start` — so migrations apply automatically on every container start/restart,
-including every deploy via `scripts/deploy.sh`. You don't need to run it by
-hand as a separate step. If you ever do want to trigger it manually (e.g. to
-apply a migration without restarting the app):
+`docker-compose.prod.yml`'s `web` command already runs both `prisma migrate
+deploy` and `prisma db seed` itself — in that order, right after a
+successful `next build` and right before `pnpm start` — so both apply
+automatically on every container start/restart, including every deploy via
+`scripts/deploy.sh`. You don't need to run either by hand as a separate step;
+both are idempotent (migrate deploy no-ops when nothing's pending, seed.ts is
+entirely `upsert`-based), so re-running them on every start is harmless. If
+you ever do want to trigger either manually (e.g. without restarting the
+whole app):
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T web sh -c "pnpm exec prisma migrate deploy"
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -e NODE_ENV=production -T web sh -c "pnpm exec prisma db seed"
 ```
 
 (No `cd apps/web` needed — the `web` service's `working_dir` is already
-`/workspace/apps/web`, see `docker-compose.yml`.)
+`/workspace/apps/web`, see `docker-compose.yml`. `NODE_ENV=production` on the
+seed command matters — see below — but must stay scoped to just that one
+`exec` invocation, not the whole container: pnpm skips devDependencies
+during `pnpm install` when `NODE_ENV=production` is set process-wide, which
+would remove `typescript`/`prisma`/`tsx` and break the build.)
 
-`migrate deploy` (not `migrate dev`) applies existing migrations without
-prompting or generating new ones — the right command for production — and is
-idempotent, so running it again when nothing's pending is a harmless no-op.
-
-The seed script (`pnpm db:seed`) fills in the listing-taxonomy categories and
-filter-attribute groups (Projekt Typ, Grundwerte, ...), which the app expects
-to exist for the "Projekt eintragen" form to render properly:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-  exec -e NODE_ENV=production web sh -c "pnpm exec prisma db seed"
-```
-
-Setting `NODE_ENV=production` here matters: the seed script skips creating
-its fixed-password local dev admin account when `NODE_ENV=production` (see
-`prisma/seed.ts`). To get your first admin in production, register a normal
-account through the site, then promote it directly in the database:
+The seed script fills in the listing-taxonomy categories and filter-attribute
+groups (Projekt Typ, Grundwerte, ...), which the app expects to exist for the
+"Projekt eintragen" form to render properly. Setting `NODE_ENV=production`
+for it matters: the seed script skips creating its fixed-password local dev
+admin account when `NODE_ENV=production` (see `prisma/seed.ts`). To get your
+first admin in production, register a normal account through the site, then
+promote it directly in the database:
 
 ```bash
 sudo -u postgres psql -d <your db> -c \
@@ -173,8 +171,8 @@ git pull
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
 ```
 
-Migrations run automatically as part of `web`'s own start command (see step
-5) — no separate migrate step needed here.
+Migrations and the seed both run automatically as part of `web`'s own start
+command (see step 5) — no separate step needed here.
 
 (Or just run `scripts/deploy.sh`, which wraps exactly this over SSH, plus a
 readiness check that waits for the app to actually answer before reporting
