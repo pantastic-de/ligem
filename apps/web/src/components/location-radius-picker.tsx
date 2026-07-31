@@ -102,7 +102,69 @@ export function LocationRadiusPicker({
   const selectedMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
+  // Bounds that fit every result (+ the search origin, if set), captured
+  // once at mount so we can zoom back out to it when a selection is
+  // cleared — see renderSelectedMarker below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const overviewBoundsRef = useRef<any>(null);
   const skipFirstChange = useRef(true);
+
+  // Rebuilds the clustered result-marker layer from the current
+  // `resultItems` prop. This used to run only once at mount, on the
+  // (incorrect) assumption that resultItems never meaningfully changes
+  // after that — but changing any filter re-renders the server-component
+  // page with a genuinely new, differently-filtered array, so without this
+  // the map kept showing whatever was found on the very first load
+  // regardless of later filtering (e.g. filtering down to 2 results still
+  // showed all the original markers). Called both at mount and from the
+  // `[resultItems, selectedId]` effect below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function renderResultsLayer(L: any, map: any) {
+    if (resultsLayerRef.current) {
+      map.removeLayer(resultsLayerRef.current);
+      resultsLayerRef.current = null;
+    }
+    if (!resultItems || resultItems.length === 0) {
+      overviewBoundsRef.current = null;
+      return;
+    }
+    const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
+    resultItems.forEach((item) => {
+      const resultMarker = L.circleMarker([item.latitude, item.longitude], {
+        radius: 9,
+        color: "#b14f24",
+        fillColor: "#b14f24",
+        fillOpacity: 0.85,
+      });
+      const labelHtml = item.sublabel
+        ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
+        : `<strong>${escapeHtml(item.label)}</strong>`;
+      resultMarker.bindTooltip(labelHtml, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -8],
+        className: "ligem-event-label",
+      });
+      resultMarker.bindPopup(
+        `<a href="${item.href}" style="font-weight:600;color:#b14f24;">${escapeHtml(item.label)}</a>`,
+      );
+      clusterGroup.addLayer(resultMarker);
+    });
+    map.addLayer(clusterGroup);
+    resultsLayerRef.current = clusterGroup;
+
+    const points: [number, number][] = resultItems.map((i) => [i.latitude, i.longitude]);
+    if (lat != null && lng != null) points.push([lat, lng]);
+    const bounds = L.latLngBounds(points);
+    overviewBoundsRef.current = bounds;
+    // Don't yank the view back to the overview if a specific item is
+    // currently focused (see renderSelectedMarker) — that effect already
+    // owns the view in that case, using the overview bounds just updated
+    // above as its own fallback once the selection is cleared again.
+    if (!selectedId) {
+      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 13 });
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function renderSelectedMarker(L: any, map: any) {
@@ -111,7 +173,14 @@ export function LocationRadiusPicker({
       selectedMarkerRef.current = null;
     }
     const item = selectedId ? resultItems?.find((i) => i.id === selectedId) : undefined;
-    if (!item) return;
+    if (!item) {
+      // No (more) selection — zoom back out to the overview instead of
+      // leaving the map focused on whatever was selected last.
+      if (overviewBoundsRef.current) {
+        map.fitBounds(overviewBoundsRef.current, { padding: [24, 24], maxZoom: 13 });
+      }
+      return;
+    }
     const marker = L.marker([item.latitude, item.longitude], {
       icon: createSelectedPinIcon(L),
       zIndexOffset: 1000,
@@ -124,6 +193,19 @@ export function LocationRadiusPicker({
     });
     marker.addTo(map);
     selectedMarkerRef.current = marker;
+
+    // Zoom to a ~20km-radius view around the selected listing/event, via a
+    // throwaway circle's bounds rather than a fixed zoom level, since the
+    // zoom that shows "20km" varies with latitude and viewport size — same
+    // technique the Umkreissuche radius circle below already uses for its
+    // own view. Leaflet's Circle.getBounds() needs the circle to actually be
+    // on the map first (it reads back its own projected screen position),
+    // so this adds it, reads the bounds, and removes it again immediately —
+    // it's never visible, just used for the one bounds computation.
+    const focusCircle = L.circle([item.latitude, item.longitude], { radius: 20_000 }).addTo(map);
+    const focusBounds = focusCircle.getBounds();
+    map.removeLayer(focusCircle);
+    map.fitBounds(focusBounds, { padding: [24, 24] });
   }
 
   useEffect(() => {
@@ -167,41 +249,7 @@ export function LocationRadiusPicker({
         map.fitBounds(circle.getBounds(), { padding: [24, 24] });
       }
 
-      // Search results are static for the lifetime of this (server-rendered)
-      // page, so they're rendered once here rather than in a dependent
-      // effect — a `[resultItems]` effect would never re-fire once mounted,
-      // since the prop reference never changes after this initial render.
-      if (resultItems && resultItems.length > 0) {
-        const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
-        resultItems.forEach((item) => {
-          const resultMarker = L.circleMarker([item.latitude, item.longitude], {
-            radius: 9,
-            color: "#b14f24",
-            fillColor: "#b14f24",
-            fillOpacity: 0.85,
-          });
-          const labelHtml = item.sublabel
-            ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
-            : `<strong>${escapeHtml(item.label)}</strong>`;
-          resultMarker.bindTooltip(labelHtml, {
-            permanent: true,
-            direction: "top",
-            offset: [0, -8],
-            className: "ligem-event-label",
-          });
-          resultMarker.bindPopup(
-            `<a href="${item.href}" style="font-weight:600;color:#b14f24;">${escapeHtml(item.label)}</a>`,
-          );
-          clusterGroup.addLayer(resultMarker);
-        });
-        map.addLayer(clusterGroup);
-        resultsLayerRef.current = clusterGroup;
-
-        const points: [number, number][] = resultItems.map((i) => [i.latitude, i.longitude]);
-        if (lat != null && lng != null) points.push([lat, lng]);
-        map.fitBounds(L.latLngBounds(points), { padding: [24, 24], maxZoom: 13 });
-      }
-
+      renderResultsLayer(L, map);
       renderSelectedMarker(L, map);
     });
     return () => {
@@ -215,16 +263,23 @@ export function LocationRadiusPicker({
   }, []);
 
   // A separate, targeted effect (rather than folding this into the
-  // mount-only effect above) because `selectedId` — unlike `resultItems` —
-  // is a plain string that legitimately changes value across soft
-  // navigations within the same page (clicking from one result's detail to
-  // another's), so a dependent effect here does re-fire correctly.
+  // mount-only effect above) because both `resultItems` (a new array on
+  // every filter-driven navigation) and `selectedId` (a plain string that
+  // changes across soft navigations between two results' details)
+  // legitimately change value across soft navigations within the same
+  // page, so a dependent effect here does re-fire correctly — unlike the
+  // very first render, where the map isn't necessarily created yet (see the
+  // async mount effect above), which is why that effect also calls both
+  // functions directly for the initial paint.
   useEffect(() => {
     const map = mapInstance.current;
     const L = leafletRef.current;
-    if (map && L) renderSelectedMarker(L, map);
+    if (map && L) {
+      renderResultsLayer(L, map);
+      renderSelectedMarker(L, map);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [resultItems, selectedId]);
 
   useEffect(() => {
     const map = mapInstance.current;
@@ -321,33 +376,6 @@ export function LocationRadiusPicker({
     <fieldset className="flex flex-col gap-3">
       <legend className="font-medium">Umkreissuche</legend>
 
-      <div className="flex flex-wrap gap-2">
-        <input
-          type="text"
-          value={placeQuery}
-          onChange={(e) => setPlaceQuery(e.target.value)}
-          placeholder="Ort eingeben, z. B. Kempten"
-          className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 text-sm"
-        />
-        <button
-          type="button"
-          onClick={searchPlace}
-          disabled={busy}
-          className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
-        >
-          {busy ? "Suche…" : "Suchen"}
-        </button>
-        <button
-          type="button"
-          onClick={useMyLocation}
-          disabled={busy}
-          className="min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg disabled:opacity-60"
-        >
-          📍 Mein Standort
-        </button>
-      </div>
-      {message ? <p className="text-sm text-error">{message}</p> : null}
-
       <div className="relative">
         <div
           ref={mapRef}
@@ -381,6 +409,33 @@ export function LocationRadiusPicker({
           👁️ Karte einblenden
         </button>
       )}
+
+      <div className="flex flex-wrap gap-2">
+        <input
+          type="text"
+          value={placeQuery}
+          onChange={(e) => setPlaceQuery(e.target.value)}
+          placeholder="Ort eingeben, z. B. Kempten"
+          className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 text-sm"
+        />
+        <button
+          type="button"
+          onClick={searchPlace}
+          disabled={busy}
+          className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
+        >
+          {busy ? "Suche…" : "Suchen"}
+        </button>
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={busy}
+          className="min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg disabled:opacity-60"
+        >
+          📍 Mein Standort
+        </button>
+      </div>
+      {message ? <p className="text-sm text-error">{message}</p> : null}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="radiusSlider" className="text-sm font-medium">

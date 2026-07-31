@@ -201,6 +201,44 @@ export default async function ProjektePage({
     }
   }
 
+  // Human-readable summary of which filters produced this result count, so
+  // the list above doesn't just show a number without context for how it
+  // came about — mirrors /termine/page.tsx's resultsSummary.
+  const activeFilters: string[] = [];
+
+  const selectedTypName = typId
+    ? projektTyp?.options.find((o) => o.id === typId)?.name
+    : undefined;
+  if (selectedTypName) activeFilters.push(`Typ „${selectedTypName}"`);
+
+  const selectedKategorieNames = kategorieIds
+    .map((id) => categories.find((c) => c.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  if (selectedKategorieNames.length > 0) {
+    activeFilters.push(`Kategorie „${selectedKategorieNames.join(", ")}"`);
+  }
+
+  for (const group of advancedGroups) {
+    const selected = attrSelected[group.slug] ?? [];
+    if (selected.length === 0) continue;
+    const names = selected
+      .map((id) => group.options.find((o) => o.id === id)?.name)
+      .filter((name): name is string => Boolean(name));
+    if (names.length > 0) {
+      activeFilters.push(`${group.name} „${names.join(", ")}"`);
+    }
+  }
+
+  if (radiusSearchActive && radiusKm != null) {
+    activeFilters.push(`Umkreis ${radiusKm} km`);
+  }
+
+  const listingLabel = listings.length === 1 ? "Projekt" : "Projekte";
+  const resultsSummary =
+    activeFilters.length > 0
+      ? `${listings.length} ${listingLabel} gefunden für ${activeFilters.join(", ")}.`
+      : `${listings.length} ${listingLabel} gefunden.`;
+
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <h1 className="text-3xl font-bold">Wohnprojekte</h1>
@@ -242,68 +280,73 @@ export default async function ProjektePage({
                 kontaktSuccess={Boolean(params.kontakt)}
               />
             </div>
-          ) : radiusSearchActive && listings.length === 0 ? (
-            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-              Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
-            </p>
-          ) : listings.length === 0 ? (
-            <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-              Keine Projekte gefunden. Trag als Erste:r euer Projekt ein, oder
-              passe die Suche an!
-            </p>
           ) : (
-            <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              {listings.map((listing) => {
-                const location = formatShortLocation(listing);
-                const projectType = listing.attributeOptions[0]?.option.name;
-                const thumbnail = listing.media[0];
-                return (
-                  <li key={listing.id}>
-                    <Link
-                      href={buildProjekteHref(params, { projekt: listing.id, kontakt: undefined })}
-                      className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
-                    >
-                      {thumbnail ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
-                        <img
-                          src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
-                          alt=""
-                          className="h-24 w-24 shrink-0 rounded-xl object-cover"
-                        />
-                      ) : null}
-                      <div className="min-w-0">
-                        <h2 className="text-lg font-semibold">
-                          {listing.projectName}
-                        </h2>
-                        {listing.motto ? (
-                          <p className="mt-1 text-text-muted">{listing.motto}</p>
-                        ) : null}
-                        {location ? (
-                          <p className="mt-1 text-sm text-text-muted">{location}</p>
-                        ) : null}
-                        {listing.categories.length > 0 || projectType ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {projectType ? (
-                              <span className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium text-text">
-                                {projectType}
-                              </span>
+            <>
+              <h2 className="mb-4 font-semibold text-text-muted">{resultsSummary}</h2>
+              {radiusSearchActive && listings.length === 0 ? (
+                <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+                  Keine Projekte mit Standortdaten in diesem Umkreis gefunden.
+                </p>
+              ) : listings.length === 0 ? (
+                <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
+                  Keine Projekte gefunden. Trag als Erste:r euer Projekt ein, oder
+                  passe die Suche an!
+                </p>
+              ) : (
+                <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  {listings.map((listing) => {
+                    const location = formatShortLocation(listing);
+                    const projectType = listing.attributeOptions[0]?.option.name;
+                    const thumbnail = listing.media[0];
+                    return (
+                      <li key={listing.id}>
+                        <Link
+                          href={buildProjekteHref(params, { projekt: listing.id, kontakt: undefined })}
+                          className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+                        >
+                          {thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+                            <img
+                              src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
+                              alt=""
+                              className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                            />
+                          ) : null}
+                          <div className="min-w-0">
+                            <h2 className="text-lg font-semibold">
+                              {listing.projectName}
+                            </h2>
+                            {listing.motto ? (
+                              <p className="mt-1 text-text-muted">{listing.motto}</p>
                             ) : null}
-                            {listing.categories.map(({ category }) => (
-                              <span
-                                key={category.id}
-                                className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
-                              >
-                                {category.name}
-                              </span>
-                            ))}
+                            {location ? (
+                              <p className="mt-1 text-sm text-text-muted">{location}</p>
+                            ) : null}
+                            {listing.categories.length > 0 || projectType ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {projectType ? (
+                                  <span className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium text-text">
+                                    {projectType}
+                                  </span>
+                                ) : null}
+                                {listing.categories.map(({ category }) => (
+                                  <span
+                                    key={category.id}
+                                    className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-text"
+                                  >
+                                    {category.name}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
-                        ) : null}
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
           )}
         </div>
       </div>

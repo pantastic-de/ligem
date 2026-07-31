@@ -91,24 +91,22 @@ export function TermineSearchForm({
         </fieldset>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-        <EventDateFilter
-          defaultVon={defaults.von}
-          defaultBis={defaults.bis}
-          onChange={submitNow}
-          eventDayColors={eventDayColors}
-          legend={legend}
-        />
+      <EventDateFilter
+        defaultVon={defaults.von}
+        defaultBis={defaults.bis}
+        onChange={submitNow}
+        eventDayColors={eventDayColors}
+        legend={legend}
+      />
 
-        <LocationRadiusPicker
-          defaultLat={defaults.lat}
-          defaultLng={defaults.lng}
-          defaultRadius={defaults.radius}
-          resultItems={resultItems}
-          selectedId={selectedId}
-          onChange={submitNow}
-        />
-      </div>
+      <LocationRadiusPicker
+        defaultLat={defaults.lat}
+        defaultLng={defaults.lng}
+        defaultRadius={defaults.radius}
+        resultItems={resultItems}
+        selectedId={selectedId}
+        onChange={submitNow}
+      />
 
       <p aria-live="polite" className="text-sm text-text-muted">
         {isPending ? "Ergebnisse werden aktualisiert…" : ""}
