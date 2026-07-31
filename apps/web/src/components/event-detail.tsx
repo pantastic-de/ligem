@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
+import { formatDistanceKm } from "@/lib/distance";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -38,12 +39,17 @@ export function EventDetail({
   backHref,
   angemeldetSuccess,
   registrationError,
+  distanceKm,
 }: {
   event: EventDetailData;
   returnTo: string;
   backHref?: string;
   angemeldetSuccess?: boolean;
   registrationError?: boolean;
+  // Distance from the viewer's current search origin, if one is set (see
+  // /termine/page.tsx) — only ever known in the context of an active
+  // Umkreissuche, never on a bare visit to the standalone page.
+  distanceKm?: number | null;
 }) {
   return (
     <div>
@@ -66,7 +72,13 @@ export function EventDetail({
 
       <h1 className="text-3xl font-bold">{event.title}</h1>
       <p className="mt-2 text-text-muted">{dateTimeFormat.format(event.startAt)}</p>
-      {event.addressText ? <p className="mt-1 text-text-muted">{event.addressText}</p> : null}
+      {event.addressText || distanceKm != null ? (
+        <p className="mt-1 text-text-muted">
+          {[event.addressText, distanceKm != null ? formatDistanceKm(distanceKm) : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      ) : null}
       {event.listing ? (
         <p className="mt-1 text-sm text-text-muted">
           Veranstaltet von{" "}

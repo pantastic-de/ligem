@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Prisma, Event } from "@/generated/prisma/client";
 import { submitContactRequest } from "@/app/projekte/[id]/actions";
+import { formatDistanceKm } from "@/lib/distance";
 
 export type ListingDetailData = Prisma.ListingGetPayload<{
   include: {
@@ -67,6 +68,7 @@ export function ListingDetail({
   returnTo,
   backHref,
   kontaktSuccess,
+  distanceKm,
 }: {
   listing: ListingDetailData;
   upcomingEvents: Event[];
@@ -76,6 +78,10 @@ export function ListingDetail({
   returnTo: string;
   backHref?: string;
   kontaktSuccess?: boolean;
+  // Distance from the viewer's current search origin, if one is set (see
+  // /projekte/page.tsx) — only ever known in the context of an active
+  // Umkreissuche, never on a bare visit to the standalone page.
+  distanceKm?: number | null;
 }) {
   const attributesByGroup = new Map<string, { name: string; options: string[] }>();
   for (const { option } of listing.attributeOptions) {
@@ -87,7 +93,9 @@ export function ListingDetail({
     attributesByGroup.set(option.group.slug, entry);
   }
 
-  const locationLine = formatLocation(listing);
+  const locationLine = [formatLocation(listing), distanceKm != null ? formatDistanceKm(distanceKm) : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div>
@@ -256,12 +264,17 @@ export function ListingDetail({
           <h2 className="text-lg font-semibold">Termine</h2>
           <ul className="mt-2 flex flex-col gap-2">
             {upcomingEvents.map((event) => (
-              <li key={event.id} className="rounded-xl bg-surface p-4 shadow-sm">
-                <div className="font-medium">{event.title}</div>
-                <div className="text-sm text-text-muted">
-                  {eventDateFormat.format(event.startAt)}
-                  {event.addressText ? ` · ${event.addressText}` : ""}
-                </div>
+              <li key={event.id}>
+                <Link
+                  href={`/termine/${event.id}`}
+                  className="block rounded-xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
+                >
+                  <div className="font-medium">{event.title}</div>
+                  <div className="text-sm text-text-muted">
+                    {eventDateFormat.format(event.startAt)}
+                    {event.addressText ? ` · ${event.addressText}` : ""}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>

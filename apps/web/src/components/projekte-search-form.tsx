@@ -30,6 +30,7 @@ export function ProjekteSearchForm({
     lng?: string;
     radius?: string;
     attrSelected: Record<string, string[]>;
+    sortierung: string;
   };
   anyAdvancedFilterActive: boolean;
   resultItems: MapResultItem[];
@@ -38,6 +39,7 @@ export function ProjekteSearchForm({
   selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+  const originSet = Boolean(defaults.lat && defaults.lng);
 
   return (
     <form
@@ -75,6 +77,23 @@ export function ProjekteSearchForm({
         selectedId={selectedId}
         onChange={submitNow}
       />
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="sortierung" className="font-medium">
+          Sortierung
+        </label>
+        <select
+          id="sortierung"
+          name="sortierung"
+          defaultValue={defaults.sortierung}
+          className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
+        >
+          <option value="neueste">Neueste zuerst</option>
+          {originSet ? <option value="entfernung">Entfernung</option> : null}
+          <option value="name">Name</option>
+          <option value="kosten">Monatliche Kosten</option>
+        </select>
+      </div>
 
       <details className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
         <summary className="cursor-pointer select-none px-4 py-3 font-medium">

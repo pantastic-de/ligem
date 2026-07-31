@@ -5,6 +5,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
 import { EventDetail, type EventDetailData } from "@/components/event-detail";
 import { colorForCategory } from "@/lib/category-color";
+import { haversineDistanceKm } from "@/lib/distance";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -267,6 +268,11 @@ export default async function KalenderPage({
                 backHref={buildTermineHref(params, { termin: undefined, angemeldet: undefined })}
                 angemeldetSuccess={Boolean(params.angemeldet)}
                 registrationError={Boolean(params.error)}
+                distanceKm={
+                  lat != null && lng != null && selectedEvent.latitude != null && selectedEvent.longitude != null
+                    ? haversineDistanceKm(lat, lng, selectedEvent.latitude, selectedEvent.longitude)
+                    : null
+                }
               />
             </div>
           ) : (

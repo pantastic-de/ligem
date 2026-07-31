@@ -6,6 +6,9 @@ import { isAdmin } from "@/lib/authz";
 import type { Event, Prisma } from "@/generated/prisma/client";
 import { ProjekteSearchForm } from "@/components/projekte-search-form";
 import { ListingDetail, type ListingDetailData } from "@/components/listing-detail";
+import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
+
+type SortOption = "neueste" | "entfernung" | "name" | "kosten";
 
 function formatShortLocation(listing: {
   city: string | null;
@@ -100,9 +103,10 @@ export default async function ProjektePage({
   const lat = params.lat ? Number.parseFloat(String(params.lat)) : null;
   const lng = params.lng ? Number.parseFloat(String(params.lng)) : null;
   const radiusKm = params.radius ? Number.parseFloat(String(params.radius)) : null;
+  const originSet = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
   let radiusSearchActive = false;
 
-  if (lat != null && lng != null && radiusKm != null && !Number.isNaN(lat + lng + radiusKm)) {
+  if (originSet && radiusKm != null && !Number.isNaN(radiusKm)) {
     radiusSearchActive = true;
     const nearby = await prisma.$queryRaw<{ id: string }[]>`
       SELECT id FROM "Listing"
@@ -115,6 +119,12 @@ export default async function ProjektePage({
     `;
     where.id = { in: nearby.map((row) => row.id) };
   }
+
+  const sortParam = typeof params.sortierung === "string" ? params.sortierung : "";
+  const sortBy: SortOption =
+    sortParam === "entfernung" || sortParam === "name" || sortParam === "kosten"
+      ? sortParam
+      : "neueste";
 
   const anyAdvancedFilterActive =
     kategorieIds.length > 0 ||
@@ -140,6 +150,39 @@ export default async function ProjektePage({
         select: { thumbnailKey: true, storageKey: true },
       },
     },
+  });
+
+  const distanceKmById: Record<string, number> = {};
+  if (originSet) {
+    for (const listing of listings) {
+      if (listing.latitude != null && listing.longitude != null) {
+        distanceKmById[listing.id] = haversineDistanceKm(
+          lat,
+          lng,
+          listing.latitude,
+          listing.longitude,
+        );
+      }
+    }
+  }
+
+  const sortedListings = [...listings].sort((a, b) => {
+    switch (sortBy) {
+      case "entfernung": {
+        const da = distanceKmById[a.id] ?? Number.POSITIVE_INFINITY;
+        const db = distanceKmById[b.id] ?? Number.POSITIVE_INFINITY;
+        return da - db;
+      }
+      case "name":
+        return a.projectName.localeCompare(b.projectName, "de");
+      case "kosten": {
+        const ca = a.costMonthly ?? Number.POSITIVE_INFINITY;
+        const cb = b.costMonthly ?? Number.POSITIVE_INFINITY;
+        return ca - cb;
+      }
+      default:
+        return (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0);
+    }
   });
 
   const listingMapItems = listings
@@ -260,6 +303,7 @@ export default async function ProjektePage({
               lng: typeof params.lng === "string" ? params.lng : undefined,
               radius: typeof params.radius === "string" ? params.radius : undefined,
               attrSelected,
+              sortierung: sortBy,
             }}
             resultItems={listingMapItems}
             selectedId={selectedId}
@@ -278,6 +322,11 @@ export default async function ProjektePage({
                 returnTo={buildProjekteHref(params, {})}
                 backHref={buildProjekteHref(params, { projekt: undefined, kontakt: undefined })}
                 kontaktSuccess={Boolean(params.kontakt)}
+                distanceKm={
+                  lat != null && lng != null && selectedListing.latitude != null && selectedListing.longitude != null
+                    ? haversineDistanceKm(lat, lng, selectedListing.latitude, selectedListing.longitude)
+                    : null
+                }
               />
             </div>
           ) : (
@@ -294,8 +343,12 @@ export default async function ProjektePage({
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  {listings.map((listing) => {
+                  {sortedListings.map((listing) => {
                     const location = formatShortLocation(listing);
+                    const distanceKm = distanceKmById[listing.id];
+                    const locationLine = [location, distanceKm != null ? formatDistanceKm(distanceKm) : null]
+                      .filter(Boolean)
+                      .join(" · ");
                     const projectType = listing.attributeOptions[0]?.option.name;
                     const thumbnail = listing.media[0];
                     return (
@@ -319,8 +372,8 @@ export default async function ProjektePage({
                             {listing.motto ? (
                               <p className="mt-1 text-text-muted">{listing.motto}</p>
                             ) : null}
-                            {location ? (
-                              <p className="mt-1 text-sm text-text-muted">{location}</p>
+                            {locationLine ? (
+                              <p className="mt-1 text-sm text-text-muted">{locationLine}</p>
                             ) : null}
                             {listing.categories.length > 0 || projectType ? (
                               <div className="mt-3 flex flex-wrap gap-2">
