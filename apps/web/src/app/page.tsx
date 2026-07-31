@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const zielgruppen = [
@@ -5,6 +6,8 @@ const zielgruppen = [
     title: "Wohngemeinschaften",
     text: "Präsentiert euer Wohnprojekt, sucht neue Mitbewohner:innen oder tauscht euch mit anderen Gemeinschaften aus.",
     href: "/ueber-uns#wohnprojekte",
+    photo: "/zielgruppen/wohngemeinschaften.jpg",
+    photoAlt: "Terrasse eines gemeinschaftlich bewohnten Hauses mit Sitzgelegenheiten und Pflanzen",
     icon: (
       <path
         strokeLinecap="round"
@@ -17,6 +20,8 @@ const zielgruppen = [
     title: "Organisationen",
     text: "Vereine, Genossenschaften und andere gemeinwohlorientierte Initiativen rund ums Thema gemeinschaftliches Wohnen, die sich vernetzen möchten.",
     href: "/ueber-uns#organisationen",
+    photo: "/zielgruppen/organisationen.jpg",
+    photoAlt: "Freiwillige einer Organisation pflanzen gemeinsam Bäume im Wald",
     icon: (
       <path
         strokeLinecap="round"
@@ -29,6 +34,8 @@ const zielgruppen = [
     title: "Interessierte",
     text: "Ihr wollt euch einfach über das Leben in Gemeinschaft informieren, ganz gleich ob mit oder ohne Suchabsicht.",
     href: "/ueber-uns#suchende",
+    photo: "/zielgruppen/interessierte.jpg",
+    photoAlt: "Person liest gemütlich mit einer Tasse Kaffee in einem Buch",
     icon: (
       <path
         strokeLinecap="round"
@@ -41,6 +48,8 @@ const zielgruppen = [
     title: "Veranstalter:innen",
     text: "Tragt Infotage, Besuchstage oder andere Veranstaltungen in den gemeinsamen Kalender ein und schafft Gelegenheiten zum Kennenlernen.",
     href: "/ueber-uns#veranstalter",
+    photo: "/zielgruppen/veranstalter.jpg",
+    photoAlt: "Nachbar:innen kommen bei einer Gartenfeier auf einer Holztreppe zusammen",
     icon: (
       <path
         strokeLinecap="round"
@@ -89,24 +98,35 @@ export default function Home() {
               <Link
                 key={gruppe.title}
                 href={gruppe.href}
-                className="flex gap-4 rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg sm:p-6"
+                className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  className="h-9 w-9 shrink-0 text-primary"
-                >
-                  {gruppe.icon}
-                </svg>
-                <div>
-                  <h3 className="text-lg font-semibold">{gruppe.title}</h3>
-                  <p className="mt-1 text-text-muted">{gruppe.text}</p>
-                  <span className="mt-2 inline-block text-sm font-medium text-primary">
-                    Mehr erfahren
-                  </span>
+                <div className="relative h-40 w-full shrink-0 sm:h-48">
+                  <Image
+                    src={gruppe.photo}
+                    alt={gruppe.photoAlt}
+                    fill
+                    sizes="(min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex gap-4 p-4 sm:p-6">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    className="h-9 w-9 shrink-0 text-primary"
+                  >
+                    {gruppe.icon}
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold">{gruppe.title}</h3>
+                    <p className="mt-1 text-text-muted">{gruppe.text}</p>
+                    <span className="mt-2 inline-block text-sm font-medium text-primary">
+                      Mehr erfahren
+                    </span>
+                  </div>
                 </div>
               </Link>
             ))}
