@@ -120,6 +120,43 @@ export const CITIES: City[] = [
   { city: "Bern", postalCode: "3011", state: "Bern", country: "Schweiz", lat: 46.948, lng: 7.4474 },
 ];
 
+// A spread of real small German/Austrian/Swiss villages and small towns, so
+// generated listings aren't just clustered in the same handful of big
+// cities — used alongside CITIES via pickLocation() below.
+export const VILLAGES: City[] = [
+  { city: "Beilstein", postalCode: "56814", state: "Rheinland-Pfalz", country: "Deutschland", lat: 50.0928, lng: 7.3833 },
+  { city: "Monschau", postalCode: "52156", state: "Nordrhein-Westfalen", country: "Deutschland", lat: 50.5567, lng: 6.2417 },
+  { city: "Schiltach", postalCode: "77761", state: "Baden-Württemberg", country: "Deutschland", lat: 48.2833, lng: 8.3333 },
+  { city: "Bad Karlshafen", postalCode: "34385", state: "Hessen", country: "Deutschland", lat: 51.6333, lng: 9.375 },
+  { city: "Vogtsburg im Kaiserstuhl", postalCode: "79235", state: "Baden-Württemberg", country: "Deutschland", lat: 48.1, lng: 7.6667 },
+  { city: "Saarburg", postalCode: "54439", state: "Rheinland-Pfalz", country: "Deutschland", lat: 49.6083, lng: 6.55 },
+  { city: "Bergen auf Rügen", postalCode: "18528", state: "Mecklenburg-Vorpommern", country: "Deutschland", lat: 54.4167, lng: 13.4333 },
+  { city: "Wallerfangen", postalCode: "66798", state: "Saarland", country: "Deutschland", lat: 49.325, lng: 6.7667 },
+  { city: "Bad Sachsa", postalCode: "37441", state: "Niedersachsen", country: "Deutschland", lat: 51.6, lng: 10.5667 },
+  { city: "Sankt Peter-Ording", postalCode: "25826", state: "Schleswig-Holstein", country: "Deutschland", lat: 54.3, lng: 8.6333 },
+  { city: "Ludwigsstadt", postalCode: "96337", state: "Bayern", country: "Deutschland", lat: 50.4833, lng: 11.4833 },
+  { city: "Bad Aussee", postalCode: "8990", state: "Steiermark", country: "Österreich", lat: 47.6167, lng: 13.7833 },
+  { city: "Alpbach", postalCode: "6236", state: "Tirol", country: "Österreich", lat: 47.3833, lng: 11.9167 },
+  { city: "Stein am Rhein", postalCode: "8260", state: "Schaffhausen", country: "Schweiz", lat: 47.6667, lng: 8.85 },
+  { city: "Guarda", postalCode: "7545", state: "Graubünden", country: "Schweiz", lat: 46.7833, lng: 10.2833 },
+  { city: "Wewelsfleth", postalCode: "25599", state: "Schleswig-Holstein", country: "Deutschland", lat: 53.85, lng: 9.4 },
+  { city: "Trusetal", postalCode: "98596", state: "Thüringen", country: "Deutschland", lat: 50.6833, lng: 10.5667 },
+  { city: "Kallmünz", postalCode: "93183", state: "Bayern", country: "Deutschland", lat: 49.15, lng: 12.05 },
+  { city: "Bad Muskau", postalCode: "02953", state: "Sachsen", country: "Deutschland", lat: 51.55, lng: 14.7167 },
+  { city: "Reit im Winkl", postalCode: "83242", state: "Bayern", country: "Deutschland", lat: 47.6833, lng: 12.4667 },
+];
+
+/**
+ * Picks a location for a new listing from either the big-city pool or the
+ * small-village pool (roughly 45% villages), so generated projects spread
+ * across both urban and rural settings instead of clustering in the same
+ * handful of major cities — see CITIES/VILLAGES above.
+ */
+export function pickLocation(): { location: City; isVillage: boolean } {
+  const isVillage = chance(0.45);
+  return { location: isVillage ? pick(VILLAGES) : pick(CITIES), isVillage };
+}
+
 /** Small random jitter (roughly +/- 3km) so listings in the same city don't all stack on one point. */
 export function jitterCoord(value: number): number {
   return value + randomFloat(-0.03, 0.03);

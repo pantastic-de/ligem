@@ -57,6 +57,49 @@ const ABSURD_TOPICS = [
   "Yoga für den inneren Komposthaufen", "Séance mit der Waschmaschine",
   "Kristallheilung für müde Gartengeräte", "Handlesen für Neuzugänge",
   "Wurzelarbeit im wörtlichen Sinne", "Schwingungsanalyse des Gemeinschaftsraums",
+
+  // Garten
+  "Radieschen-Flüsterkurs für Anfänger:innen", "Zwiebelschneiden ohne Tränen, ein Selbstversuch",
+  "Gartenzwerg-Feng-Shui für maximale Erntekraft", "Unkraut oder Nutzpflanze? Eine Grundsatzdebatte",
+  "Kompost-Flüstern: Gespräche mit dem Verrottungsprozess", "Rasenmähen als meditative Kampfkunst",
+  "Kartoffelkäfer-Diplomatie für Fortgeschrittene", "Gießkannen-Feng-Shui für die neue Saison",
+
+  // Weiter ausgebaute Esoterik
+  "Channeling für Anfänger:innen: Der Komposthaufen spricht", "Aurafotografie für Gemüsebeete",
+  "Schutzengel-Sprechstunde für verlorene Gartenschuhe", "Kristallgitter-Wartung für Fortgeschrittene",
+  "Engelsnummern erkennen an der eigenen Hausnummer",
+
+  // Waldbaden
+  "Waldbaden für Handy-Süchtige, ganz ohne Empfang", "Baumumarmungs-Technik nach altem Familienrezept",
+  "Waldbaden im Regen: Warum trocken überbewertet ist", "Achtsames Barfußlaufen über Tannenzapfen",
+  "Waldbaden mit anschließender Zeckenkontrolle", "Gespräche mit alten Eichen: Ein Anfängerkurs",
+
+  // Schwurbel/Verschwörungstheorien — bewusst kleinteilig-albern statt real,
+  // gehört zur harmlosen Selbstironie der Szene, nicht zu echten
+  // Verschwörungsideologien
+  "Wer kontrolliert wirklich den Wäscheplan? Eine Enthüllung", "5G und der Kohlrabi: Was uns niemand sagen will",
+  "Die Wahrheit über die verschwundene Kompostgabel", "Reptiloide unter uns: Ein Erfahrungsaustausch",
+  "Chemtrails über dem Gemüsebeet: Volkshochschulniveau", "Ist der Wetterbericht eine Verschwörung der Regenschirmindustrie?",
+  "Flache Erde, runder Kompost: Ein Widerspruch?", "Wer steuert wirklich das Ämtli-System? Eine Spurensuche",
+  "Der Nachbar, das Funkloch und die große Verschwörung",
+
+  // Ungewöhnliche, aber ganz legale Themen aus der Alternativ-Szene
+  "Tantra-Workshop für Anfänger:innen: Atmen, nicht mehr", "Kuschelparty mit Anmeldung, Decken werden gestellt",
+  "Polyamorie-Stammtisch: Wer liebt hier eigentlich wen", "FKK-Gartenarbeit, wetterabhängig",
+  "Nacktwandern für Mutige, Zeckenschutz empfohlen", "Achtsame Berührung für Fortgeschrittene, mit Klangschale",
+  "Tantrisches Kartoffelschälen, ganz ohne Eile",
+
+  // Absurde Hobbys, Tiere und Kombinationen
+  "Wie halte ich einen Orca in der Badewanne", "Dinosaurierreiten für Fortgeschrittene",
+  "Alpaka-Yoga mit garantiertem Spuck-Risiko", "Schnecken-Rennbahn-Bau für Ambitionierte",
+  "Handaufzucht von Regenwürmern, ein Erfahrungsbericht", "Kampfkunst für Zimmerpflanzen",
+  "Synchronschwimmen für Gartenzwerge", "Wie überzeuge ich meinen Goldfisch vom Konsensprinzip",
+  "Falknerei für Stubenfliegen", "Trüffelsuche mit dem Meerschweinchen",
+  "Extremstricken bei Windstärke 8", "Wie baue ich meinem Hamster ein Ämtli-System",
+  "Schachspielen gegen die eigene Ziege", "Untertassen-Sammlertreffen mit Zeitreise-Thema",
+  "Wie spreche ich fließend mit meinem Komposthaufen", "Extremstaubsaugen: Ein Wettbewerb",
+  "Wie zähme ich meinen inneren Waschbären", "Vogelspinnen-Kuscheltherapie für Fortgeschrittene",
+  "Wie trainiere ich meine Schnecke für den Stadtmarathon",
 ];
 
 const MITMACHTAG_ACTIONS = [
@@ -70,6 +113,8 @@ const MITMACHTAG_ACTIONS = [
   "Wir reparieren den alten Lehmofen", "Insektenhotel für die Wildbienen bauen",
   "Wir mähen die Streuobstwiese von Hand", "Solarpanels aufs Dach montieren",
   "Wir sortieren die gemeinsame Werkzeugkiste", "Feuerstelle im Garten neu bauen",
+  "Schneckenzaun um das Gemüsebeet bauen", "Waldbaden-Pfad im eigenen Wäldchen anlegen",
+  "Alpaka-Gehege erweitern", "Wir bauen eine Trüffelsuch-Ecke für das Meerschweinchen",
 ];
 
 const BESUCHSTAG_TOPICS = [
@@ -80,12 +125,16 @@ const BESUCHSTAG_TOPICS = [
   "Hofführung mit Frühstück", "Handwerker-Schau", "Wollschaf-Besuch",
   "Baumhaus-Besichtigung", "Kräutergarten-Führung", "Teichbau-Vorführung",
   "Solaranlagen-Rundgang", "Streuobstwiesen-Spaziergang",
+  "Waldbaden-Schnupperstunde", "Alpaka-Fütterung", "Schneckenrennen zum Zuschauen",
+  "Kristallgitter-Rundgang", "Tarot-Schnupperlegung", "Räucherwerk-Werkstatt",
 ];
 
 const FEST_OCCASIONS = [
   "Vollmond-Erntedankfest", "Sommersonnenwende", "Frühlingsfest", "Tag-und-Nacht-Gleiche",
   "Erntedankfest", "Winterfeuer", "Gartenfest", "Hoffest", "Nachbarschaftsfest",
   "Kartoffelfest", "Apfelfest", "Lichterfest", "Scheunenfest", "Sommerfest", "Herbstfest",
+  "Waldbaden-Fest", "Alpaka-Fest", "Verschwörungstheorien-Stammtischfest", "Kuschelfest",
+  "Meerschweinchen-Trüffeljagd-Fest",
 ];
 
 const FEST_ACTIVITIES = [
