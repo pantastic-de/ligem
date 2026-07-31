@@ -392,6 +392,12 @@ export function LocationRadiusPicker({
     const map = mapInstance.current;
     const L = leafletRef.current;
     if (mapVisible && map && L) {
+      // The overlay panel with the place search/radius slider (see below)
+      // sits flush along the full bottom edge while expanded, which would
+      // otherwise hide Leaflet's required attribution control (default
+      // position: bottom-right) behind it — move it out of the way, next to
+      // the zoom control, instead.
+      map.attributionControl?.setPosition(expanded ? "topleft" : "bottomright");
       requestAnimationFrame(() => {
         map.invalidateSize();
         if (selectedId) {
@@ -451,6 +457,61 @@ export function LocationRadiusPicker({
       setBusy(false);
     }
   }
+
+  // Shared between the normal below-map position and the overlay panel
+  // rendered on top of the enlarged map (see `expanded` below) — the same
+  // controlled inputs either way, so toggling `expanded` just moves this
+  // block to a different spot in the tree rather than losing any value.
+  const searchControls = (
+    <>
+      <div className="flex flex-wrap gap-2">
+        <div className="relative min-w-0 flex-1">
+          <input
+            type="text"
+            value={placeQuery}
+            onChange={(e) => setPlaceQuery(e.target.value)}
+            placeholder="Ort oder Region eingeben"
+            className="min-h-11 w-full rounded-xl border border-text/20 bg-bg py-2 pl-3 pr-11 text-sm"
+          />
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={busy}
+            aria-label="Meinen Standort verwenden"
+            title="Meinen Standort verwenden"
+            className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg disabled:opacity-60"
+          >
+            <LocateFixed className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={searchPlace}
+          disabled={busy}
+          className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
+        >
+          {busy ? "Suche…" : "Suchen"}
+        </button>
+      </div>
+      {message ? <p className="text-sm text-error">{message}</p> : null}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="radiusSlider" className="text-sm font-medium">
+          Umkreis: {radiusValue == null ? "Alle" : `${radiusValue} km`}
+        </label>
+        <input
+          id="radiusSlider"
+          type="range"
+          min={0}
+          max={RADIUS_STEPS.length - 1}
+          step={1}
+          value={radiusIndex}
+          onChange={(e) => setRadiusIndex(Number(e.target.value))}
+          className="ligem-radius-slider w-full"
+        />
+      </div>
+    </>
+  );
 
   return (
     <fieldset className="flex flex-col gap-3">
@@ -521,6 +582,16 @@ export function LocationRadiusPicker({
               </button>
             </>
           ) : null}
+          {expanded ? (
+            // Overlaid on the bottom of the enlarged map itself, rather than
+            // only below it in normal flow, so the place search and radius
+            // slider stay usable without having to shrink the map back down
+            // first — a solid (not translucent) background keeps the
+            // controls readable over the map tiles underneath.
+            <div className="absolute inset-x-0 bottom-0 z-[1500] flex flex-col gap-3 bg-surface p-3 shadow-[0_-2px_10px_rgba(0,0,0,0.15)] sm:p-4">
+              {searchControls}
+            </div>
+          ) : null}
         </div>
       </div>
       {!mapVisible ? (
@@ -533,52 +604,7 @@ export function LocationRadiusPicker({
         </button>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <div className="relative min-w-0 flex-1">
-          <input
-            type="text"
-            value={placeQuery}
-            onChange={(e) => setPlaceQuery(e.target.value)}
-            placeholder="Ort eingeben, z. B. Kempten"
-            className="min-h-11 w-full rounded-xl border border-text/20 bg-bg py-2 pl-3 pr-11 text-sm"
-          />
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={busy}
-            aria-label="Meinen Standort verwenden"
-            title="Meinen Standort verwenden"
-            className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg disabled:opacity-60"
-          >
-            <LocateFixed className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={searchPlace}
-          disabled={busy}
-          className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
-        >
-          {busy ? "Suche…" : "Suchen"}
-        </button>
-      </div>
-      {message ? <p className="text-sm text-error">{message}</p> : null}
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="radiusSlider" className="text-sm font-medium">
-          Umkreis: {radiusValue == null ? "Alle" : `${radiusValue} km`}
-        </label>
-        <input
-          id="radiusSlider"
-          type="range"
-          min={0}
-          max={RADIUS_STEPS.length - 1}
-          step={1}
-          value={radiusIndex}
-          onChange={(e) => setRadiusIndex(Number(e.target.value))}
-          className="ligem-radius-slider w-full"
-        />
-      </div>
+      {!expanded ? searchControls : null}
 
       <input type="hidden" name="lat" value={lat ?? ""} />
       <input type="hidden" name="lng" value={lng ?? ""} />
