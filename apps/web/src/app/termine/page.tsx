@@ -320,17 +320,17 @@ export default async function KalenderPage({
                       <li key={event.id}>
                         <Link
                           href={buildTermineHref(params, { termin: event.id, angemeldet: undefined })}
-                          className="flex h-full gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+                          className="flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg"
                         >
                           {thumbnail ? (
                             // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
                             <img
                               src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
                               alt=""
-                              className="h-24 w-24 shrink-0 rounded-xl object-cover"
+                              className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
                             />
                           ) : null}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1 p-4 sm:p-6">
                             <h2 className="text-lg font-semibold">{event.title}</h2>
                             <p className="mt-1 text-text-muted">
                               {dateTimeFormat.format(event.startAt)}
