@@ -1,6 +1,15 @@
 services:
   web:
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm build && pnpm start"
+    # `prisma generate` is listed explicitly here rather than relying only on
+    # apps/web's own postinstall hook: `pnpm install --frozen-lockfile` can
+    # decide node_modules already satisfies the lockfile and skip re-running
+    # lifecycle scripts, leaving the generated client (gitignored, so it's
+    # whatever was last generated on this server) out of sync with a
+    # schema.prisma change that just arrived via `git reset --hard` — `next
+    # build`'s type-check then fails on any field Prisma Client doesn't know
+    # about yet, and the container crash-loops (restart: unless-stopped
+    # keeps retrying the same broken build forever).
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm build && pnpm start"
     restart: unless-stopped
     # Production uses the server's native PostgreSQL/PostGIS install instead
     # of the Dockerized `postgres` service (that one is dev-only). DATABASE_URL
