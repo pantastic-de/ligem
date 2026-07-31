@@ -18,7 +18,9 @@ async function main() {
   const count = Number(countArg?.split("=")[1] ?? 20);
 
   console.log(`Generiere Demo-Wohnprojekte ...`);
-  const { created } = await generateDemoListings(count, (msg) => console.log(`  ${msg}`));
+  const { created } = await generateDemoListings(count, (current, total, msg) =>
+    console.log(`  [${current}/${total}] ${msg}`),
+  );
   console.log(`Fertig. ${created} Projekte erstellt.`);
   await prisma.$disconnect();
 }

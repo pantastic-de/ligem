@@ -436,7 +436,7 @@ function buildTimes(duration: DurationCategory): { startAt: Date; endAt: Date } 
   return { startAt: base, endAt };
 }
 
-export type GenerateProgress = (message: string) => void;
+export type GenerateProgress = (current: number, total: number, message: string) => void;
 
 /**
  * Creates `count` (clamped 1-200) synthetic events attached to existing demo
@@ -556,7 +556,7 @@ export async function generateDemoEvents(
       }
     }
 
-    onProgress?.(`[${i + 1}/${clamped}] ${event.title} (${duration})`);
+    onProgress?.(i + 1, clamped, `${event.title} (${duration})`);
   }
 
   return { created: clamped };

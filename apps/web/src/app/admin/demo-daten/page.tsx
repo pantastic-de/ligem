@@ -3,7 +3,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
-import { generateListingsAction, generateEventsAction, deleteAllDemoDataAction } from "./actions";
+import { DemoDataGenerateForm } from "@/components/demo-data-generate-form";
+import {
+  startGenerateListings,
+  startGenerateEvents,
+  getGenerateProgress,
+  deleteAllDemoDataAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -57,68 +63,27 @@ export default async function AdminDemoDatenPage({
         </div>
       </div>
 
-      <form
-        action={generateListingsAction}
-        className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
-      >
-        <h2 className="text-lg font-semibold">Demo-Projekte generieren</h2>
-        <p className="text-sm text-text-muted">
-          Schrullige Wohnprojekte mit wild gemischten Attributen, Adressen und
-          Fotos. Kann je nach Anzahl einige Sekunden bis Minuten dauern.
-        </p>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="count-listings" className="font-medium">
-            Anzahl (1-100)
-          </label>
-          <input
-            id="count-listings"
-            name="count"
-            type="number"
-            min={1}
-            max={100}
-            defaultValue={20}
-            className="min-h-12 w-32 rounded-xl border border-text/20 bg-bg px-4 text-text"
-          />
-        </div>
-        <button
-          type="submit"
-          className="min-h-12 self-start rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          Generieren
-        </button>
-      </form>
+      <DemoDataGenerateForm
+        title="Demo-Projekte generieren"
+        description="Schrullige Wohnprojekte mit wild gemischten Attributen, Adressen und Fotos. Kann je nach Anzahl einige Sekunden bis Minuten dauern."
+        inputId="count-listings"
+        min={1}
+        max={100}
+        defaultValue={20}
+        start={startGenerateListings}
+        getProgress={getGenerateProgress}
+      />
 
-      <form
-        action={generateEventsAction}
-        className="mt-6 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
-      >
-        <h2 className="text-lg font-semibold">Demo-Termine generieren</h2>
-        <p className="text-sm text-text-muted">
-          Absurd-esoterische Veranstaltungen unterschiedlicher Dauer, verteilt
-          auf die vorhandenen Demo-Projekte. Setzt voraus, dass oben bereits
-          Demo-Projekte generiert wurden.
-        </p>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="count-events" className="font-medium">
-            Anzahl (1-200)
-          </label>
-          <input
-            id="count-events"
-            name="count"
-            type="number"
-            min={1}
-            max={200}
-            defaultValue={40}
-            className="min-h-12 w-32 rounded-xl border border-text/20 bg-bg px-4 text-text"
-          />
-        </div>
-        <button
-          type="submit"
-          className="min-h-12 self-start rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          Generieren
-        </button>
-      </form>
+      <DemoDataGenerateForm
+        title="Demo-Termine generieren"
+        description="Absurd-esoterische Veranstaltungen unterschiedlicher Dauer, verteilt auf die vorhandenen Demo-Projekte. Setzt voraus, dass oben bereits Demo-Projekte generiert wurden."
+        inputId="count-events"
+        min={1}
+        max={200}
+        defaultValue={40}
+        start={startGenerateEvents}
+        getProgress={getGenerateProgress}
+      />
 
       <form
         action={deleteAllDemoDataAction}

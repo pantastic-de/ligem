@@ -15,7 +15,9 @@ async function main() {
   const count = Number(countArg?.split("=")[1] ?? 30);
 
   console.log(`Generiere Demo-Termine ...`);
-  const { created } = await generateDemoEvents(count, (msg) => console.log(`  ${msg}`));
+  const { created } = await generateDemoEvents(count, (current, total, msg) =>
+    console.log(`  [${current}/${total}] ${msg}`),
+  );
   console.log(`Fertig. ${created} Termine erstellt.`);
   await prisma.$disconnect();
 }

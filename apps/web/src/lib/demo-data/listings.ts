@@ -271,7 +271,7 @@ async function ensureDemoOwners(count: number): Promise<string[]> {
   return ids;
 }
 
-export type GenerateProgress = (message: string) => void;
+export type GenerateProgress = (current: number, total: number, message: string) => void;
 
 /**
  * Creates `count` (clamped 1-100) synthetic, clearly-fake Wohnprojekt
@@ -407,7 +407,7 @@ export async function generateDemoListings(
       });
     }
 
-    onProgress?.(`[${i + 1}/${clamped}] ${projectName} (${city.city})`);
+    onProgress?.(i + 1, clamped, `${projectName} (${city.city})`);
   }
 
   return { created: clamped };
