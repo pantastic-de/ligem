@@ -6,6 +6,7 @@ import type {
   ListingCategory,
 } from "@/generated/prisma/client";
 import { LocationRadiusPicker } from "@/components/location-radius-picker";
+import { EventDateFilter } from "@/components/event-date-filter";
 import { type MapResultItem } from "@/lib/map-result-item";
 import { useAutoSubmitForm } from "@/lib/use-auto-submit-form";
 
@@ -31,6 +32,8 @@ export function ProjekteSearchForm({
     radius?: string;
     attrSelected: Record<string, string[]>;
     sortierung: string;
+    von?: string;
+    bis?: string;
   };
   anyAdvancedFilterActive: boolean;
   resultItems: MapResultItem[];
@@ -39,7 +42,6 @@ export function ProjekteSearchForm({
   selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
-  const originSet = Boolean(defaults.lat && defaults.lng);
 
   return (
     <form
@@ -78,22 +80,14 @@ export function ProjekteSearchForm({
         onChange={submitNow}
       />
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="sortierung" className="font-medium">
-          Sortierung
-        </label>
-        <select
-          id="sortierung"
-          name="sortierung"
-          defaultValue={defaults.sortierung}
-          className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
-        >
-          <option value="neueste">Neueste zuerst</option>
-          {originSet ? <option value="entfernung">Entfernung</option> : null}
-          <option value="name">Name</option>
-          <option value="kosten">Monatliche Kosten</option>
-        </select>
-      </div>
+      {/*
+        Sortierung is chosen via ProjekteSortSelect above the results list
+        (see /projekte/page.tsx), not here — but it still needs to travel
+        along whenever a *sidebar* filter change triggers this form's own
+        auto-submit, so its current value rides along as a hidden field
+        rather than being lost/reset back to the default each time.
+      */}
+      <input type="hidden" name="sortierung" value={defaults.sortierung} />
 
       <details className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
         <summary className="cursor-pointer select-none px-4 py-3 font-medium">
@@ -119,6 +113,17 @@ export function ProjekteSearchForm({
               </div>
             </fieldset>
           ) : null}
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="font-medium">Suchzeitraum</legend>
+            <EventDateFilter
+              defaultVon={defaults.von}
+              defaultBis={defaults.bis}
+              onChange={submitNow}
+              placeholder="Suchzeitraum wählen"
+              emptyHint="Kein bestimmter Suchzeitraum — zum Eingrenzen einen Beginn-Tag anklicken."
+            />
+          </fieldset>
 
           {advancedGroups.map((group) => {
             const selected = defaults.attrSelected[group.slug] ?? [];

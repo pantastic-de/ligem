@@ -18,6 +18,12 @@ const dateLabelFormat = new Intl.DateTimeFormat("de-DE", {
   month: "long",
 });
 
+const shortDateFormat = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 const buttonClass =
   "min-h-9 rounded-full border border-text/20 px-3 text-sm font-medium transition-colors hover:bg-bg";
 
@@ -27,6 +33,8 @@ export function EventDateFilter({
   onChange,
   eventDayColors,
   legend,
+  placeholder = "Zeitraum wählen (alle anstehenden Termine)",
+  emptyHint = "Alle anstehenden Termine — zum Eingrenzen einen Beginn-Tag anklicken.",
 }: {
   defaultVon?: string;
   defaultBis?: string;
@@ -40,9 +48,17 @@ export function EventDateFilter({
   // Name + color for each event type, shown as a small legend so the dots'
   // colors carry meaning rather than being purely decorative.
   legend?: { name: string; color: string }[];
+  // This component is also reused for /projekte's "Suchzeitraum" filter
+  // (a listing's own move-in window, not an event feed), so the
+  // Termine-flavored copy is overridable rather than hardcoded.
+  placeholder?: string;
+  emptyHint?: string;
 }) {
   const [startDate, setStartDate] = useState(defaultVon ?? "");
   const [endDate, setEndDate] = useState(defaultBis ?? "");
+  // The calendar starts collapsed behind a single-line summary input — see
+  // the input below — and only opens once that input is clicked/focused.
+  const [expanded, setExpanded] = useState(false);
 
   const skipFirstChange = useRef(true);
   useEffect(() => {
@@ -77,7 +93,10 @@ export function EventDateFilter({
       setStartDate(key);
       setEndDate("");
     } else {
+      // Range complete (including the same day clicked twice, for a
+      // single-day range) — collapse back to the compact summary input.
       setEndDate(key);
+      setExpanded(false);
     }
   }
 
@@ -87,22 +106,49 @@ export function EventDateFilter({
     setStartDate(toDateKey(today));
     if (daysAhead == null) {
       setEndDate("");
+      setExpanded(false);
       return;
     }
     const end = new Date(today);
     end.setDate(end.getDate() + daysAhead);
     setEndDate(toDateKey(end));
+    setExpanded(false);
   }
 
   function clearRange() {
     setStartDate("");
     setEndDate("");
+    setExpanded(false);
   }
+
+  const rangeSummary = startDate
+    ? endDate
+      ? `${shortDateFormat.format(new Date(startDate))} – ${shortDateFormat.format(new Date(endDate))}`
+      : `ab ${shortDateFormat.format(new Date(startDate))}`
+    : "";
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
-        <div className="flex items-center justify-between">
+      <input
+        type="text"
+        readOnly
+        value={rangeSummary}
+        onFocus={() => setExpanded(true)}
+        placeholder={placeholder}
+        className="min-h-11 w-full cursor-pointer rounded-xl border border-text/20 bg-bg px-3 text-sm"
+      />
+      {expanded ? (
+      <>
+      <div className="relative flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          aria-label="Zeitraum-Auswahl schließen"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg"
+        >
+          ✕
+        </button>
+        <div className="flex items-center justify-between pr-12">
           <button
             type="button"
             onClick={() =>
@@ -206,7 +252,7 @@ export function EventDateFilter({
             ? endDate
               ? `Vom ${dateLabelFormat.format(new Date(startDate))} bis ${dateLabelFormat.format(new Date(endDate))}`
               : "Beginn gewählt — jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
-            : "Alle anstehenden Termine — zum Eingrenzen einen Beginn-Tag anklicken."}
+            : emptyHint}
         </p>
       </div>
 
@@ -222,6 +268,8 @@ export function EventDateFilter({
           Alle anstehenden
         </button>
       </div>
+      </>
+      ) : null}
 
       <input type="hidden" name="von" value={startDate} />
       <input type="hidden" name="bis" value={endDate} />

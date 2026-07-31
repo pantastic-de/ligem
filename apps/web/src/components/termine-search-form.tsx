@@ -50,6 +50,14 @@ export function TermineSearchForm({
       onSubmit={(e) => e.preventDefault()}
       className="mt-8 flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
     >
+      <EventDateFilter
+        defaultVon={defaults.von}
+        defaultBis={defaults.bis}
+        onChange={submitNow}
+        eventDayColors={eventDayColors}
+        legend={legend}
+      />
+
       {veranstaltungsart ? (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="art" className="font-medium">
@@ -90,14 +98,6 @@ export function TermineSearchForm({
           </div>
         </fieldset>
       ) : null}
-
-      <EventDateFilter
-        defaultVon={defaults.von}
-        defaultBis={defaults.bis}
-        onChange={submitNow}
-        eventDayColors={eventDayColors}
-        legend={legend}
-      />
 
       <LocationRadiusPicker
         defaultLat={defaults.lat}

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
 import { formatDistanceKm } from "@/lib/distance";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -40,6 +42,8 @@ export function EventDetail({
   angemeldetSuccess,
   registrationError,
   distanceKm,
+  prevItem,
+  nextItem,
 }: {
   event: EventDetailData;
   returnTo: string;
@@ -50,6 +54,11 @@ export function EventDetail({
   // /termine/page.tsx) — only ever known in the context of an active
   // Umkreissuche, never on a bare visit to the standalone page.
   distanceKm?: number | null;
+  // Previous/next event in the current search results (see
+  // /termine/page.tsx) — only set for the inline pane, since the
+  // standalone page has no "current search results" to step through.
+  prevItem?: { href: string; label: string } | null;
+  nextItem?: { href: string; label: string } | null;
 }) {
   return (
     <div>
@@ -57,6 +66,33 @@ export function EventDetail({
         <Link href={backHref} className="mb-4 inline-flex items-center text-sm font-medium text-primary hover:underline">
           ← Zurück zur Liste
         </Link>
+      ) : null}
+
+      {prevItem || nextItem ? (
+        <div className="mb-4 flex items-center justify-between gap-4 text-sm">
+          {prevItem ? (
+            <Link
+              href={prevItem.href}
+              className="inline-flex min-w-0 items-center gap-1 font-medium text-primary hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{prevItem.label}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextItem ? (
+            <Link
+              href={nextItem.href}
+              className="inline-flex min-w-0 items-center gap-1 text-right font-medium text-primary hover:underline"
+            >
+              <span className="truncate">{nextItem.label}</span>
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
       ) : null}
 
       {angemeldetSuccess ? (
@@ -82,25 +118,13 @@ export function EventDetail({
       {event.listing ? (
         <p className="mt-1 text-sm text-text-muted">
           Veranstaltet von{" "}
-          <Link href={`/projekte/${event.listing.id}`} className="text-primary">
+          <Link href={`/projekte?projekt=${event.listing.id}`} className="text-primary">
             {event.listing.projectName}
           </Link>
         </p>
       ) : null}
 
-      {event.media.length > 0 ? (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {event.media.map((item) => (
-            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
-            <img
-              key={item.id}
-              src={`/api/media/${item.storageKey}`}
-              alt={item.caption ?? ""}
-              className="aspect-square w-full rounded-xl object-cover"
-            />
-          ))}
-        </div>
-      ) : null}
+      <PhotoGallery photos={event.media} />
 
       {event.attributeOptions.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">

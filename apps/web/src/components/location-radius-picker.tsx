@@ -5,6 +5,7 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
 import { useEffect, useRef, useState } from "react";
+import { LocateFixed } from "lucide-react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
 
@@ -94,11 +95,6 @@ export function LocationRadiusPicker({
   // map is too cramped to really use (pan/zoom/read labels) once there are
   // several result markers on it.
   const [expanded, setExpanded] = useState(false);
-  // Armed via an explicit "Standort auf Karte setzen" step (see the button
-  // below) rather than any click on the map setting the origin — otherwise
-  // panning/zooming to look around the results map could accidentally move
-  // the search origin. Auto-disarms again after the next click places it.
-  const [placementMode, setPlacementMode] = useState(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -119,10 +115,6 @@ export function LocationRadiusPicker({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const overviewBoundsRef = useRef<any>(null);
   const skipFirstChange = useRef(true);
-  // Mirrors `placementMode` for the map's click handler, which is registered
-  // once in the mount effect below and would otherwise read a stale value
-  // out of its closure.
-  const placementModeRef = useRef(false);
 
   // Bounds that fit every result marker plus the search origin, extended to
   // always also include the full radius circle when one is active. This is
@@ -168,7 +160,23 @@ export function LocationRadiusPicker({
       resultsLayerRef.current = null;
     }
     if (resultItems && resultItems.length > 0) {
-      const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
+      // spiderfyDistanceMultiplier spaces out markers a bit further than
+      // the default when a cluster is spiderfied (clicked while already at
+      // max zoom) — without it, markers that sit at nearly the same
+      // coordinates (e.g. several events at the same listing's address)
+      // spiderfy close enough together that their permanent labels
+      // (below) visually overlap into an unreadable mess.
+      const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50, spiderfyDistanceMultiplier: 3 });
+      // Permanent labels only make sense one-at-a-time — while a cluster is
+      // spiderfied its markers are already visually spread out and
+      // individually clickable, so their labels are hidden for that brief
+      // state to avoid overlapping each other regardless of spacing.
+      clusterGroup.on("spiderfied", (e: { markers: { closeTooltip: () => void }[] }) => {
+        e.markers.forEach((m) => m.closeTooltip());
+      });
+      clusterGroup.on("unspiderfied", (e: { markers: { openTooltip: () => void }[] }) => {
+        e.markers.forEach((m) => m.openTooltip());
+      });
       resultItems.forEach((item) => {
         const resultMarker = L.circleMarker([item.latitude, item.longitude], {
           radius: 9,
@@ -184,15 +192,24 @@ export function LocationRadiusPicker({
           direction: "top",
           offset: [0, -8],
           className: "ligem-event-label",
+          // Tooltips are non-interactive (pointer-events: none) by default,
+          // so a click on the label would otherwise fall through to
+          // whatever's underneath instead of opening the marker's popup.
+          interactive: true,
         });
-        // The whole popup is one clickable link (not just the label text)
-        // to the item's detail page, with its Projekttyp/Veranstaltungsart
-        // shown as a small badge underneath.
-        const popupHtml = `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
+        resultMarker.getTooltip()?.on("click", () => resultMarker.openPopup());
+        // Uses the caller-supplied rich "business card" HTML when given
+        // (see /projekte/page.tsx's buildListingPopupHtml) — otherwise the
+        // whole popup is one plain clickable link to the item's detail
+        // page, with its Projekttyp/Veranstaltungsart shown as a small
+        // badge underneath.
+        const popupHtml =
+          item.popupHtml ??
+          `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
           <strong style="color:#b14f24;">${escapeHtml(item.label)}</strong>
           ${item.type ? `<br><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;background:#eee2d3;font-size:0.8em;">${escapeHtml(item.type)}</span>` : ""}
         </a>`;
-        resultMarker.bindPopup(popupHtml);
+        resultMarker.bindPopup(popupHtml, { maxWidth: 260 });
         clusterGroup.addLayer(resultMarker);
       });
       map.addLayer(clusterGroup);
@@ -272,19 +289,6 @@ export function LocationRadiusPicker({
 
       const marker = L.marker([startLat, startLng], { icon: createPinIcon(L) });
       if (lat != null && lng != null) marker.addTo(map);
-
-      // Only sets the origin while the explicit "Standort auf Karte setzen"
-      // step is armed (see the placementMode button below) — otherwise a
-      // click just pans/interacts with the map like normal, so browsing the
-      // results map can never accidentally move the search origin.
-      map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
-        if (!placementModeRef.current) return;
-        marker.setLatLng(e.latlng);
-        if (!map.hasLayer(marker)) marker.addTo(map);
-        setLat(e.latlng.lat);
-        setLng(e.latlng.lng);
-        setPlacementMode(false);
-      });
 
       mapInstance.current = map;
       markerRef.current = marker;
@@ -366,10 +370,6 @@ export function LocationRadiusPicker({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, radiusValue]);
-
-  useEffect(() => {
-    placementModeRef.current = placementMode;
-  }, [placementMode]);
 
   // Closing the expanded map via Escape as well as the explicit ✕ button and
   // the backdrop click below — standard expectation for anything that opens
@@ -482,11 +482,7 @@ export function LocationRadiusPicker({
             Leaflet's own classes the moment `expanded` toggled. The actual
             size/shape now lives entirely on the wrapper div above instead.
           */}
-          <div
-            ref={mapRef}
-            style={placementMode ? { cursor: "crosshair" } : undefined}
-            className="h-full w-full"
-          />
+          <div ref={mapRef} className="h-full w-full" />
           {expanded ? (
             <button
               type="button"
@@ -527,13 +523,7 @@ export function LocationRadiusPicker({
           ) : null}
         </div>
       </div>
-      {mapVisible ? (
-        placementMode ? (
-          <p className="-mt-1 text-sm font-medium text-primary">
-            Auf die Karte klicken, um den Ausgangspunkt zu setzen.
-          </p>
-        ) : null
-      ) : (
+      {!mapVisible ? (
         <button
           type="button"
           onClick={() => setMapVisible(true)}
@@ -541,16 +531,28 @@ export function LocationRadiusPicker({
         >
           👁️ Karte einblenden
         </button>
-      )}
+      ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <input
-          type="text"
-          value={placeQuery}
-          onChange={(e) => setPlaceQuery(e.target.value)}
-          placeholder="Ort eingeben, z. B. Kempten"
-          className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 text-sm"
-        />
+        <div className="relative min-w-0 flex-1">
+          <input
+            type="text"
+            value={placeQuery}
+            onChange={(e) => setPlaceQuery(e.target.value)}
+            placeholder="Ort eingeben, z. B. Kempten"
+            className="min-h-11 w-full rounded-xl border border-text/20 bg-bg py-2 pl-3 pr-11 text-sm"
+          />
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={busy}
+            aria-label="Meinen Standort verwenden"
+            title="Meinen Standort verwenden"
+            className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg disabled:opacity-60"
+          >
+            <LocateFixed className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
         <button
           type="button"
           onClick={searchPlace}
@@ -558,25 +560,6 @@ export function LocationRadiusPicker({
           className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
         >
           {busy ? "Suche…" : "Suchen"}
-        </button>
-        <button
-          type="button"
-          onClick={useMyLocation}
-          disabled={busy}
-          className="min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg disabled:opacity-60"
-        >
-          📍 Mein Standort
-        </button>
-        <button
-          type="button"
-          onClick={() => setPlacementMode((v) => !v)}
-          className={
-            placementMode
-              ? "min-h-11 rounded-full bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
-              : "min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
-          }
-        >
-          {placementMode ? "❌ Abbrechen" : "📍 Standort auf Karte setzen"}
         </button>
       </div>
       {message ? <p className="text-sm text-error">{message}</p> : null}

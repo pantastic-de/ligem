@@ -9,12 +9,15 @@ import {
   MapPin,
   Target,
   Tag,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 
 import type { Prisma, Event } from "@/generated/prisma/client";
 import { submitContactRequest } from "@/app/projekte/[id]/actions";
 import { formatDistanceKm } from "@/lib/distance";
+import { PhotoGallery } from "@/components/photo-gallery";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -98,6 +101,8 @@ export function ListingDetail({
   backHref,
   kontaktSuccess,
   distanceKm,
+  prevItem,
+  nextItem,
 }: {
   listing: ListingDetailData;
   upcomingEvents: Event[];
@@ -111,6 +116,11 @@ export function ListingDetail({
   // /projekte/page.tsx) — only ever known in the context of an active
   // Umkreissuche, never on a bare visit to the standalone page.
   distanceKm?: number | null;
+  // Previous/next listing in the current search results (see
+  // /projekte/page.tsx) — only set for the inline pane, since the
+  // standalone page has no "current search results" to step through.
+  prevItem?: { href: string; label: string } | null;
+  nextItem?: { href: string; label: string } | null;
 }) {
   const attributesByGroup = new Map<string, { name: string; options: string[] }>();
   for (const { option } of listing.attributeOptions) {
@@ -132,6 +142,33 @@ export function ListingDetail({
         <Link href={backHref} className="mb-4 inline-flex items-center text-sm font-medium text-primary hover:underline">
           ← Zurück zur Liste
         </Link>
+      ) : null}
+
+      {prevItem || nextItem ? (
+        <div className="mb-4 flex items-center justify-between gap-4 text-sm">
+          {prevItem ? (
+            <Link
+              href={prevItem.href}
+              className="inline-flex min-w-0 items-center gap-1 font-medium text-primary hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{prevItem.label}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextItem ? (
+            <Link
+              href={nextItem.href}
+              className="inline-flex min-w-0 items-center gap-1 text-right font-medium text-primary hover:underline"
+            >
+              <span className="truncate">{nextItem.label}</span>
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
       ) : null}
 
       {kontaktSuccess ? (
@@ -176,19 +213,7 @@ export function ListingDetail({
       {listing.motto ? <p className="mt-1 text-lg text-text-muted">{listing.motto}</p> : null}
       {locationLine ? <p className="mt-2 text-text-muted">{locationLine}</p> : null}
 
-      {listing.media.length > 0 ? (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {listing.media.map((item) => (
-            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
-            <img
-              key={item.id}
-              src={`/api/media/${item.storageKey}`}
-              alt={item.caption ?? ""}
-              className="aspect-square w-full rounded-xl object-cover"
-            />
-          ))}
-        </div>
-      ) : null}
+      <PhotoGallery photos={listing.media} />
 
       {listing.categories.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -301,7 +326,7 @@ export function ListingDetail({
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <Link
-                  href={`/termine/${event.id}`}
+                  href={`/termine?termin=${event.id}`}
                   className="block rounded-xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
                 >
                   <div className="font-medium">{event.title}</div>

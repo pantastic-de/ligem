@@ -199,6 +199,14 @@ export default async function KalenderPage({
     }
   }
 
+  // Previous/next event to step to from the inline detail pane, based on the
+  // same chronological order shown in the results list — lets a viewer walk
+  // through every match without going back to the list each time.
+  const selectedIndex = selectedEvent ? events.findIndex((e) => e.id === selectedEvent.id) : -1;
+  const prevEvent = selectedIndex > 0 ? events[selectedIndex - 1] : null;
+  const nextEvent =
+    selectedIndex >= 0 && selectedIndex < events.length - 1 ? events[selectedIndex + 1] : null;
+
   // Human-readable summary of which filters produced this result count, so
   // the list above doesn't just show a number without context for how it
   // came about.
@@ -273,6 +281,22 @@ export default async function KalenderPage({
                 distanceKm={
                   lat != null && lng != null && selectedEvent.latitude != null && selectedEvent.longitude != null
                     ? haversineDistanceKm(lat, lng, selectedEvent.latitude, selectedEvent.longitude)
+                    : null
+                }
+                prevItem={
+                  prevEvent
+                    ? {
+                        href: buildTermineHref(params, { termin: prevEvent.id, angemeldet: undefined }),
+                        label: prevEvent.title,
+                      }
+                    : null
+                }
+                nextItem={
+                  nextEvent
+                    ? {
+                        href: buildTermineHref(params, { termin: nextEvent.id, angemeldet: undefined }),
+                        label: nextEvent.title,
+                      }
                     : null
                 }
               />
