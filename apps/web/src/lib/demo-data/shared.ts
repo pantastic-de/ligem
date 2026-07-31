@@ -144,16 +144,28 @@ export const VILLAGES: City[] = [
   { city: "Kallmünz", postalCode: "93183", state: "Bayern", country: "Deutschland", lat: 49.15, lng: 12.05 },
   { city: "Bad Muskau", postalCode: "02953", state: "Sachsen", country: "Deutschland", lat: 51.55, lng: 14.7167 },
   { city: "Reit im Winkl", postalCode: "83242", state: "Bayern", country: "Deutschland", lat: 47.6833, lng: 12.4667 },
+  { city: "Norden", postalCode: "26506", state: "Niedersachsen", country: "Deutschland", lat: 53.5967, lng: 7.2039 },
+  { city: "Bad König", postalCode: "64732", state: "Hessen", country: "Deutschland", lat: 49.7167, lng: 9.0167 },
+  { city: "Schmallenberg", postalCode: "57392", state: "Nordrhein-Westfalen", country: "Deutschland", lat: 51.15, lng: 8.2833 },
+  { city: "Prenzlau", postalCode: "17291", state: "Brandenburg", country: "Deutschland", lat: 53.3167, lng: 13.8667 },
+  { city: "Oberstdorf", postalCode: "87561", state: "Bayern", country: "Deutschland", lat: 47.4058, lng: 10.2795 },
+  { city: "Bad Frankenhausen", postalCode: "06567", state: "Thüringen", country: "Deutschland", lat: 51.3583, lng: 11.1 },
+  { city: "Insel Hiddensee", postalCode: "18565", state: "Mecklenburg-Vorpommern", country: "Deutschland", lat: 54.55, lng: 13.1 },
+  { city: "Schwarzenberg", postalCode: "6867", state: "Vorarlberg", country: "Österreich", lat: 47.4167, lng: 9.9 },
+  { city: "Appenzell", postalCode: "9050", state: "Appenzell Innerrhoden", country: "Schweiz", lat: 47.3333, lng: 9.4167 },
+  { city: "Grindelwald", postalCode: "3818", state: "Bern", country: "Schweiz", lat: 46.6244, lng: 8.0356 },
 ];
 
 /**
  * Picks a location for a new listing from either the big-city pool or the
- * small-village pool (roughly 45% villages), so generated projects spread
- * across both urban and rural settings instead of clustering in the same
- * handful of major cities — see CITIES/VILLAGES above.
+ * small-village pool (weighted well toward villages — 60% — since the
+ * default 45/55 split still read as too city-heavy given the demo dataset
+ * accumulates across many generator runs; a stronger rural lean makes the
+ * effect actually visible on /projekte's map without needing to wipe and
+ * regenerate existing demo data) — see CITIES/VILLAGES above.
  */
 export function pickLocation(): { location: City; isVillage: boolean } {
-  const isVillage = chance(0.45);
+  const isVillage = chance(0.6);
   return { location: isVillage ? pick(VILLAGES) : pick(CITIES), isVillage };
 }
 

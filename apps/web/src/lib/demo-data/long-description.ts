@@ -16,11 +16,6 @@ type Theme = {
   closer: string[];
 };
 
-const MUSIC_GENRES = [
-  "Techno", "Death Metal", "Freejazz", "Volksmusik", "Gregorianische Choräle",
-  "Drum'n'Bass", "Shanty-Gesang", "Gothic-Rock",
-];
-
 function fillTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? "");
 }
@@ -256,34 +251,282 @@ const THEMES: Theme[] = [
     ],
   },
   {
-    slug: "musik",
+    slug: "kooperation",
     opener: [
-      "Schon auf der Straße hört man den Bass von {genre} durch die Fenster wummern, egal zu welcher Tageszeit.",
-      "Am Gartentor hängt ein handgesprühtes Graffiti mit dem Schriftzug: „Hier lebt {genre}, und zwar laut.“",
-      "Wer hier klingelt, wird zunächst gefragt, ob man Ohrstöpsel mitgebracht hat, „nur zur Sicherheit“.",
-      "Im Vorgarten stapeln sich Boxen, Kabeltrommeln und mindestens ein kaputtes Mischpult mit Geschichte.",
-      "Schon von Weitem erkennt man das Haus an der Basswelle, die selbst die Gartenzwerge der Nachbarschaft leicht vibrieren lässt.",
+      "Schon am Gartentor hängt eine laminierte Liste: Wer kann was, wer braucht was, wer hilft wann aus.",
+      "Hier beginnt jede Woche mit der Frage, wer diesmal wen unterstützen kann, und wer gerade selbst Unterstützung braucht.",
+      "Kaum ein Tag vergeht, an dem nicht irgendwer irgendwem beim Umzugskarton-Schleppen, Kinderhüten oder Steuererklären hilft.",
+      "Wer hier lebt, lernt schnell: Allein schafft man wenig, gemeinsam fast alles.",
+      "Am Schwarzen Brett im Flur wechseln sich Hilfegesuche und Hilfeangebote im Minutentakt ab.",
     ],
     building: [
-      "Der Keller ist komplett schallisoliert, was theoretisch bedeutet, dass man {genre} auch um drei Uhr nachts in voller Lautstärke genießen kann.",
-      "Jeder Raum ist nach einem legendären {genre}-Album benannt, auch das Badezimmer.",
-      "Die Wände sind über und über mit Konzertplakaten tapeziert, von denen manche älter sind als die jüngsten Bewohner:innen.",
-      "Im Wohnzimmer steht eine Anlage, die den Wert des restlichen Mobiliars locker übersteigt.",
-      "Der Dachboden dient offiziell als Tonstudio, inoffiziell als Ort für Proben, die weit über Mitternacht hinausgehen.",
+      "Der Gemeinschaftsraum ist bewusst so eingerichtet, dass sich hier spontane Arbeitsteams bilden können, mit großem Tisch und noch größerem Werkzeugschrank.",
+      "Im Flur hängt eine Tauschbörse für Fähigkeiten, von Fahrradreparatur bis Steuererklärung, ausgehandelt gegen Kuchen oder Gegendienste.",
+      "Die Waschküche ist so organisiert, dass automatisch mal die eine, mal die andere Familie für alle mitwäscht.",
+      "Im Keller lagert ein gemeinsamer Werkzeugpark, den man sich nach einem simplen, aber verlässlichen Ausleihsystem teilt.",
+      "Am Gemeinschaftsbrett hängt für jede Aufgabe ein Zettel, in den sich freiwillig einträgt, wer gerade Kapazität hat.",
     ],
     people: [
-      "Hier lebt ein DJ, der ausschließlich {genre} auflegt, Tür an Tür mit einer Konzertfotografin, die jedes einzelne Bandshirt im Haus fotografisch dokumentiert hat.",
-      "Man erkennt die Bewohner:innen an Ohrstöpseln, die sie auch beim Frühstück nicht ablegen.",
-      "Konflikte werden traditionell durch eine gemeinsame Playlist gelöst, deren Reihenfolge ausführlich verhandelt wird.",
-      "Alle hier haben eine feste Meinung zur besten {genre}-Ära, und keine davon deckt sich mit der der Nachbarin.",
-      "Neuankömmlinge werden mit einer eigens zusammengestellten Willkommens-Playlist begrüßt, mindestens drei Stunden lang.",
+      "Hier lebt eine Krankenpflegerin, die im Schichtdienst arbeitet, Tür an Tür mit einer Familie, die verlässlich auf sie aufpasst, wenn die Kinder mal krank werden.",
+      "Man erkennt die Bewohner:innen daran, dass niemand zweimal fragen muss, bevor Hilfe kommt.",
+      "Zuletzt gab es eine lebhafte Diskussion darüber, ob Hilfe eigentlich immer erwidert werden muss oder ob auch mal geben ohne Gegenleistung reicht, mit geteilten Meinungen am Ende.",
+      "Alle hier haben unterschiedliche Stärken, und erstaunlich oft ergänzen sie sich genau richtig.",
+      "Neuankömmlinge werden nicht mit Regeln, sondern mit einem vollen Kühlschrank und einem offenen Angebot zur Mithilfe begrüßt.",
     ],
     closer: [
-      "Am Ende jeder Nacht verklingt hier irgendwann sogar {genre}, meist erst kurz vor Sonnenaufgang.",
-      "Ob Nachbarschaftsbeschwerde oder Standing Ovation, hier wird beides mit gleicher Hingabe entgegengenommen.",
-      "So bleibt dieses Haus, was es schon immer war: laut, stolz und mit hervorragendem Sound.",
-      "Wer Ruhe sucht, ist hier eindeutig falsch, wer guten Bass, goldrichtig.",
-      "Und irgendwo zwischen Anlage und Ohrstöpseln findet sich hier ein ganz eigener, sehr lauter Alltag.",
+      "Am Ende eines anstrengenden Tages ist hier fast immer irgendwer da, der übernimmt, was gerade zu viel wird.",
+      "So bleibt gegenseitige Unterstützung hier kein Lippenbekenntnis, sondern gelebter Alltag.",
+      "Wer hier wohnt, gibt genauso viel, wie er bekommt, nur selten am gleichen Tag.",
+      "Und am Ende zählt vor allem, dass niemand allein durch schwierige Phasen muss.",
+      "Kooperation ist hier weniger ein Konzept als eine Gewohnheit, die kaum noch auffällt.",
+    ],
+  },
+  {
+    slug: "wertschaetzung",
+    opener: [
+      "Jeden Sonntagabend nimmt sich hier jemand Zeit, um laut auszusprechen, wofür er oder sie in dieser Woche dankbar war.",
+      "Am Kühlschrank hängt eine Karte, auf der reihum notiert wird, wem gerade ein kleines Dankeschön gebührt.",
+      "Wer hier neu einzieht, merkt schnell: Kleine Gesten der Anerkennung gehören hier zum Alltag wie das Abendessen.",
+      "Schon beim Frühstück wird hier öfter gelobt als gemeckert, was nicht jedem gleich auffällt, aber jedem guttut.",
+      "Fürsorge beginnt hier morgens meist mit der Frage: Wie geht es dir eigentlich wirklich?",
+    ],
+    building: [
+      "Im Wohnzimmer steht ein Korb, in den jede und jeder anonym kleine Wertschätzungskarten für andere legen kann.",
+      "Es gibt ein eigenes Krankenzimmer, damit sich Erkrankte zurückziehen können, ohne dass der Alltag der anderen stillsteht.",
+      "Die Küchentafel trägt Kreidenachrichten, die selten praktische Infos, meist einfach nur nette Worte enthalten.",
+      "Im Gästezimmer wohnt regelmäßig, wer gerade selbst Unterstützung braucht, sei es nach einer Trennung oder einem Jobverlust.",
+      "Der Gemeinschaftsraum hat eine ruhige Ecke extra für Gespräche, die etwas mehr Zeit und Nähe brauchen.",
+    ],
+    people: [
+      "Hier lebt ein Pflegehelfer im Ruhestand, der ungefragt, aber nie aufdringlich, ein Auge auf alle hat, die gerade eine schwere Zeit durchmachen.",
+      "Man merkt den Bewohner:innen an, dass ehrliches Nachfragen hier wichtiger ist als aufgesetzte Höflichkeit.",
+      "Zuletzt gab es eine offene Runde darüber, wie viel Fürsorge eigentlich guttut und wo sie in Bevormundung umschlägt, mit ehrlich unterschiedlichen Antworten.",
+      "Alle hier wissen, wer gerade Unterstützung braucht, ohne dass es großartig kommuniziert werden müsste.",
+      "Neuankömmlinge werden zunächst einfach gefragt, wie es ihnen geht, und zwar so, dass eine ehrliche Antwort tatsächlich erwartet wird.",
+    ],
+    closer: [
+      "Am Ende eines schwierigen Tages ist hier fast immer jemand da, der einfach zuhört, ohne gleich Lösungen anzubieten.",
+      "So bleibt Wertschätzung hier keine Floskel, sondern ein tägliches, kleines Ritual.",
+      "Wer hier lebt, merkt: Gesehen werden ist manchmal mehr wert als jede praktische Hilfe.",
+      "Und am Ende zählt vor allem, dass sich niemand mit seinen Sorgen allein fühlt.",
+      "Fürsorge braucht hier keine großen Worte, nur regelmäßige kleine Gesten.",
+    ],
+  },
+  {
+    slug: "achtsamkeit",
+    opener: [
+      "Vor jeder größeren Besprechung nehmen sich hier alle drei bewusste Atemzüge Zeit, bevor es losgeht.",
+      "Am Gemeinschaftsbrett hängt eine kleine Erinnerung: Erst zuhören, dann verstehen, dann erst antworten.",
+      "Wer hier ankommt, merkt schnell: Hektik wird bewusst ausgebremst, auch wenn es manchmal länger dauert.",
+      "Schon beim Frühstück wird hier öfter geschwiegen als geredet, ganz bewusst und ohne Verlegenheit.",
+      "Am Gartentor hängt ein kleines Schild: „Bitte einen Moment innehalten, bevor du hereinkommst.“",
+    ],
+    building: [
+      "Im obersten Stock gibt es einen bewusst leeren Raum, der einzig zum Innehalten und Durchatmen gedacht ist.",
+      "Der Garten hat eine Ecke, in der ausdrücklich nicht geredet, sondern nur gesessen werden darf.",
+      "Im Flur hängt eine kleine Glocke, die geläutet wird, wenn jemand gerade einen Moment Ruhe braucht.",
+      "Die Küche hat bewusst keine Radios oder Bildschirme, damit beim Kochen tatsächlich nachgedacht werden kann.",
+      "Im Gemeinschaftsraum liegen Sitzkissen bereit für spontane, stille Pausen mitten am Tag.",
+    ],
+    people: [
+      "Hier lebt eine Therapeutin, die niemandem ihre Übungen aufdrängt, aber gern erklärt, warum sie ihr selbst helfen.",
+      "Man erkennt die Bewohner:innen daran, dass sie öfter nachfragen, bevor sie urteilen.",
+      "Zuletzt gab es eine ruhige Runde darüber, ob Achtsamkeit eigentlich Zeit braucht, die viele im Alltag gar nicht haben, ohne dass am Ende eine klare Antwort stand.",
+      "Alle hier haben unterschiedliche Wege gefunden, zur Ruhe zu kommen, vom Spazierengehen bis zum stillen Abwasch.",
+      "Neuankömmlinge merken schnell: Hier wird niemand gedrängt, aber jede und jeder ermutigt, sich Pausen zu erlauben.",
+    ],
+    closer: [
+      "Am Ende eines hektischen Tages sitzt hier meistens irgendwer einfach nur still im Garten.",
+      "So bleibt Achtsamkeit hier keine Technik, sondern eine geteilte, unaufgeregte Haltung.",
+      "Wer hier lebt, lernt: Nicht jede Stille muss gefüllt werden.",
+      "Und am Ende zählt vor allem, dass niemand sich hetzen muss, um dazuzugehören.",
+      "Ruhe ist hier keine Ausnahme, sondern ein fester Teil des Alltags.",
+    ],
+  },
+  {
+    slug: "konflikte",
+    opener: [
+      "Schon am ersten Tag wird hier offen gesagt: Streit gehört dazu, wichtig ist nur, wie man ihn austrägt.",
+      "An der Küchentür hängt ein kleiner Leitfaden: Erst ansprechen, dann zuhören, dann gemeinsam lösen.",
+      "Wer hier einzieht, lernt schnell, dass Meinungsverschiedenheiten offen ausgesprochen werden, statt sich in der Küche aus dem Weg zu gehen.",
+      "Schon beim Einzugsgespräch wird gefragt, wie jemand am liebsten Konflikte klärt, laut, schriftlich oder erstmal mit etwas Abstand.",
+      "Hier weiß jede und jeder: Ein ungelöster Streit ist lauter als jeder gelöste.",
+    ],
+    building: [
+      "Im Gemeinschaftsraum steht ein extra Tisch, an dem ausschließlich schwierige Gespräche geführt werden, mit Wasserkaraffe und Taschentüchern griffbereit.",
+      "Es gibt einen Klärungsraum, klein, aber schallgedämpft, für Gespräche, die etwas mehr Privatsphäre brauchen.",
+      "Am Schwarzen Brett hängt ein Ablaufplan für Konfliktgespräche, den mittlerweile fast niemand mehr lesen muss, weil er im Kopf sitzt.",
+      "Die Küche hat einen Timer für hitzige Debatten, nach zwanzig Minuten wird notfalls vertagt statt eskaliert.",
+      "Im Flur hängt ein Kalender für Klärungsgespräche, der erstaunlich oft gebucht, aber nie überfüllt ist.",
+    ],
+    people: [
+      "Hier lebt ein Mediator im Nebenberuf, der auch privat kaum eine Meinungsverschiedenheit unmoderiert lässt.",
+      "Man erkennt die Bewohner:innen daran, dass sie in Streitgesprächen erstaunlich oft zuerst fragen: Wie geht es dir gerade damit?",
+      "Zuletzt gab es eine hitzige, aber am Ende versöhnliche Debatte darüber, wer wie oft an der Reihe ist, das laute Übungszimmer zu nutzen.",
+      "Alle hier haben gelernt, Kritik zu äußern, ohne die Person dahinter anzugreifen, was nicht immer, aber meistens gelingt.",
+      "Neuankömmlinge werden ausdrücklich ermutigt, Unstimmigkeiten früh anzusprechen, statt sie schwelen zu lassen.",
+    ],
+    closer: [
+      "Am Ende eines Streits sitzt man hier meistens noch zusammen, auch wenn die Meinung nicht dieselbe geworden ist.",
+      "So bleibt Streit hier kein Tabu, sondern ein normaler, ernstgenommener Teil des Zusammenlebens.",
+      "Wer hier lebt, lernt: Nicht jeder Konflikt muss gewonnen werden, manche müssen nur gehört werden.",
+      "Und am Ende zählt vor allem, dass man sich danach noch in die Augen sehen kann.",
+      "Konflikte verschwinden hier nicht, sie werden nur ehrlicher verhandelt.",
+    ],
+  },
+  {
+    slug: "entscheidungsfindung",
+    opener: [
+      "Jeden zweiten Sonntag findet hier ein Plenum statt, das offiziell zwei Stunden dauert und inoffiziell selten pünktlich endet.",
+      "An der Wand hängt die aktuelle Tagesordnung, meist länger, als der eigentliche Abend Zeit hergibt.",
+      "Wer hier neu einzieht, lernt schnell die drei Grundregeln: ausreden lassen, Redezeit begrenzen, am Ende abstimmen.",
+      "Schon beim ersten Treffen wird erklärt, wie Entscheidungen hier wirklich getroffen werden, im Konsens, mit gelegentlichem Murren.",
+      "Bei uns wird selten schnell entschieden, dafür aber selten im Nachhinein bereut.",
+    ],
+    building: [
+      "Der Plenumsraum hat einen großen, runden Tisch, extra so gewählt, dass niemand am Kopfende sitzt.",
+      "An der Wand hängt ein Whiteboard, auf dem Pro- und Contra-Argumente fein säuberlich in zwei Spalten gesammelt werden.",
+      "Es gibt eine Redeliste, handgeschrieben auf Papier, weil digitale Tools erstaunlicherweise mehr Streit verursacht haben, als sie lösten.",
+      "Im Flur hängt das Protokollbuch der letzten fünf Jahre, das gelegentlich zur Klärung alter Beschlüsse gewälzt wird.",
+      "Der Gemeinschaftsraum hat bewusst keine bequemen Sessel, damit Sitzungen nicht ausufern, was nur mäßig funktioniert.",
+    ],
+    people: [
+      "Hier lebt eine Moderatorin vom Fach, die auch beim eigenen Plenum kaum die Klappe halten kann, wenn es um gute Gesprächskultur geht.",
+      "Man erkennt die Bewohner:innen daran, dass sie selbst bei Kleinigkeiten fragen: Haben wir das eigentlich schon richtig entschieden?",
+      "Zuletzt gab es eine lange, ernsthafte Debatte darüber, ob eine einzelne Person ein ganzes Projekt blockieren darf, mit einem am Ende sorgfältig ausgehandelten Kompromiss.",
+      "Alle hier haben eine Meinung zur besten Entscheidungsform, Konsens, Mehrheit oder Los, und die Debatte darüber ist selbst schon fast Tradition.",
+      "Neuankömmlinge dürfen von Anfang an mitentscheiden, auch wenn ihre erste Stimme erfahrungsgemäß noch zurückhaltend ausfällt.",
+    ],
+    closer: [
+      "Am Ende jedes Plenums steht meist ein Beschluss, über den noch wochenlang weiterdiskutiert wird.",
+      "So bleibt Mitbestimmung hier kein Ideal auf dem Papier, sondern ein zäher, aber ehrlicher Prozess.",
+      "Wer hier lebt, lernt: Gute Entscheidungen brauchen Zeit, und die nehmen wir uns.",
+      "Und am Ende zählt vor allem, dass sich alle gehört gefühlt haben, auch die, die überstimmt wurden.",
+      "Diskurs ist hier anstrengend, aber niemand würde ihn missen wollen.",
+    ],
+  },
+  {
+    slug: "rechte-privilegien",
+    opener: [
+      "Schon beim Einzugsgespräch wird offen besprochen, wer welche Rechte und Pflichten im Haus hat, unabhängig davon, wie lange jemand schon dabei ist.",
+      "An der Wand hängt eine Übersicht: Mitspracherecht, Vetorecht, Nutzungsrechte, klar und für alle gleich einsehbar.",
+      "Wer hier neu einzieht, merkt schnell: Dienstälteste haben hier keine automatischen Sonderrechte.",
+      "Schon früh wird hier offen über die Frage gesprochen, wer eigentlich wie viel Raum im Gespräch bekommt, und warum.",
+      "Bei uns gilt: Wer länger da ist, hat mehr Erfahrung, aber nicht automatisch mehr Rechte.",
+    ],
+    building: [
+      "Im Gemeinschaftsraum hängt die Hausordnung, für alle gleich, unabhängig von Zimmergröße oder Mietanteil.",
+      "Es gibt keine bevorzugten Parkplätze oder Sonderschlüssel, das war eine der ersten gemeinsamen Entscheidungen im Haus.",
+      "Der Nutzungsplan für Garten und Werkstatt hängt öffentlich aus, mit klar rotierenden, fairen Zeitfenstern.",
+      "Im Flur hängt eine kleine Erinnerung: Wer mehr besitzt, teilt auch mehr, eine Regel, die nicht immer einfach, aber ernst genommen wird.",
+      "Die Kostenverteilung im Haus orientiert sich am Einkommen, nicht an der Zimmergröße, was regelmäßig neu verhandelt wird.",
+    ],
+    people: [
+      "Hier lebt eine Sozialarbeiterin, die ungefragt darauf achtet, dass auch leisere Stimmen im Plenum zu Wort kommen.",
+      "Man erkennt die Bewohner:innen daran, dass sie eigene Privilegien eher benennen als verschweigen.",
+      "Zuletzt gab es eine ernsthafte Debatte darüber, ob wer mehr verdient auch automatisch mehr Mitspracherecht haben sollte, mit einem klaren, gemeinsamen Nein am Ende.",
+      "Alle hier sind sich einig, dass Fairness regelmäßig überprüft werden muss, nicht nur einmal beschlossen.",
+      "Neuankömmlinge werden ausdrücklich gefragt, ob sie sich im Haus gleichberechtigt fühlen, nicht nur bei Einzug, sondern immer wieder.",
+    ],
+    closer: [
+      "Am Ende jeder Debatte über Rechte bleibt hier vor allem eines: die Bereitschaft, eigene Vorteile ehrlich zu hinterfragen.",
+      "So bleibt Gleichberechtigung hier kein einmaliger Beschluss, sondern eine ständige Aufgabe.",
+      "Wer hier lebt, lernt: Fairness muss man immer wieder neu aushandeln, sie hält sich nicht von allein.",
+      "Und am Ende zählt vor allem, dass niemand sich leiser fühlen muss als andere.",
+      "Rechte sind hier kein Papierbeschluss, sondern etwas, das im Alltag ständig überprüft wird.",
+    ],
+  },
+  {
+    slug: "alltag-aktivitaeten",
+    opener: [
+      "An der Küchenwand hängt der Wochenplan, akribisch geführt, aber trotzdem verlässlich chaotisch.",
+      "Schon am Sonntagabend wird hier gemeinsam die kommende Woche durchgeplant, wer kocht, wer einkauft, wer fährt wen wohin.",
+      "Wer hier lebt, kennt den Unterschied zwischen Plan und Realität sehr genau, und lacht meistens darüber.",
+      "Am Kühlschrank hängt eine Liste gemeinsamer Aktivitäten, von Spieleabend bis Fahrradtour, ständig ergänzt und selten vollständig abgearbeitet.",
+      "Schon beim Frühstück wird hier über die Frage verhandelt, was heute Abend eigentlich alle zusammen unternehmen könnten.",
+    ],
+    building: [
+      "Im Wohnzimmer steht ein Spieleschrank, der Generationen von Abenden überlebt hat und trotzdem ständig wächst.",
+      "Der Garten hat eine feste Ecke für den wöchentlichen Fahrradcheck, bei dem meist mehr repariert als gefahren wird.",
+      "Im Flur hängt ein großer Wandkalender, auf dem private und gemeinsame Termine bunt durcheinander stehen.",
+      "Die Küche hat eine Tafel mit dem aktuellen Kochplan, der theoretisch feststeht und praktisch ständig neu verhandelt wird.",
+      "Im Keller lagert die gemeinsame Ausrüstung für Ausflüge, Zelte, Kanus, ein halbdefektes Grammophon für stimmungsvolle Abende.",
+    ],
+    people: [
+      "Hier lebt eine Familie mit drei Kindern neben einem Rentnerpaar, das mittlerweile öfter zum Spieleabend eingeladen wird als die Gleichaltrigen.",
+      "Man erkennt die Bewohner:innen an vollen Terminkalendern, die trotzdem immer noch Platz für Spontanes lassen.",
+      "Zuletzt gab es eine engagierte Diskussion darüber, ob der wöchentliche Kinoabend nun Pflicht oder Kür sein soll, mit dem Kompromiss: Kür, aber mit schlechtem Gewissen beim Fehlen.",
+      "Alle hier haben unterschiedliche Vorlieben für gemeinsame Aktivitäten, und trotzdem findet sich fast immer eine Mehrheit für irgendetwas.",
+      "Neuankömmlinge werden meist schon in der ersten Woche zum nächsten gemeinsamen Ausflug eingeladen, ob sie wollen oder nicht.",
+    ],
+    closer: [
+      "Am Ende einer vollen Woche sitzt man hier trotzdem noch gemeinsam beim Feierabendbier zusammen.",
+      "So bleibt der Alltag hier durchgeplant und trotzdem angenehm unvorhersehbar.",
+      "Wer hier lebt, lernt: Ein guter Plan lässt genug Raum für spontane Abweichungen.",
+      "Und am Ende zählt vor allem, dass zusammen mehr Spaß macht als allein.",
+      "Gemeinsamkeit braucht hier keinen Anlass, nur einen freien Abend.",
+    ],
+  },
+  {
+    slug: "ernaehrung",
+    opener: [
+      "Am Kühlschrank hängt ein bunt beschrifteter Plan: vegan, vegetarisch, omnivor, glutenfrei, alles fein säuberlich sortiert.",
+      "Schon beim Einzugsgespräch wird gefragt, was jemand isst, was nicht, und warum, ganz ohne Wertung.",
+      "Wer hier kocht, kocht meist für mehrere Ernährungsweisen gleichzeitig, was Übung, aber auch Kreativität erfordert.",
+      "Am Küchentisch wird öfter über Zutatenlisten diskutiert als über das Wetter.",
+      "Schon der Wocheneinkauf ist hier eine kleine logistische Meisterleistung zwischen Hafermilch, Fleisch vom Hof und glutenfreiem Mehl.",
+    ],
+    building: [
+      "Die Küche hat zwei getrennte Schneidebretter, eines für Fleisch, eines für alles andere, klar beschriftet und ernst genommen.",
+      "Im Vorratsschrank stehen Hafermilch, Kuhmilch und mindestens drei verschiedene Mehlsorten friedlich nebeneinander.",
+      "Es gibt eine gemeinsame Gewürzwand, an der jede und jeder seine eigenen Lieblingsmischungen findet.",
+      "Der Garten liefert im Sommer so viel Gemüse, dass der Speiseplan sich fast von selbst schreibt.",
+      "Am Kühlschrank hängt eine Liste mit Unverträglichkeiten, ernst gemeint und von allen respektiert.",
+    ],
+    people: [
+      "Hier lebt eine Veganerin Tür an Tür mit einem leidenschaftlichen Wurstliebhaber, und beide kochen erstaunlich oft füreinander.",
+      "Man erkennt die Bewohner:innen daran, dass niemand mehr fragt, ob es für alle etwas gibt, sondern einfach mitkocht.",
+      "Zuletzt gab es eine lebhafte, aber freundliche Debatte darüber, ob der gemeinsame Grillabend nun vegan oder gemischt stattfinden soll, gelöst durch zwei Grills nebeneinander.",
+      "Alle hier respektieren unterschiedliche Ernährungsweisen, auch wenn nicht jeder jede versteht.",
+      "Neuankömmlinge werden nie nach ihren Essgewohnheiten beurteilt, nur höflich danach gefragt.",
+    ],
+    closer: [
+      "Am Ende eines gemeinsamen Essens steht hier meist ein Tisch voller ganz unterschiedlicher Teller, und trotzdem eine gemeinsame Runde.",
+      "So bleibt Essen hier ein Ort der Vielfalt, nicht der Grabenkämpfe.",
+      "Wer hier lebt, lernt: Am Esstisch ist Platz für alle Vorlieben, solange geteilt wird.",
+      "Und am Ende zählt vor allem, dass niemand hungrig oder ausgeschlossen vom Tisch aufsteht.",
+      "Unterschiedlich essen heißt hier nicht getrennt essen.",
+    ],
+  },
+  {
+    slug: "politik-gesellschaft",
+    opener: [
+      "Am Küchentisch wird hier genauso oft über Kommunalpolitik gestritten wie über den Spülplan.",
+      "Schon beim Einzugsgespräch wird offen gefragt, wie jemand zu gesellschaftlichen Fragen steht, nicht um auszuschließen, sondern um Gespräche vorzubereiten.",
+      "Wer hier lebt, hat garantiert eine Meinung zur Verkehrswende, meist eine sehr klare.",
+      "Am Schwarzen Brett hängen Zeitungsausschnitte, Flugblätter und handgeschriebene Diskussionsnotizen bunt durcheinander.",
+      "Schon beim Frühstück wird hier gelegentlich das Weltgeschehen verhandelt, mit Kaffee statt Rednerpult.",
+    ],
+    building: [
+      "Im Gemeinschaftsraum steht ein Bücherregal voller politischer Sachbücher, quer durch alle Lager, absichtlich ungeordnet.",
+      "Es gibt ein Board mit aktuellen lokalen Themen, an dem sich jede und jeder mit Haftnotizen beteiligen kann.",
+      "Der Gemeinschaftsraum war schon Schauplatz mehrerer improvisierter Podiumsdiskussionen zu Themen, die eigentlich niemand geplant hatte.",
+      "Im Flur hängt eine Wahlkalender-Übersicht, liebevoll gepflegt von der Person im Haus, die keine Wahl je verpasst.",
+      "Die Küche hat ein eigenes Regal für Broschüren von Vereinen und Initiativen, die im Haus jemand unterstützt.",
+    ],
+    people: [
+      "Hier lebt ein Kommunalpolitiker im Ehrenamt Tür an Tür mit einer überzeugten Parteilosen, und beide diskutieren wöchentlich, ohne sich je wirklich zu einigen.",
+      "Man erkennt die Bewohner:innen daran, dass politische Gespräche hier laut, aber selten persönlich verletzend geführt werden.",
+      "Zuletzt gab es eine hitzige, mehrstündige Debatte darüber, ob das Haus offiziell zu gesellschaftlichen Themen Stellung beziehen soll, mit einem vorläufigen, sorgsam formulierten Kompromiss.",
+      "Alle hier haben unterschiedliche politische Ansichten, und trotzdem sitzen sie beim Abendessen an einem Tisch.",
+      "Neuankömmlinge merken schnell: Meinung haben ist hier erwünscht, Meinung anderen aufzwingen dagegen nicht.",
+    ],
+    closer: [
+      "Am Ende jeder hitzigen Debatte sitzt man hier trotzdem noch beim gemeinsamen Abwasch zusammen.",
+      "So bleibt politischer Diskurs hier lebendig, aber nie ein Grund für einen echten Bruch.",
+      "Wer hier lebt, lernt: Unterschiedliche Meinungen sind kein Problem, solange man einander zuhört.",
+      "Und am Ende zählt vor allem, dass Meinungsvielfalt hier als Stärke gilt, nicht als Störung.",
+      "Gesellschaftliche Fragen enden hier selten mit einer einzigen richtigen Antwort, aber immer mit einem weiteren Gespräch.",
     ],
   },
 ];
@@ -315,7 +558,7 @@ const CITY_REGION_FLAVOR = [
  */
 export function buildLongDescriptionCandidate(cityName: string, isVillage: boolean): string {
   const theme = pick(THEMES);
-  const vars = { city: cityName, genre: pick(MUSIC_GENRES) };
+  const vars = { city: cityName };
   const regionBank = isVillage ? VILLAGE_REGION_FLAVOR : CITY_REGION_FLAVOR;
   return [
     pick(theme.opener),

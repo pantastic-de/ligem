@@ -247,6 +247,23 @@ export async function generateDemoListings(
     const groupSizeCurrent = maybe(randomInt(1, 14), 0.85);
     const publishedDaysAgo = randomInt(0, 200);
 
+    // Realistic search periods: mostly a start date plus a week- or
+    // month-length window, occasionally just a start date with no end
+    // (an open-ended "looking from this date onward"), sometimes no period
+    // at all (not currently searching for a specific timeframe).
+    let searchPeriodStart: Date | null = null;
+    let searchPeriodEnd: Date | null = null;
+    if (chance(0.7)) {
+      searchPeriodStart = new Date(Date.now() + randomInt(-10, 30) * 24 * 60 * 60 * 1000);
+      const periodLength = pick(["week", "week", "month", "month", "open"] as const);
+      if (periodLength === "week") {
+        searchPeriodEnd = new Date(searchPeriodStart.getTime() + randomInt(5, 9) * 24 * 60 * 60 * 1000);
+      } else if (periodLength === "month") {
+        searchPeriodEnd = new Date(searchPeriodStart.getTime() + randomInt(26, 35) * 24 * 60 * 60 * 1000);
+      }
+      // "open" leaves searchPeriodEnd null — a start date with no end.
+    }
+
     const listing = await prisma.listing.create({
       data: {
         status: "PUBLISHED",
@@ -273,8 +290,8 @@ export async function generateDemoListings(
         moveInDate: maybe(new Date(Date.now() + randomInt(-30, 180) * 24 * 60 * 60 * 1000), 0.5),
         minStayDays: isTemporary ? randomInt(7, 60) : null,
         maxStayDays: isTemporary ? randomInt(60, 365) : null,
-        searchPeriodStart: maybe(new Date(Date.now() + randomInt(0, 30) * 24 * 60 * 60 * 1000), 0.4),
-        searchPeriodEnd: maybe(new Date(Date.now() + randomInt(60, 200) * 24 * 60 * 60 * 1000), 0.4),
+        searchPeriodStart,
+        searchPeriodEnd,
         groupSizeCurrent,
         groupSizePlanned: maybe(randomInt(groupSizeCurrent ?? 1, 20), 0.4),
         freeSpots: maybe(randomInt(0, 5), 0.6),
@@ -305,8 +322,8 @@ export async function generateDemoListings(
 
     await setListingLocation(listing.id, listing.latitude, listing.longitude);
 
-    // One or two photos per listing.
-    const photoCount = randomInt(1, 2);
+    // Three to six photos per listing, enough to exercise a real gallery.
+    const photoCount = randomInt(3, 6);
     for (let p = 0; p < photoCount; p++) {
       const stored = await attachRandomPhoto(`listings/${listing.id}`);
       if (!stored) continue;
