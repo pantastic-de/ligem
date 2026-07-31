@@ -88,6 +88,16 @@ export function LocationRadiusPicker({
   const [radiusIndex, setRadiusIndex] = useState(initialRadiusIndex);
   const radiusValue = RADIUS_STEPS[radiusIndex];
   const [mapVisible, setMapVisible] = useState(true);
+  // Enlarges the map to a fixed, full-viewport-width overlay (with a
+  // click-to-close backdrop) instead of the small inline preview — the small
+  // map is too cramped to really use (pan/zoom/read labels) once there are
+  // several result markers on it.
+  const [expanded, setExpanded] = useState(false);
+  // Armed via an explicit "Standort auf Karte setzen" step (see the button
+  // below) rather than any click on the map setting the origin — otherwise
+  // panning/zooming to look around the results map could accidentally move
+  // the search origin. Auto-disarms again after the next click places it.
+  const [placementMode, setPlacementMode] = useState(false);
 
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,6 +118,38 @@ export function LocationRadiusPicker({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const overviewBoundsRef = useRef<any>(null);
   const skipFirstChange = useRef(true);
+  // Mirrors `placementMode` for the map's click handler, which is registered
+  // once in the mount effect below and would otherwise read a stale value
+  // out of its closure.
+  const placementModeRef = useRef(false);
+
+  // Bounds that fit every result marker plus the search origin, extended to
+  // always also include the full radius circle when one is active. This is
+  // the single source of "what should the map currently show" — called from
+  // both the results-layer effect (resultItems/selectedId change) and the
+  // radius-circle effect (lat/lng/radiusValue change), since those two used
+  // to each call their own fitBounds independently and race each other:
+  // moving the radius slider re-fetches a new (filtered) resultItems array a
+  // moment later, and whichever fitBounds happened to run last won — often
+  // leaving the radius circle only partially visible again right after it
+  // had just been fitted. Folding both into one shared bounds computation
+  // means the circle is always included no matter which one fires last.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function fitOverviewView(L: any, map: any) {
+    const points: [number, number][] = (resultItems ?? []).map((i) => [i.latitude, i.longitude]);
+    if (lat != null && lng != null) points.push([lat, lng]);
+    if (points.length === 0 && !circleRef.current) return;
+    const bounds = points.length > 0 ? L.latLngBounds(points) : circleRef.current.getBounds();
+    if (circleRef.current) bounds.extend(circleRef.current.getBounds());
+    overviewBoundsRef.current = bounds;
+    // Don't yank the view back to the overview if a specific item is
+    // currently focused (see renderSelectedMarker) — that effect already
+    // owns the view in that case, using the overview bounds just updated
+    // above as its own fallback once the selection is cleared again.
+    if (!selectedId) {
+      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 13 });
+    }
+  }
 
   // Rebuilds the clustered result-marker layer from the current
   // `resultItems` prop. This used to run only once at mount, on the
@@ -124,46 +166,33 @@ export function LocationRadiusPicker({
       map.removeLayer(resultsLayerRef.current);
       resultsLayerRef.current = null;
     }
-    if (!resultItems || resultItems.length === 0) {
-      overviewBoundsRef.current = null;
-      return;
-    }
-    const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
-    resultItems.forEach((item) => {
-      const resultMarker = L.circleMarker([item.latitude, item.longitude], {
-        radius: 9,
-        color: "#b14f24",
-        fillColor: "#b14f24",
-        fillOpacity: 0.85,
+    if (resultItems && resultItems.length > 0) {
+      const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 50 });
+      resultItems.forEach((item) => {
+        const resultMarker = L.circleMarker([item.latitude, item.longitude], {
+          radius: 9,
+          color: "#b14f24",
+          fillColor: "#b14f24",
+          fillOpacity: 0.85,
+        });
+        const labelHtml = item.sublabel
+          ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
+          : `<strong>${escapeHtml(item.label)}</strong>`;
+        resultMarker.bindTooltip(labelHtml, {
+          permanent: true,
+          direction: "top",
+          offset: [0, -8],
+          className: "ligem-event-label",
+        });
+        resultMarker.bindPopup(
+          `<a href="${item.href}" style="font-weight:600;color:#b14f24;">${escapeHtml(item.label)}</a>`,
+        );
+        clusterGroup.addLayer(resultMarker);
       });
-      const labelHtml = item.sublabel
-        ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
-        : `<strong>${escapeHtml(item.label)}</strong>`;
-      resultMarker.bindTooltip(labelHtml, {
-        permanent: true,
-        direction: "top",
-        offset: [0, -8],
-        className: "ligem-event-label",
-      });
-      resultMarker.bindPopup(
-        `<a href="${item.href}" style="font-weight:600;color:#b14f24;">${escapeHtml(item.label)}</a>`,
-      );
-      clusterGroup.addLayer(resultMarker);
-    });
-    map.addLayer(clusterGroup);
-    resultsLayerRef.current = clusterGroup;
-
-    const points: [number, number][] = resultItems.map((i) => [i.latitude, i.longitude]);
-    if (lat != null && lng != null) points.push([lat, lng]);
-    const bounds = L.latLngBounds(points);
-    overviewBoundsRef.current = bounds;
-    // Don't yank the view back to the overview if a specific item is
-    // currently focused (see renderSelectedMarker) — that effect already
-    // owns the view in that case, using the overview bounds just updated
-    // above as its own fallback once the selection is cleared again.
-    if (!selectedId) {
-      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 13 });
+      map.addLayer(clusterGroup);
+      resultsLayerRef.current = clusterGroup;
     }
+    fitOverviewView(L, map);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -226,11 +255,17 @@ export function LocationRadiusPicker({
       const marker = L.marker([startLat, startLng], { icon: createPinIcon(L) });
       if (lat != null && lng != null) marker.addTo(map);
 
+      // Only sets the origin while the explicit "Standort auf Karte setzen"
+      // step is armed (see the placementMode button below) — otherwise a
+      // click just pans/interacts with the map like normal, so browsing the
+      // results map can never accidentally move the search origin.
       map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
+        if (!placementModeRef.current) return;
         marker.setLatLng(e.latlng);
         if (!map.hasLayer(marker)) marker.addTo(map);
         setLat(e.latlng.lat);
         setLng(e.latlng.lng);
+        setPlacementMode(false);
       });
 
       mapInstance.current = map;
@@ -238,15 +273,13 @@ export function LocationRadiusPicker({
       leafletRef.current = L;
 
       if (lat != null && lng != null && radiusValue != null) {
-        const circle = L.circle([lat, lng], {
+        circleRef.current = L.circle([lat, lng], {
           radius: radiusValue * 1000,
           color: "#b14f24",
           fillColor: "#b14f24",
           fillOpacity: 0.1,
           weight: 1.5,
         }).addTo(map);
-        circleRef.current = circle;
-        map.fitBounds(circle.getBounds(), { padding: [24, 24] });
       }
 
       renderResultsLayer(L, map);
@@ -304,8 +337,8 @@ export function LocationRadiusPicker({
             weight: 1.5,
           }).addTo(map);
         }
-        map.fitBounds(circleRef.current.getBounds(), { padding: [24, 24] });
       }
+      fitOverviewView(L, map);
     }
 
     if (skipFirstChange.current) {
@@ -316,13 +349,42 @@ export function LocationRadiusPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, radiusValue]);
 
-  // Leaflet doesn't notice its container resizing while hidden (display:
-  // none), so it needs a nudge once it becomes visible again.
   useEffect(() => {
-    if (mapVisible && mapInstance.current) {
-      requestAnimationFrame(() => mapInstance.current?.invalidateSize());
+    placementModeRef.current = placementMode;
+  }, [placementMode]);
+
+  // Closing the expanded map via Escape as well as the explicit ✕ button and
+  // the backdrop click below — standard expectation for anything that opens
+  // as a full-viewport overlay.
+  useEffect(() => {
+    if (!expanded) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setExpanded(false);
     }
-  }, [mapVisible]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expanded]);
+
+  // Leaflet doesn't notice its container resizing while hidden (display:
+  // none) or while toggling between the small preview and the expanded
+  // overlay size, so both need a nudge — and since the container's pixel
+  // size just changed, the current view is re-fitted afterwards too
+  // (whichever view was active: the selected-item focus, or the overview).
+  useEffect(() => {
+    const map = mapInstance.current;
+    const L = leafletRef.current;
+    if (mapVisible && map && L) {
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        if (selectedId) {
+          renderSelectedMarker(L, map);
+        } else {
+          fitOverviewView(L, map);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapVisible, expanded]);
 
   function moveTo(newLat: number, newLng: number, zoom = 12) {
     setLat(newLat);
@@ -377,29 +439,70 @@ export function LocationRadiusPicker({
       <legend className="font-medium">Umkreissuche</legend>
 
       <div className="relative">
-        <div
-          ref={mapRef}
-          className={
-            mapVisible
-              ? `w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
-              : "hidden"
-          }
-        />
-        {mapVisible ? (
-          <button
-            type="button"
-            onClick={() => setMapVisible(false)}
-            aria-label="Karte ausblenden"
-            className="absolute right-2 top-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
-          >
-            ✕
-          </button>
+        {expanded ? (
+          <div
+            className="fixed inset-0 z-[1998] bg-black/40"
+            onClick={() => setExpanded(false)}
+          />
         ) : null}
+        <div
+          className={
+            !mapVisible
+              ? "hidden"
+              : expanded
+                ? "fixed inset-x-0 top-1/2 z-[1999] h-72 -translate-y-1/2 shadow-2xl sm:h-[350px]"
+                : "relative w-full"
+          }
+        >
+          <div
+            ref={mapRef}
+            style={placementMode ? { cursor: "crosshair" } : undefined}
+            className={
+              expanded
+                ? "h-full w-full overflow-hidden"
+                : `w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
+            }
+          />
+          {expanded ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-label="Karte verkleinern"
+              className="absolute right-2 top-2 z-[2000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
+            >
+              ✕
+            </button>
+          ) : mapVisible ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                aria-label="Karte vergrößern"
+                className="absolute left-2 top-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
+              >
+                ⤢
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMapVisible(false);
+                  setExpanded(false);
+                }}
+                aria-label="Karte ausblenden"
+                className="absolute right-2 top-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
+              >
+                ✕
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
       {mapVisible ? (
-        <p className="-mt-1 text-sm text-text-muted">
-          Auf die Karte klicken, um den Ausgangspunkt der Suche zu setzen.
-        </p>
+        placementMode ? (
+          <p className="-mt-1 text-sm font-medium text-primary">
+            Auf die Karte klicken, um den Ausgangspunkt zu setzen.
+          </p>
+        ) : null
       ) : (
         <button
           type="button"
@@ -433,6 +536,17 @@ export function LocationRadiusPicker({
           className="min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg disabled:opacity-60"
         >
           📍 Mein Standort
+        </button>
+        <button
+          type="button"
+          onClick={() => setPlacementMode((v) => !v)}
+          className={
+            placementMode
+              ? "min-h-11 rounded-full bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+              : "min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+          }
+        >
+          {placementMode ? "❌ Abbrechen" : "📍 Standort auf Karte setzen"}
         </button>
       </div>
       {message ? <p className="text-sm text-error">{message}</p> : null}
