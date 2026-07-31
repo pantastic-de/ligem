@@ -194,6 +194,7 @@ export default async function ProjektePage({
       id: l.id,
       label: l.projectName,
       sublabel: formatShortLocation(l) ?? undefined,
+      type: l.attributeOptions[0]?.option.name,
       latitude: l.latitude,
       longitude: l.longitude,
       href: buildProjekteHref(params, { projekt: l.id, kontakt: undefined }),

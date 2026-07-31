@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
 import { useEffect, useRef, useState } from "react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
@@ -184,9 +185,14 @@ export function LocationRadiusPicker({
           offset: [0, -8],
           className: "ligem-event-label",
         });
-        resultMarker.bindPopup(
-          `<a href="${item.href}" style="font-weight:600;color:#b14f24;">${escapeHtml(item.label)}</a>`,
-        );
+        // The whole popup is one clickable link (not just the label text)
+        // to the item's detail page, with its Projekttyp/Veranstaltungsart
+        // shown as a small badge underneath.
+        const popupHtml = `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
+          <strong style="color:#b14f24;">${escapeHtml(item.label)}</strong>
+          ${item.type ? `<br><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;background:#eee2d3;font-size:0.8em;">${escapeHtml(item.type)}</span>` : ""}
+        </a>`;
+        resultMarker.bindPopup(popupHtml);
         clusterGroup.addLayer(resultMarker);
       });
       map.addLayer(clusterGroup);
@@ -243,7 +249,19 @@ export function LocationRadiusPicker({
       if (cancelled || !mapRef.current || mapInstance.current) return;
       const startLat = lat ?? 51.1657;
       const startLng = lng ?? 10.4515;
-      const map = L.map(mapRef.current, { scrollWheelZoom: false }).setView(
+      const map = L.map(mapRef.current, {
+        scrollWheelZoom: false,
+        // Requires two fingers to pan/zoom via touch (a single finger falls
+        // through to the page's normal scroll instead, since a one-finger
+        // drag is very easy to trigger by accident while scrolling past an
+        // embedded map on a phone) and requires Ctrl/Cmd+scroll to zoom on
+        // desktop — via leaflet-gesture-handling (loaded/registered as a
+        // handler in getLeafletWithCluster), the established solution for
+        // this exact "Google Maps-style" embedded-map behavior, shown with
+        // a small "use two fingers"/"use ctrl+scroll" hint on the first
+        // blocked attempt.
+        gestureHandling: true,
+      }).setView(
         [startLat, startLng],
         lat != null ? 11 : 6,
       );
@@ -450,18 +468,24 @@ export function LocationRadiusPicker({
             !mapVisible
               ? "hidden"
               : expanded
-                ? "fixed inset-x-0 top-1/2 z-[1999] h-72 -translate-y-1/2 shadow-2xl sm:h-[350px]"
-                : "relative w-full"
+                ? "fixed inset-0 z-[1999] overflow-hidden bg-surface sm:inset-8 sm:m-auto sm:max-h-[70vh] sm:max-w-4xl sm:rounded-2xl sm:border sm:border-text/20 sm:shadow-2xl"
+                : `relative w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
           }
         >
+          {/*
+            className here must stay a constant string across every render —
+            L.map() adds its own classes (leaflet-container, leaflet-touch,
+            ...) directly to this element, and React overwrites the whole
+            `class` attribute whenever the className *prop value* changes
+            between renders (it diffs against what it last wrote, not
+            against the DOM's current class list), which would wipe out
+            Leaflet's own classes the moment `expanded` toggled. The actual
+            size/shape now lives entirely on the wrapper div above instead.
+          */}
           <div
             ref={mapRef}
             style={placementMode ? { cursor: "crosshair" } : undefined}
-            className={
-              expanded
-                ? "h-full w-full overflow-hidden"
-                : `w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
-            }
+            className="h-full w-full"
           />
           {expanded ? (
             <button
@@ -478,7 +502,13 @@ export function LocationRadiusPicker({
                 type="button"
                 onClick={() => setExpanded(true)}
                 aria-label="Karte vergrößern"
-                className="absolute left-2 top-2 z-[1000] flex h-9 w-9 items-center justify-center rounded-full bg-surface text-lg font-medium text-text shadow-md transition-colors hover:bg-bg"
+                title="Karte vergrößern"
+                // Styled to match Leaflet's own zoom-control buttons
+                // (.leaflet-bar a) rather than the app's usual rounded
+                // surface buttons, and placed bottom-right — Leaflet's
+                // default zoom control already occupies top-left, and
+                // "Karte ausblenden" occupies top-right.
+                className="absolute bottom-2 right-2 z-[1000] flex h-[26px] w-[26px] items-center justify-center rounded bg-white text-lg leading-none text-[#333] shadow-[0_1px_5px_rgba(0,0,0,0.65)] hover:bg-gray-100"
               >
                 ⤢
               </button>

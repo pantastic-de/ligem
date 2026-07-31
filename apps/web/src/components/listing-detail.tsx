@@ -1,8 +1,37 @@
 import Link from "next/link";
+import {
+  Home,
+  Activity,
+  VenusAndMars,
+  Building2,
+  HeartHandshake,
+  Heart,
+  MapPin,
+  Target,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { Prisma, Event } from "@/generated/prisma/client";
 import { submitContactRequest } from "@/app/projekte/[id]/actions";
 import { formatDistanceKm } from "@/lib/distance";
+
+// One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
+// attribute system"), keyed by slug — purely decorative next to each
+// group's heading, chosen for a loose thematic fit rather than mirroring
+// any specific reference 1:1. Falls back to a plain tag icon for any group
+// not listed here (new groups are just DB rows, added freely from
+// /admin/attribute — see CLAUDE.md).
+const ATTRIBUTE_GROUP_ICONS: Record<string, LucideIcon> = {
+  "projekt-typ": Home,
+  "projekt-status": Activity,
+  geschlechterverteilung: VenusAndMars,
+  organisationsform: Building2,
+  gemeinschaftsbereiche: HeartHandshake,
+  grundwerte: Heart,
+  wohnlage: MapPin,
+  zielgruppe: Target,
+};
 
 export type ListingDetailData = Prisma.ListingGetPayload<{
   include: {
@@ -244,18 +273,24 @@ export function ListingDetail({
 
       {attributesByGroup.size > 0 ? (
         <section className="mt-8 flex flex-col gap-4">
-          {Array.from(attributesByGroup.values()).map((entry) => (
-            <div key={entry.name}>
-              <h2 className="text-sm font-semibold text-text-muted">{entry.name}</h2>
-              <div className="mt-1 flex flex-wrap gap-2">
-                {entry.options.map((name) => (
-                  <span key={name} className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium">
-                    {name}
-                  </span>
-                ))}
+          {Array.from(attributesByGroup.entries()).map(([slug, entry]) => {
+            const Icon = ATTRIBUTE_GROUP_ICONS[slug] ?? Tag;
+            return (
+              <div key={entry.name}>
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-text-muted">
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {entry.name}
+                </h2>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {entry.options.map((name) => (
+                    <span key={name} className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium">
+                      {name}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       ) : null}
 

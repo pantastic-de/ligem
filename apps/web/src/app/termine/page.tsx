@@ -170,6 +170,8 @@ export default async function KalenderPage({
       id: e.id,
       label: e.title,
       sublabel: dateTimeFormat.format(e.startAt),
+      type: e.attributeOptions.find(({ option }) => option.groupId === veranstaltungsart?.id)?.option
+        .name,
       latitude: e.latitude,
       longitude: e.longitude,
       href: buildTermineHref(params, { termin: e.id, angemeldet: undefined }),
