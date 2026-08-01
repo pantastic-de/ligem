@@ -7,7 +7,12 @@ import { isAdmin } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { deleteEvent, updateEvent } from "../../actions";
-import { deleteEventMedia, reorderEventMedia, uploadEventMedia } from "../../event-media-actions";
+import {
+  deleteEventMedia,
+  reorderEventMedia,
+  uploadEventMedia,
+  uploadEventPanorama,
+} from "../../event-media-actions";
 
 export const metadata: Metadata = {
   title: "Termin bearbeiten",
@@ -98,6 +103,12 @@ export default async function TerminBearbeitenPage({
           Dateien wählen.
         </p>
       ) : null}
+      {error === "panorama-format" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Dieses Bild hat nicht das für 360°-Panoramen nötige Seitenverhältnis
+          von ca. 2:1. Bitte ein equirektangulares Panoramabild hochladen.
+        </p>
+      ) : null}
 
       <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Fotos</h2>
@@ -135,6 +146,37 @@ export default async function TerminBearbeitenPage({
             className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
           >
             Hochladen
+          </button>
+        </form>
+      </section>
+
+      <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">360°-Bild</h2>
+        <p className="mt-1 text-sm text-text-muted">
+          Ein einzelnes equirektangulares Panoramabild im Format ca. 2:1 —
+          wird in der Galerie mit einem 360°-Symbol hervorgehoben und in der
+          Termin-Ansicht als Ausschnitt mit leichter automatischer Drehung
+          angezeigt.
+        </p>
+
+        <form
+          action={uploadEventPanorama}
+          className="mt-4 flex flex-wrap items-center gap-3"
+        >
+          <input type="hidden" name="listingId" value={listingId} />
+          <input type="hidden" name="eventId" value={event.id} />
+          <input
+            type="file"
+            name="panorama"
+            accept="image/*"
+            required
+            className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
+          >
+            360°-Bild hochladen
           </button>
         </form>
       </section>

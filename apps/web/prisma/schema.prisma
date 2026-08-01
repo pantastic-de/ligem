@@ -337,6 +337,11 @@ model Media {
   thumbnailKey  String? // downscaled at upload time; position 0's thumbnail is used as the listing's/event's list-view thumbnail
   caption       String?
   position      Int       @default(0)
+  // True for a dedicated 360°/equirectangular panorama upload (separate
+  // upload flow from regular photos, validated as ~2:1 aspect ratio at
+  // upload time) — flags the gallery to show a 360° badge and render it
+  // through the interactive panorama viewer instead of a plain <img>.
+  isPanorama    Boolean   @default(false)
   uploadedById  String
   uploadedBy    User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
   createdAt     DateTime  @default(now())

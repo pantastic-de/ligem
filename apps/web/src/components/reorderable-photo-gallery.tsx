@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { RotateCw } from "lucide-react";
 
 type MediaItem = {
   id: string;
   thumbnailKey: string | null;
   storageKey: string;
   caption: string | null;
+  isPanorama?: boolean;
 };
 
 /**
@@ -74,6 +76,12 @@ export function ReorderablePhotoGallery({
             {index === 0 ? (
               <span className="absolute left-1 top-1 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">
                 Vorschau
+              </span>
+            ) : null}
+            {item.isPanorama ? (
+              <span className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+                <RotateCw className="h-3 w-3" aria-hidden="true" />
+                360°
               </span>
             ) : null}
           </div>

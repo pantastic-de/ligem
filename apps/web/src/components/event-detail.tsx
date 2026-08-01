@@ -8,6 +8,7 @@ import { PhotoGallery } from "@/components/photo-gallery";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
+import { PanoramaViewer } from "@/components/panorama-viewer";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -69,6 +70,9 @@ export function EventDetail({
   // right: name, dates, location, organizer, and price/free-of-charge.
   const canonicalUrl = `${SITE_URL}/termine/${event.id}`;
   const hasAddress = Boolean(event.street || event.city || event.postalCode);
+  // First 360°-flagged photo, if any — see listing-detail.tsx for why this
+  // gets a separate ambient auto-rotating preview above the regular gallery.
+  const panoramaPhoto = event.media.find((m) => m.isPanorama);
   const eventJsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -185,6 +189,16 @@ export function EventDetail({
             {event.listing.projectName}
           </Link>
         </p>
+      ) : null}
+
+      {panoramaPhoto ? (
+        <div className="mt-6 overflow-hidden rounded-2xl">
+          <PanoramaViewer
+            url={`/api/media/${panoramaPhoto.storageKey}`}
+            mode="ambient"
+            className="h-64 w-full sm:h-80"
+          />
+        </div>
       ) : null}
 
       <PhotoGallery photos={event.media} />

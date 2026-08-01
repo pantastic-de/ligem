@@ -13,6 +13,27 @@ export function splitBySize(files: File[]): { valid: File[]; oversizedCount: num
   return { valid, oversizedCount: files.length - valid.length };
 }
 
+const PANORAMA_ASPECT_RATIO = 2;
+const PANORAMA_ASPECT_RATIO_TOLERANCE = 0.05; // allow ~5% deviation from a perfect 2:1
+
+/**
+ * Checks whether an uploaded image is close enough to the 2:1 aspect ratio
+ * that equirectangular 360° panoramas require. Returns false (rather than
+ * throwing) for anything unreadable, so the caller can show a plain "wrong
+ * format" error instead of a crash.
+ */
+export async function isPanoramaAspectRatio(file: File): Promise<boolean> {
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { width, height } = await sharp(buffer).metadata();
+    if (!width || !height) return false;
+    const ratio = width / height;
+    return Math.abs(ratio - PANORAMA_ASPECT_RATIO) <= PANORAMA_ASPECT_RATIO_TOLERANCE;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Resizes an uploaded image into a display version (max 1600px wide) and a
  * thumbnail (max 400px wide), uploads both to MinIO under `keyPrefix`, and

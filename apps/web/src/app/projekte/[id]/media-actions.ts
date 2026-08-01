@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
-import { processAndStoreImage, splitBySize } from "@/lib/media";
+import { MAX_IMAGE_SIZE, isPanoramaAspectRatio, processAndStoreImage, splitBySize } from "@/lib/media";
 
 async function requireListingAccess(listingId: string) {
   const session = await auth();
@@ -73,6 +73,54 @@ export async function uploadListingMedia(formData: FormData): Promise<void> {
       ? `/projekte/${listingId}/bearbeiten?fotos=1&uebersprungen=${oversizedCount}`
       : `/projekte/${listingId}/bearbeiten?fotos=1`,
   );
+}
+
+/**
+ * Dedicated upload path for a single 360°/equirectangular panorama photo —
+ * separate from uploadListingMedia above since it takes exactly one file,
+ * validates it's close to the 2:1 aspect ratio a panorama needs (rather
+ * than accepting any photo), and flags the resulting Media row so the
+ * gallery can badge it and render it through the panorama viewer.
+ */
+export async function uploadListingPanorama(formData: FormData): Promise<void> {
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+  const userId = await requireListingAccess(listingId);
+
+  const file = formData.get("panorama");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(`/projekte/${listingId}/bearbeiten?error=nofile`);
+  }
+  if (file.size > MAX_IMAGE_SIZE) {
+    redirect(`/projekte/${listingId}/bearbeiten?error=toobig`);
+  }
+  if (!(await isPanoramaAspectRatio(file))) {
+    redirect(`/projekte/${listingId}/bearbeiten?error=panorama-format`);
+  }
+
+  const stored = await processAndStoreImage(file, `listings/${listingId}`);
+  if (!stored) {
+    redirect(`/projekte/${listingId}/bearbeiten?error=panorama-format`);
+  }
+
+  const lastPosition = await prisma.media.aggregate({
+    where: { listingId },
+    _max: { position: true },
+  });
+
+  await prisma.media.create({
+    data: {
+      listingId,
+      type: "PHOTO",
+      storageKey: stored.storageKey,
+      thumbnailKey: stored.thumbnailKey,
+      position: (lastPosition._max.position ?? -1) + 1,
+      uploadedById: userId,
+      isPanorama: true,
+    },
+  });
+
+  redirect(`/projekte/${listingId}/bearbeiten?fotos=1`);
 }
 
 export async function deleteListingMedia(formData: FormData): Promise<void> {

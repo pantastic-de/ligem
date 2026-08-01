@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RotateCw } from "lucide-react";
+
+import { PanoramaViewer } from "@/components/panorama-viewer";
 
 type GalleryPhoto = {
   id: string;
   storageKey: string;
   caption?: string | null;
+  isPanorama?: boolean;
 };
+
+function PanoramaBadge() {
+  return (
+    <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+      <RotateCw className="h-3 w-3" aria-hidden="true" />
+      360°
+    </span>
+  );
+}
 
 /**
  * Booking.com-style photo grid (one large hero, up to two stacked beside it,
@@ -41,7 +54,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
         <button
           type="button"
           onClick={() => setOpenIndex(0)}
-          className={`h-56 min-h-0 overflow-hidden rounded-xl sm:h-full ${stacked.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
+          className={`relative h-56 min-h-0 overflow-hidden rounded-xl sm:h-full ${stacked.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
           <img
@@ -49,6 +62,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
             alt={hero.caption ?? ""}
             className="h-full w-full object-cover"
           />
+          {hero.isPanorama ? <PanoramaBadge /> : null}
         </button>
         {stacked.length > 0 ? (
           <div className="flex min-h-0 flex-row gap-2 sm:h-full sm:flex-col">
@@ -57,7 +71,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 key={photo.id}
                 type="button"
                 onClick={() => setOpenIndex(i + 1)}
-                className="h-28 min-h-0 flex-1 overflow-hidden rounded-xl sm:h-auto"
+                className="relative h-28 min-h-0 flex-1 overflow-hidden rounded-xl sm:h-auto"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
                 <img
@@ -65,6 +79,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                   alt={photo.caption ?? ""}
                   className="h-full w-full object-cover"
                 />
+                {photo.isPanorama ? <PanoramaBadge /> : null}
               </button>
             ))}
           </div>
@@ -93,6 +108,8 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                   <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-semibold text-white">
                     + {extraCount} Fotos
                   </span>
+                ) : photo.isPanorama ? (
+                  <PanoramaBadge />
                 ) : null}
               </button>
             );
@@ -126,13 +143,32 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
               ‹
             </button>
           ) : null}
-          {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
-          <img
-            src={`/api/media/${photos[openIndex].storageKey}`}
-            alt={photos[openIndex].caption ?? ""}
-            className="max-h-full max-w-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {photos[openIndex].isPanorama ? (
+            // Dragging inside the panorama viewer to look around is itself a
+            // sequence of mouse/touch events on this element — without
+            // stopping propagation here, every one of them bubbles up to the
+            // backdrop's onClick above and immediately closes the lightbox
+            // again, exactly like the plain <img> below already guards against.
+            <div
+              className="h-full w-full max-h-[90vh] max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PanoramaViewer
+                url={`/api/media/${photos[openIndex].storageKey}`}
+                mode="interactive"
+                className="h-full w-full"
+                key={photos[openIndex].id}
+              />
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+            <img
+              src={`/api/media/${photos[openIndex].storageKey}`}
+              alt={photos[openIndex].caption ?? ""}
+              className="max-h-full max-w-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           {photos.length > 1 ? (
             <button
               type="button"

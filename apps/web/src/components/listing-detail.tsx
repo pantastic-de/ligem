@@ -21,6 +21,7 @@ import { PhotoGallery } from "@/components/photo-gallery";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
+import { PanoramaViewer } from "@/components/panorama-viewer";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -138,6 +139,11 @@ export function ListingDetail({
   const locationLine = [formatLocation(listing), distanceKm != null ? formatDistanceKm(distanceKm) : null]
     .filter(Boolean)
     .join(" · ");
+
+  // First 360°-flagged photo, if any — shown as a small ambient auto-
+  // rotating "hero" preview above the regular gallery (which also lists it
+  // normally, badged, alongside every other photo).
+  const panoramaPhoto = listing.media.find((m) => m.isPanorama);
 
   // Structured data only for actually-published listings — a pending/
   // rejected/archived draft has no business being described to search
@@ -258,6 +264,16 @@ export function ListingDetail({
       <h1 className="text-3xl font-bold">{listing.projectName}</h1>
       {listing.motto ? <p className="mt-1 text-lg text-text-muted">{listing.motto}</p> : null}
       {locationLine ? <p className="mt-2 text-text-muted">{locationLine}</p> : null}
+
+      {panoramaPhoto ? (
+        <div className="mt-6 overflow-hidden rounded-2xl">
+          <PanoramaViewer
+            url={`/api/media/${panoramaPhoto.storageKey}`}
+            mode="ambient"
+            className="h-64 w-full sm:h-80"
+          />
+        </div>
+      ) : null}
 
       <PhotoGallery photos={listing.media} />
 

@@ -14,6 +14,12 @@ importers:
       '@auth/prisma-adapter':
         specifier: ^2.11.3
         version: 2.11.3(@prisma/client@7.9.0(prisma@7.9.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))
+      '@photo-sphere-viewer/autorotate-plugin':
+        specifier: ^5.15.0
+        version: 5.15.0(@photo-sphere-viewer/core@5.15.0)
+      '@photo-sphere-viewer/core':
+        specifier: ^5.15.0
+        version: 5.15.0
       '@prisma/adapter-pg':
         specifier: ^7.9.0
         version: 7.9.0
@@ -935,6 +941,14 @@ packages:
 
   '@panva/hkdf@1.2.1':
     resolution: {integrity: sha512-6oclG6Y3PiDFcoyk8srjLfVKyMfVCKJ27JwNPViuXziFpmdz+MZnZN/aKY0JGXgYuO/VghU0jcOAZgWXZ1Dmrw==}
+
+  '@photo-sphere-viewer/autorotate-plugin@5.15.0':
+    resolution: {integrity: sha512-oI/mA0P+3pJAVfYUNmzhzew6j+ALJ+w23JGHNIzmJzdv9yrtXSA3vLrX16UsibPnvVOvxbUP7TJAAkqzwp4Feg==}
+    peerDependencies:
+      '@photo-sphere-viewer/core': 5.15.0
+
+  '@photo-sphere-viewer/core@5.15.0':
+    resolution: {integrity: sha512-Mf72l3R8iBf+Im5duv7IVkX3uiKU1BT6bzzXmdE43KahQgNftt9pYKqTzN1YjaYLAzWDBCFZj/bEK1dIZXk9Gg==}
 
   '@prisma/adapter-pg@7.9.0':
     resolution: {integrity: sha512-kPYuFvNTlqnaFf2UpXBBG3ycTT3PL76uSZtLFBEwDytjMMUW8ZHrsb9cSNIarzdPW5EXWmBOeOq9/MVjMtbWkA==}
@@ -3366,6 +3380,9 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
+  three@0.185.1:
+    resolution: {integrity: sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==}
+
   through2@4.0.2:
     resolution: {integrity: sha512-iOqSav00cVxEEICeD7TjLB1sueEL+81Wpzp2bY17uZjZN0pWZPuo4suZ/61VujxmqSGFfgOcNuTZ85QJwNZQpw==}
 
@@ -4206,6 +4223,14 @@ snapshots:
   '@nolyfill/is-core-module@1.0.39': {}
 
   '@panva/hkdf@1.2.1': {}
+
+  '@photo-sphere-viewer/autorotate-plugin@5.15.0(@photo-sphere-viewer/core@5.15.0)':
+    dependencies:
+      '@photo-sphere-viewer/core': 5.15.0
+
+  '@photo-sphere-viewer/core@5.15.0':
+    dependencies:
+      three: 0.185.1
 
   '@prisma/adapter-pg@7.9.0':
     dependencies:
@@ -6965,6 +6990,8 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  three@0.185.1: {}
 
   through2@4.0.2:
     dependencies:
