@@ -184,20 +184,28 @@ export function LocationRadiusPicker({
           fillColor: "#b14f24",
           fillOpacity: 0.85,
         });
-        const labelHtml = item.sublabel
-          ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
-          : `<strong>${escapeHtml(item.label)}</strong>`;
-        resultMarker.bindTooltip(labelHtml, {
-          permanent: true,
-          direction: "top",
-          offset: [0, -8],
-          className: "ligem-event-label",
-          // Tooltips are non-interactive (pointer-events: none) by default,
-          // so a click on the label would otherwise fall through to
-          // whatever's underneath instead of opening the marker's popup.
-          interactive: true,
-        });
-        resultMarker.getTooltip()?.on("click", () => resultMarker.openPopup());
+        // The selected item already gets its own dedicated marker + label
+        // directly on the map (see renderSelectedMarker) so it's never
+        // hidden inside a cluster bubble — binding a second permanent
+        // tooltip here too would show two overlapping labels for the same
+        // spot, so this one is skipped for whichever item is selected.
+        if (item.id !== selectedId) {
+          const labelHtml = item.sublabel
+            ? `<strong>${escapeHtml(item.label)}</strong><br>${escapeHtml(item.sublabel)}`
+            : `<strong>${escapeHtml(item.label)}</strong>`;
+          resultMarker.bindTooltip(labelHtml, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -8],
+            className: "ligem-event-label",
+            // Tooltips are non-interactive (pointer-events: none) by
+            // default, so a click on the label would otherwise fall
+            // through to whatever's underneath instead of opening the
+            // marker's popup.
+            interactive: true,
+          });
+          resultMarker.getTooltip()?.on("click", () => resultMarker.openPopup());
+        }
         // Uses the caller-supplied rich "business card" HTML when given
         // (see /projekte/page.tsx's buildListingPopupHtml) — otherwise the
         // whole popup is one plain clickable link to the item's detail

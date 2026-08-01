@@ -1,7 +1,9 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
 import { useEffect, useRef, useState } from "react";
+import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -54,14 +56,19 @@ export function AddressFields({
 
   useEffect(() => {
     let cancelled = false;
-    import("leaflet").then((L) => {
+    getLeafletWithCluster().then((L) => {
       if (cancelled || !mapRef.current || mapInstance.current) return;
       const startLat = lat ?? 51.1657;
       const startLng = lng ?? 10.4515;
-      const map = L.map(mapRef.current).setView(
-        [startLat, startLng],
-        lat != null ? 13 : 5,
-      );
+      // Same reasoning as location-radius-picker.tsx's Umkreissuche map:
+      // scrolling the page over an embedded map shouldn't hijack the scroll
+      // into a zoom, and a single-finger touch drag should still scroll the
+      // page rather than pan the map — gestureHandling requires two fingers
+      // to pan/zoom on touch and Ctrl/Cmd+scroll to zoom on desktop instead.
+      const map = L.map(mapRef.current, {
+        scrollWheelZoom: false,
+        gestureHandling: true,
+      }).setView([startLat, startLng], lat != null ? 13 : 5);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
         maxZoom: 18,
