@@ -35,7 +35,11 @@ export default async function NeuesProjektPage() {
       </p>
 
       <form action={createListing} className="mt-8 flex flex-col gap-10">
-        <ListingFormFields categories={categories} attributeGroups={attributeGroups} />
+        <ListingFormFields
+          categories={categories}
+          attributeGroups={attributeGroups}
+          aiImportEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
+        />
 
         <button
           type="submit"

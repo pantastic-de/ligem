@@ -23,10 +23,16 @@ export default async function ProjektBearbeitenPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; fotos?: string; uebersprungen?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    fotos?: string;
+    uebersprungen?: string;
+    importiert?: string;
+    termine?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { error, fotos, uebersprungen } = await searchParams;
+  const { error, fotos, uebersprungen, importiert, termine } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
@@ -85,6 +91,31 @@ export default async function ProjektBearbeitenPage({
           Dateien wählen.
         </p>
       ) : null}
+      {error === "homepage-ungueltig" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Diese Homepage-Adresse konnte nicht erkannt werden.
+        </p>
+      ) : null}
+      {error === "warte" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Bitte warte kurz, bevor du den KI-Import erneut startest.
+        </p>
+      ) : null}
+      {error === "import-fehlgeschlagen" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Die Homepage konnte nicht durchsucht werden. Bitte prüfe die
+          Adresse oder versuche es später erneut.
+        </p>
+      ) : null}
+      {importiert ? (
+        <p className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          KI-Import abgeschlossen. Bitte prüfe die übernommenen Felder und
+          Fotos unten.
+          {termine
+            ? ` Mögliche Termine auf der Homepage gefunden: ${termine} — bitte bei Bedarf manuell unter „Termine verwalten“ eintragen.`
+            : ""}
+        </p>
+      ) : null}
 
       <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Fotos</h2>
@@ -130,9 +161,12 @@ export default async function ProjektBearbeitenPage({
         <ListingFormFields
           categories={categories}
           attributeGroups={attributeGroups}
+          listingId={listing.id}
+          aiImportEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
           defaults={{
             projectName: listing.projectName,
             motto: listing.motto ?? undefined,
+            homepageUrl: listing.homepageUrl ?? undefined,
             country: listing.country ?? undefined,
             state: listing.state ?? undefined,
             postalCode: listing.postalCode ?? undefined,

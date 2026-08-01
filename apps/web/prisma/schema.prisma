@@ -170,6 +170,17 @@ model Listing {
   createdBy   User   @relation("ListingCreatedBy", fields: [createdById], references: [id])
   motto       String? // kurzer Claim/Untertitel
 
+  // Eigene Homepage des Projekts (URL). "http(s)://" wird beim Speichern
+  // automatisch ergänzt, falls es fehlt (siehe src/lib/normalize-url.ts).
+  // Grundlage für den KI-Import-Button im Formular (siehe
+  // src/lib/homepage-import.ts): durchsucht diese Seite und füllt "So leben
+  // wir", Kontaktdaten, Adresse und die Foto-Galerie automatisch aus.
+  homepageUrl String?
+  // Zeitpunkt des letzten KI-Imports — dient nur als einfache
+  // Missbrauchsbremse (Cooldown), damit der Button nicht im Sekundentakt
+  // wiederholte, kostenpflichtige LLM-Aufrufe auslösen kann.
+  lastAiImportAt DateTime?
+
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
 

@@ -5,6 +5,7 @@ import type {
 } from "@/generated/prisma/client";
 import { AddressFields } from "@/components/address-fields";
 import { RichTextField } from "@/components/rich-text-field";
+import { HomepageImportField } from "@/components/homepage-import-field";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -12,6 +13,7 @@ const inputClass =
 export type ListingFormDefaults = {
   projectName?: string;
   motto?: string;
+  homepageUrl?: string;
   country?: string;
   state?: string;
   postalCode?: string;
@@ -46,10 +48,16 @@ export function ListingFormFields({
   categories,
   attributeGroups,
   defaults = {},
+  listingId,
+  aiImportEnabled = false,
 }: {
   categories: ListingCategory[];
   attributeGroups: AttributeGroupWithOptions[];
   defaults?: ListingFormDefaults;
+  // Set only on the edit page — lets the KI-Import button import directly
+  // into this listing instead of creating a new draft first.
+  listingId?: string;
+  aiImportEnabled?: boolean;
 }) {
   const groupBySlug = (slug: string) =>
     attributeGroups.find((group) => group.slug === slug);
@@ -93,6 +101,12 @@ export function ListingFormFields({
             className={inputClass}
           />
         </div>
+
+        <HomepageImportField
+          listingId={listingId}
+          defaultValue={defaults.homepageUrl}
+          aiImportEnabled={aiImportEnabled}
+        />
 
         {projektTyp ? (
           <div className="flex flex-col gap-2">

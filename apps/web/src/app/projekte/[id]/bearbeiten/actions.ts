@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { setListingLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { normalizeHomepageUrl } from "@/lib/normalize-url";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
@@ -75,6 +76,7 @@ export async function updateListing(formData: FormData): Promise<void> {
         status: "PENDING_REVIEW",
 
         motto: optionalString(formData.get("motto")),
+        homepageUrl: normalizeHomepageUrl(formData.get("homepageUrl")?.toString()),
 
         country: optionalString(formData.get("country")),
         state: optionalString(formData.get("state")),
