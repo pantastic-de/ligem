@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
+
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { addCategory, deleteCategory } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Kategorien verwalten - Admin",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminKategorienPage() {
   await requireAdminPage();

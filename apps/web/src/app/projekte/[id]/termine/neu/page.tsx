@@ -1,10 +1,16 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
 import { createEvent } from "../actions";
+
+export const metadata: Metadata = {
+  title: "Termin eintragen",
+  robots: { index: false, follow: false },
+};
 
 export default async function NeuerTerminPage({
   params,

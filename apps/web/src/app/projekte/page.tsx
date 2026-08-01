@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,42 @@ import { ProjekteSortSelect } from "@/components/projekte-sort-select";
 import { ListingDetail, type ListingDetailData } from "@/components/listing-detail";
 import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
 import { escapeHtml } from "@/lib/map-result-item";
+
+// Bare list page (any filters, no ?projekt= selection) stays indexable with
+// a self-canonical stripped of query params entirely — indexing every
+// filter-parameter permutation would be duplicate-content noise. When a
+// ?projekt=<id> selection is active, the inline pane duplicates a listing's
+// standalone /projekte/<id> page, so that state is noindexed with its
+// canonical pointing at the standalone page instead.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const selectedId = typeof params.projekt === "string" ? params.projekt : undefined;
+
+  if (selectedId) {
+    const listing = await prisma.listing.findUnique({
+      where: { id: selectedId },
+      select: { projectName: true },
+    });
+    if (listing) {
+      return {
+        title: listing.projectName,
+        alternates: { canonical: `/projekte/${selectedId}` },
+        robots: { index: false, follow: true },
+      };
+    }
+  }
+
+  return {
+    title: "Wohnprojekte finden",
+    description:
+      "Durchsuche veröffentlichte Wohngemeinschaften und Wohnprojekte nach Typ, Kategorie, Lage und Zeitraum — kostenlos, ohne Login und ohne automatisiertes Matching.",
+    alternates: { canonical: "/projekte" },
+  };
+}
 
 type SortOption = "neueste" | "entfernung" | "name" | "kosten";
 

@@ -1,9 +1,15 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ListingFormFields } from "@/components/listing-form-fields";
 import { createListing } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Projekt eintragen",
+  robots: { index: false, follow: false },
+};
 
 export default async function NeuesProjektPage() {
   const session = await auth();

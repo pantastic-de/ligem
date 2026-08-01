@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe: Registrierung & Anmeldung",
+  description: "So erstellst du ein Konto bei LiGem und meldest dich an.",
+  alternates: { canonical: "/hilfe/registrierung-anmeldung" },
+};
 
 export default function HilfeRegistrierungPage() {
   return (

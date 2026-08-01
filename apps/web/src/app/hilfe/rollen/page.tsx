@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe: Rollen",
+  description: "Welche Rollen es bei LiGem gibt (Suchende, Anbieter, Moderator:in, Admin) und was sie dürfen.",
+  alternates: { canonical: "/hilfe/rollen" },
+};
 
 export default function HilfeRollenPage() {
   return (

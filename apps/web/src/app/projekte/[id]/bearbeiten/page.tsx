@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,11 @@ import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { updateListing } from "./actions";
 import { deleteListingMedia, reorderListingMedia, uploadListingMedia } from "../media-actions";
+
+export const metadata: Metadata = {
+  title: "Projekt bearbeiten",
+  robots: { index: false, follow: false },
+};
 
 function toDateInputValue(date: Date | null): string | undefined {
   return date ? date.toISOString().slice(0, 10) : undefined;

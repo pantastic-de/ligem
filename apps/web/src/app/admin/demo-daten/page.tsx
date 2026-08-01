@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
@@ -10,6 +11,11 @@ import {
   getGenerateProgress,
   deleteAllDemoDataAction,
 } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Demo-Daten - Admin",
+  robots: { index: false, follow: false },
+};
 
 export const dynamic = "force-dynamic";
 

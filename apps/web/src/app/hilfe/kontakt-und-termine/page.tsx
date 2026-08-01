@@ -1,4 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe: Kontakt aufnehmen & Termine",
+  description:
+    "Wie die Kontaktaufnahme zu Wohnprojekten funktioniert und wie du dich für Termine anmeldest.",
+  alternates: { canonical: "/hilfe/kontakt-und-termine" },
+};
 
 export default function HilfeKontaktUndTerminePage() {
   return (

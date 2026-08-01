@@ -18,6 +18,9 @@ import type { Prisma, Event } from "@/generated/prisma/client";
 import { submitContactRequest } from "@/app/projekte/[id]/actions";
 import { formatDistanceKm } from "@/lib/distance";
 import { PhotoGallery } from "@/components/photo-gallery";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL } from "@/lib/site";
+import { stripHtml } from "@/lib/sanitize-html";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -136,8 +139,51 @@ export function ListingDetail({
     .filter(Boolean)
     .join(" · ");
 
+  // Structured data only for actually-published listings — a pending/
+  // rejected/archived draft has no business being described to search
+  // engines or AI agents as a real, existing community.
+  const canonicalUrl = `${SITE_URL}/projekte/${listing.id}`;
+  const hasAddress = Boolean(listing.street || listing.city || listing.postalCode);
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: listing.projectName,
+    url: canonicalUrl,
+    description: listing.motto ?? (listing.howWeLive ? stripHtml(listing.howWeLive, 300) : undefined),
+    image: listing.media[0] ? `${SITE_URL}/api/media/${listing.media[0].storageKey}` : undefined,
+    address: hasAddress
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: [listing.street, listing.houseNumber].filter(Boolean).join(" ") || undefined,
+          addressLocality: listing.city ?? undefined,
+          addressRegion: listing.state ?? undefined,
+          postalCode: listing.postalCode ?? undefined,
+          addressCountry: listing.country ?? undefined,
+        }
+      : undefined,
+    geo:
+      listing.latitude != null && listing.longitude != null
+        ? { "@type": "GeoCoordinates", latitude: listing.latitude, longitude: listing.longitude }
+        : undefined,
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Startseite", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Wohnprojekte", item: `${SITE_URL}/projekte` },
+      { "@type": "ListItem", position: 3, name: listing.projectName, item: canonicalUrl },
+    ],
+  };
+
   return (
     <div>
+      {listing.status === "PUBLISHED" ? (
+        <>
+          <JsonLd data={organizationJsonLd} />
+          <JsonLd data={breadcrumbJsonLd} />
+        </>
+      ) : null}
       {backHref ? (
         <Link href={backHref} className="mb-4 inline-flex items-center text-sm font-medium text-primary hover:underline">
           ← Zurück zur Liste

@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
+
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { DEMO_EMAIL_DOMAIN } from "@/lib/demo-data/shared";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { bulkAddRole, bulkDeleteUsers, bulkRemoveRole, updateUserRoles } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Nutzer verwalten - Admin",
+  robots: { index: false, follow: false },
+};
 
 const BULK_FORM_ID = "bulk-nutzer-form";
 

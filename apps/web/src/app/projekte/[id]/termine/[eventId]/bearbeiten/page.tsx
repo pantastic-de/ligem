@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,11 @@ import { EventFormFields } from "@/components/event-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { deleteEvent, updateEvent } from "../../actions";
 import { deleteEventMedia, reorderEventMedia, uploadEventMedia } from "../../event-media-actions";
+
+export const metadata: Metadata = {
+  title: "Termin bearbeiten",
+  robots: { index: false, follow: false },
+};
 
 function toDateTimeLocal(date: Date | null): string | undefined {
   if (!date) return undefined;

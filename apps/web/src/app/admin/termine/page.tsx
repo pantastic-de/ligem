@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
@@ -13,6 +14,11 @@ import {
   bulkRejectEvents,
   rejectEvent,
 } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Termine moderieren - Admin",
+  robots: { index: false, follow: false },
+};
 
 const BULK_FORM_ID = "bulk-termine-form";
 

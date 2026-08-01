@@ -1,4 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe",
+  description:
+    "Anleitungen zu Registrierung & Anmeldung, Projekt eintragen, Projekte finden, Rollen und Kontakt/Termine bei LiGem.",
+  alternates: { canonical: "/hilfe" },
+};
 
 const themen = [
   {

@@ -1,7 +1,51 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { EventDetail } from "@/components/event-detail";
+import { stripHtml } from "@/lib/sanitize-html";
+
+// Shared between generateMetadata and the page body via React's cache() so
+// the identical query only hits the database once per request instead of
+// twice.
+const getEvent = cache((eventId: string) =>
+  prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      listing: { select: { id: true, projectName: true } },
+      attributeOptions: { include: { option: true } },
+      media: { orderBy: { position: "asc" } },
+    },
+  }),
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}): Promise<Metadata> {
+  const { eventId } = await params;
+  const event = await getEvent(eventId);
+  if (!event) return {};
+
+  const description = event.description ? stripHtml(event.description, 160) : undefined;
+  const thumbnail = event.media[0];
+  const image = thumbnail ? `/api/media/${thumbnail.storageKey}` : undefined;
+
+  return {
+    title: event.title,
+    description,
+    alternates: { canonical: `/termine/${eventId}` },
+    robots: { index: event.status === "PUBLISHED", follow: true },
+    openGraph: {
+      type: "website",
+      title: event.title,
+      description,
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
+}
 
 export default async function TerminDetailPage({
   params,
@@ -13,14 +57,7 @@ export default async function TerminDetailPage({
   const { eventId } = await params;
   const { angemeldet, error } = await searchParams;
 
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      listing: { select: { id: true, projectName: true } },
-      attributeOptions: { include: { option: true } },
-      media: { orderBy: { position: "asc" } },
-    },
-  });
+  const event = await getEvent(eventId);
 
   if (!event || event.status !== "PUBLISHED") {
     notFound();

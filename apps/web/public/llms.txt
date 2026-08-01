@@ -1,0 +1,24 @@
+# LiGem – Leben in Gemeinschaft
+
+> Kostenlose, gemeinwohlorientierte Plattform für alle Formen gemeinschaftlichen Wohnens (WGs, Ökodörfer, Co-Housing, Mehrgenerationenhäuser u.v.m.) im deutschsprachigen Raum. Es gibt kein automatisiertes Matching — Nutzer:innen suchen und filtern selbst. Inhalte sind ohne Login lesbar (Gastzugriff); Kontaktdaten einer Wohngemeinschaft werden erst sichtbar, nachdem deren Inhaber:innen eine Kontaktanfrage angenommen haben.
+
+LiGem richtet sich an vier Zielgruppen gleichzeitig: Wohnprojekte, die sich präsentieren oder neue Mitglieder suchen; gemeinwohlorientierte Organisationen (Vereine, Genossenschaften) rund ums Thema gemeinschaftliches Wohnen; Menschen, die sich einfach informieren wollen, unabhängig von einer konkreten Suchabsicht; und Veranstalter:innen, die Infotage, Besuchstage oder andere Termine in den gemeinsamen Kalender eintragen. LiGem ist bewusst nicht als Matching- oder Vermittlungsplattform konzipiert — echtes Kennenlernen soll vor allem über die Veranstaltungen im Kalender entstehen.
+
+## Kernseiten
+
+- [Wohnprojekte durchsuchen](https://ligem.de/projekte): alle veröffentlichten Wohngemeinschaften und Projekte, filterbar nach Projekttyp, Kategorie, Lage (Umkreissuche mit Karte) und Suchzeitraum.
+- [Veranstaltungskalender](https://ligem.de/termine): Infotage, Besuchstage und andere Veranstaltungen aller Projekte, filterbar nach Art, Zielgruppe, Zeitraum und Lage.
+- [Über uns](https://ligem.de/ueber-uns): Positionierung, Zielgruppen im Detail, Übersicht über erhobene Daten.
+- [Hilfe](https://ligem.de/hilfe): Anleitungen zu Registrierung/Anmeldung, Projekt eintragen, Projekte finden, Rollen im System.
+
+## Für Entwickler:innen und Agenten
+
+- [sitemap.xml](https://ligem.de/sitemap.xml): vollständige, laufend aktualisierte Liste aller veröffentlichten Projekt- und Termin-Seiten.
+- Einzelne Projekt- (`/projekte/<id>`) und Termin-Seiten (`/termine/<id>`) tragen strukturierte Daten (JSON-LD, u.a. schema.org/Event für Termine) für maschinenlesbares Verständnis von Ort, Zeit und Beschreibung.
+- Server-seitig gerendertes HTML — alle öffentlichen Inhalte sind ohne JavaScript-Ausführung lesbar.
+
+## Rechtliches
+
+- [Impressum](https://ligem.de/impressum)
+- [Datenschutz](https://ligem.de/datenschutz)
+- [AGB](https://ligem.de/agb)

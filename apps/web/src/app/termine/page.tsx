@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
@@ -30,6 +31,41 @@ type TermineSearchParams = {
   angemeldet?: string;
   error?: string;
 };
+
+// Bare list page (any filters, no ?termin= selection) stays indexable with
+// a self-canonical stripped of query params entirely — indexing every
+// filter-parameter permutation would be duplicate-content noise. When a
+// ?termin=<id> selection is active, the inline pane duplicates an event's
+// standalone /termine/<id> page, so that state is noindexed with its
+// canonical pointing at the standalone page instead.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<TermineSearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+
+  if (params.termin) {
+    const event = await prisma.event.findUnique({
+      where: { id: params.termin },
+      select: { title: true },
+    });
+    if (event) {
+      return {
+        title: event.title,
+        alternates: { canonical: `/termine/${params.termin}` },
+        robots: { index: false, follow: true },
+      };
+    }
+  }
+
+  return {
+    title: "Veranstaltungskalender",
+    description:
+      "Infotage, Besuchstage und andere Veranstaltungen aller Wohnprojekte — filterbar nach Art, Zielgruppe, Zeitraum und Lage.",
+    alternates: { canonical: "/termine" },
+  };
+}
 
 // Builds a /termine?... query string from the current search params, with
 // `overrides` applied on top (a value of undefined removes that key). Used

@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Meine Projekte",
+  robots: { index: false, follow: false },
+};
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Entwurf",

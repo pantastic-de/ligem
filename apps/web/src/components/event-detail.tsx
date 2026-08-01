@@ -5,6 +5,9 @@ import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
 import { formatDistanceKm } from "@/lib/distance";
 import { PhotoGallery } from "@/components/photo-gallery";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL } from "@/lib/site";
+import { stripHtml } from "@/lib/sanitize-html";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -60,8 +63,68 @@ export function EventDetail({
   prevItem?: { href: string; label: string } | null;
   nextItem?: { href: string; label: string } | null;
 }) {
+  // Structured data only for actually-published events — schema.org/Event
+  // is Google's/AI agents' natural fit here (unlike listings, which don't
+  // map cleanly onto any one schema.org type), so this is worth getting
+  // right: name, dates, location, organizer, and price/free-of-charge.
+  const canonicalUrl = `${SITE_URL}/termine/${event.id}`;
+  const hasAddress = Boolean(event.street || event.city || event.postalCode);
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    url: canonicalUrl,
+    startDate: event.startAt.toISOString(),
+    endDate: event.endAt?.toISOString(),
+    description: event.description ? stripHtml(event.description, 300) : undefined,
+    image: event.media[0] ? `${SITE_URL}/api/media/${event.media[0].storageKey}` : undefined,
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    isAccessibleForFree: event.cost == null,
+    offers:
+      event.cost != null
+        ? { "@type": "Offer", price: event.cost, priceCurrency: "EUR", url: canonicalUrl }
+        : undefined,
+    location: {
+      "@type": "Place",
+      name: event.addressText ?? undefined,
+      address: hasAddress
+        ? {
+            "@type": "PostalAddress",
+            streetAddress: [event.street, event.houseNumber].filter(Boolean).join(" ") || undefined,
+            addressLocality: event.city ?? undefined,
+            addressRegion: event.state ?? undefined,
+            postalCode: event.postalCode ?? undefined,
+            addressCountry: event.country ?? undefined,
+          }
+        : undefined,
+      geo:
+        event.latitude != null && event.longitude != null
+          ? { "@type": "GeoCoordinates", latitude: event.latitude, longitude: event.longitude }
+          : undefined,
+    },
+    organizer: event.listing
+      ? { "@type": "Organization", name: event.listing.projectName, url: `${SITE_URL}/projekte/${event.listing.id}` }
+      : undefined,
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Startseite", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Kalender", item: `${SITE_URL}/termine` },
+      { "@type": "ListItem", position: 3, name: event.title, item: canonicalUrl },
+    ],
+  };
+
   return (
     <div>
+      {event.status === "PUBLISHED" ? (
+        <>
+          <JsonLd data={eventJsonLd} />
+          <JsonLd data={breadcrumbJsonLd} />
+        </>
+      ) : null}
       {backHref ? (
         <Link href={backHref} className="mb-4 inline-flex items-center text-sm font-medium text-primary hover:underline">
           ← Zurück zur Liste

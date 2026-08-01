@@ -1,9 +1,55 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { ListingDetail } from "@/components/listing-detail";
+import { stripHtml } from "@/lib/sanitize-html";
+
+// Shared between generateMetadata and the page body via React's cache() so
+// the identical query only hits the database once per request instead of
+// twice.
+const getListing = cache((id: string) =>
+  prisma.listing.findUnique({
+    where: { id },
+    include: {
+      categories: { include: { category: true } },
+      attributeOptions: { include: { option: { include: { group: true } } } },
+      createdBy: { select: { id: true, name: true } },
+      media: { orderBy: { position: "asc" } },
+    },
+  }),
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const listing = await getListing(id);
+  if (!listing) return {};
+
+  const description =
+    listing.motto ?? (listing.howWeLive ? stripHtml(listing.howWeLive, 160) : undefined);
+  const thumbnail = listing.media[0];
+  const image = thumbnail ? `/api/media/${thumbnail.storageKey}` : undefined;
+
+  return {
+    title: listing.projectName,
+    description,
+    alternates: { canonical: `/projekte/${id}` },
+    robots: { index: listing.status === "PUBLISHED", follow: true },
+    openGraph: {
+      type: "website",
+      title: listing.projectName,
+      description,
+      images: image ? [{ url: image }] : undefined,
+    },
+  };
+}
 
 export default async function ProjektDetailPage({
   params,
@@ -19,15 +65,7 @@ export default async function ProjektDetailPage({
   const { id } = await params;
   const { eingereicht, kontakt, aktualisiert } = await searchParams;
 
-  const listing = await prisma.listing.findUnique({
-    where: { id },
-    include: {
-      categories: { include: { category: true } },
-      attributeOptions: { include: { option: { include: { group: true } } } },
-      createdBy: { select: { id: true, name: true } },
-      media: { orderBy: { position: "asc" } },
-    },
-  });
+  const listing = await getListing(id);
 
   if (!listing) {
     notFound();

@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe: Für Admins",
+  description: "Was Admin-Konten bei LiGem verwalten können.",
+  alternates: { canonical: "/hilfe/admin" },
+};
 
 export default function HilfeAdminPage() {
   return (

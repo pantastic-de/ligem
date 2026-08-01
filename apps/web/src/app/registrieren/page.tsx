@@ -1,5 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { registerUser } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Registrieren",
+  description: "Kostenloses Konto bei LiGem erstellen — als Suchende:r, Anbieter:in oder beides.",
+  alternates: { canonical: "/registrieren" },
+};
 
 const errorMessages: Record<string, string> = {
   email: "Bitte gib eine gültige E-Mail-Adresse ein.",

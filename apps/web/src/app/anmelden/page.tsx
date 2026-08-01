@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { authenticate, signInWithGoogle } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Anmelden",
+  alternates: { canonical: "/anmelden" },
+};
 
 const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,

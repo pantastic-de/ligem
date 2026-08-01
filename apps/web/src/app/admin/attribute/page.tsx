@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import type {
   AttributeGroup,
   AttributeOption,
@@ -5,6 +7,11 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { addGroup, addOption, deleteGroup, deleteOption } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Attribute verwalten - Admin",
+  robots: { index: false, follow: false },
+};
 
 type GroupWithOptions = AttributeGroup & {
   options: (AttributeOption & {

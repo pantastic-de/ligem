@@ -1,4 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hilfe: Projekt eintragen & bearbeiten",
+  description:
+    "So trägst du dein Wohnprojekt bei LiGem ein und bearbeitest es später — inklusive Moderation und Fotos.",
+  alternates: { canonical: "/hilfe/projekt-eintragen" },
+};
 
 export default function HilfeProjektEintragenPage() {
   return (
