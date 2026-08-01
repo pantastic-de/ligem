@@ -228,14 +228,20 @@ export function ListingDetail({
       {listing.howWeLive ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">So leben wir</h2>
-          <p className="mt-2 whitespace-pre-line text-text-muted">{listing.howWeLive}</p>
+          <div
+            className="mt-2 text-text-muted [&>*+*]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+            dangerouslySetInnerHTML={{ __html: listing.howWeLive }}
+          />
         </section>
       ) : null}
 
       {listing.whoWeAreLooking ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">Wen wir suchen</h2>
-          <p className="mt-2 whitespace-pre-line text-text-muted">{listing.whoWeAreLooking}</p>
+          <div
+            className="mt-2 text-text-muted [&>*+*]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+            dangerouslySetInnerHTML={{ __html: listing.whoWeAreLooking }}
+          />
         </section>
       ) : null}
 

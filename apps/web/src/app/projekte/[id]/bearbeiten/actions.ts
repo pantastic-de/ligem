@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { setListingLocation } from "@/lib/geo";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
@@ -87,8 +88,8 @@ export async function updateListing(formData: FormData): Promise<void> {
         contactEmail: optionalString(formData.get("contactEmail")),
         contactPhone: optionalString(formData.get("contactPhone")),
 
-        howWeLive: optionalString(formData.get("howWeLive")),
-        whoWeAreLooking: optionalString(formData.get("whoWeAreLooking")),
+        howWeLive: sanitizeRichText(formData.get("howWeLive")?.toString()),
+        whoWeAreLooking: sanitizeRichText(formData.get("whoWeAreLooking")?.toString()),
 
         isTemporary: formData.get("isTemporary") === "on",
 

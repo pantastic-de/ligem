@@ -4,11 +4,10 @@ import type {
   ListingCategory,
 } from "@/generated/prisma/client";
 import { AddressFields } from "@/components/address-fields";
+import { RichTextField } from "@/components/rich-text-field";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
-const textareaClass =
-  "rounded-xl border border-text/20 bg-surface px-4 py-3 text-text";
 
 export type ListingFormDefaults = {
   projectName?: string;
@@ -234,30 +233,18 @@ export function ListingFormFields({
 
       <fieldset className="flex flex-col gap-6">
         <legend className="text-lg font-semibold">Über euch</legend>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="howWeLive" className="font-medium">
-            So leben wir
-          </label>
-          <textarea
-            id="howWeLive"
-            name="howWeLive"
-            rows={4}
-            defaultValue={defaults.howWeLive}
-            className={textareaClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="whoWeAreLooking" className="font-medium">
-            Wen wir suchen
-          </label>
-          <textarea
-            id="whoWeAreLooking"
-            name="whoWeAreLooking"
-            rows={4}
-            defaultValue={defaults.whoWeAreLooking}
-            className={textareaClass}
-          />
-        </div>
+        <RichTextField
+          id="howWeLive"
+          name="howWeLive"
+          label="So leben wir"
+          defaultValue={defaults.howWeLive}
+        />
+        <RichTextField
+          id="whoWeAreLooking"
+          name="whoWeAreLooking"
+          label="Wen wir suchen"
+          defaultValue={defaults.whoWeAreLooking}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-6">

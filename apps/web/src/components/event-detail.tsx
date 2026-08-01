@@ -137,7 +137,10 @@ export function EventDetail({
       ) : null}
 
       {event.description ? (
-        <p className="mt-6 whitespace-pre-line text-text-muted">{event.description}</p>
+        <div
+          className="mt-6 text-text-muted [&>*+*]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+          dangerouslySetInnerHTML={{ __html: event.description }}
+        />
       ) : null}
 
       <div className="mt-6 flex flex-wrap gap-8">

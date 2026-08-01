@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { setEventLocation } from "@/lib/geo";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 
 async function requireListingOwner(listingId: string) {
   const session = await auth();
@@ -96,7 +97,7 @@ export async function createEvent(formData: FormData): Promise<void> {
       title,
       startAt,
       endAt,
-      description: formData.get("description")?.toString().trim() || null,
+      description: sanitizeRichText(formData.get("description")?.toString()),
       addressText: formData.get("addressText")?.toString().trim() || null,
       country: formData.get("country")?.toString().trim() || null,
       state: formData.get("state")?.toString().trim() || null,
@@ -150,7 +151,7 @@ export async function updateEvent(formData: FormData): Promise<void> {
         title,
         startAt,
         endAt,
-        description: formData.get("description")?.toString().trim() || null,
+        description: sanitizeRichText(formData.get("description")?.toString()),
         addressText: formData.get("addressText")?.toString().trim() || null,
         country: formData.get("country")?.toString().trim() || null,
         state: formData.get("state")?.toString().trim() || null,

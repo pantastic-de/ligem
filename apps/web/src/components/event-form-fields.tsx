@@ -1,11 +1,10 @@
 import type { AttributeGroup, AttributeOption } from "@/generated/prisma/client";
 import { AddressFields } from "@/components/address-fields";
 import { EventDateRangeField } from "@/components/event-date-range-field";
+import { RichTextField } from "@/components/rich-text-field";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
-const textareaClass =
-  "rounded-xl border border-text/20 bg-surface px-4 py-3 text-text";
 
 export type EventFormDefaults = {
   title?: string;
@@ -167,18 +166,12 @@ export function EventFormFields({
         Voranmeldung notwendig
       </label>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="description" className="font-medium">
-          Beschreibung
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={4}
-          defaultValue={defaults.description}
-          className={textareaClass}
-        />
-      </div>
+      <RichTextField
+        id="description"
+        name="description"
+        label="Beschreibung"
+        defaultValue={defaults.description}
+      />
 
       {multiSelectGroups.map((group) => (
         <div key={group.id} className="flex flex-col gap-2">
