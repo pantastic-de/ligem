@@ -164,10 +164,14 @@ const WHO_WE_SEEK_SLOT_2 = [
   null,
 ];
 
+// HTML (matching what RichTextField's reduced editor can produce, see
+// sanitizeRichText()'s tag allowlist) — a two-item bullet list when both
+// slots roll a sentence, otherwise a single paragraph, since this feeds the
+// same `whoWeAreLooking` field a real submission would.
 function buildWhoWeSeekCandidate(): string {
   const second = pick(WHO_WE_SEEK_SLOT_2);
   const first = pick(WHO_WE_SEEK_SLOT_1);
-  return second ? `${first} ${second}` : first;
+  return second ? `<ul><li>${first}</li><li>${second}</li></ul>` : `<p>${first}</p>`;
 }
 
 async function ensureDemoOwners(count: number): Promise<string[]> {

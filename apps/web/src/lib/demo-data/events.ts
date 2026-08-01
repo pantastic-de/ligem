@@ -434,21 +434,26 @@ const DETAIL_SENTENCES = [
   "Fotos sind erlaubt, unser wechselhaftes WLAN aber keine Selbstverständlichkeit.",
 ];
 
+// HTML (matching what RichTextField's reduced editor can produce, see
+// sanitizeRichText()'s tag allowlist), since this feeds the same
+// `description` field a real submission would. "mehrtaegig" events get a
+// real `<ol>` day-by-day program instead of newline-joined plain text.
 function buildDescriptionCandidate(theme: EventTheme, duration: DurationCategory): string {
   const detail = chance(0.35) ? ` ${pick(DETAIL_SENTENCES)}` : "";
   if (duration === "kurz") {
     const base = chance(0.5) ? pick(theme.short) : `${pick(theme.short)} ${pick(theme.flavor)}`;
-    return `${base}${detail}`;
+    return `<p>${base}${detail}</p>`;
   }
   if (duration === "ganztag") {
-    return [pick(theme.opening), pick(theme.flavor), pick(theme.flavor), pick(theme.closing)]
+    const paragraph = [pick(theme.opening), pick(theme.flavor), pick(theme.flavor), pick(theme.closing)]
       .join(" ")
       .concat(detail);
+    return `<p>${paragraph}</p>`;
   }
-  // mehrtaegig: längere, mehrabsatzige Beschreibung mit einem kleinen "Ablauf"
+  // mehrtaegig: opener, ein Tag-für-Tag-Ablauf als Liste, dann ein Abschluss.
   const days = randomInt(2, 4);
-  const program = Array.from({ length: days }, (_, i) => `Tag ${i + 1}: ${pick(theme.flavor)}`).join("\n");
-  return `${pick(theme.opening)}\n\n${program}\n\n${pick(theme.closing)}${detail}`;
+  const program = Array.from({ length: days }, (_, i) => `<li>Tag ${i + 1}: ${pick(theme.flavor)}</li>`).join("");
+  return `<p>${pick(theme.opening)}</p><ol>${program}</ol><p>${pick(theme.closing)}${detail}</p>`;
 }
 
 function pickDurationCategory(): DurationCategory {

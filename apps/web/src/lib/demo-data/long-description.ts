@@ -554,19 +554,21 @@ const CITY_REGION_FLAVOR = [
  * leben wir" text: one random theme's opener, two region-flavor sentences
  * (village or city framing, see pickLocation() in shared.ts), three building
  * and three people sentences (each distinct within the text), and two
- * closers.
+ * closers — as HTML (one `<p>` per section: intro, building, people,
+ * closing), matching what RichTextField's reduced editor can produce (see
+ * sanitizeRichText()'s tag allowlist), since this feeds the same
+ * `howWeLive` field a real submission would.
  */
 export function buildLongDescriptionCandidate(cityName: string, isVillage: boolean): string {
   const theme = pick(THEMES);
   const vars = { city: cityName };
   const regionBank = isVillage ? VILLAGE_REGION_FLAVOR : CITY_REGION_FLAVOR;
-  return [
-    pick(theme.opener),
-    ...pickNDistinct(regionBank, 2),
-    ...pickNDistinct(theme.building, 4),
-    ...pickNDistinct(theme.people, 4),
-    ...pickNDistinct(theme.closer, 2),
-  ]
-    .map((sentence) => fillTemplate(sentence, vars))
-    .join(" ");
+  const fill = (sentence: string) => fillTemplate(sentence, vars);
+
+  const intro = [pick(theme.opener), ...pickNDistinct(regionBank, 2)].map(fill).join(" ");
+  const building = pickNDistinct(theme.building, 4).map(fill).join(" ");
+  const people = pickNDistinct(theme.people, 4).map(fill).join(" ");
+  const closing = pickNDistinct(theme.closer, 2).map(fill).join(" ");
+
+  return [intro, building, people, closing].map((paragraph) => `<p>${paragraph}</p>`).join("");
 }

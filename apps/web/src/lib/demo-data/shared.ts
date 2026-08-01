@@ -158,14 +158,15 @@ export const VILLAGES: City[] = [
 
 /**
  * Picks a location for a new listing from either the big-city pool or the
- * small-village pool (weighted well toward villages — 60% — since the
- * default 45/55 split still read as too city-heavy given the demo dataset
- * accumulates across many generator runs; a stronger rural lean makes the
- * effect actually visible on /projekte's map without needing to wipe and
- * regenerate existing demo data) — see CITIES/VILLAGES above.
+ * small-village pool, weighted heavily toward villages (88%) — even the
+ * earlier 60% split still read as too city-heavy in practice, so only a
+ * small minority of newly generated listings should land in a big city at
+ * all. Note this only affects newly generated listings; the already-
+ * accumulated demo dataset keeps whatever mix it was generated with until
+ * it's cleared and regenerated via /admin/demo-daten.
  */
 export function pickLocation(): { location: City; isVillage: boolean } {
-  const isVillage = chance(0.6);
+  const isVillage = chance(0.88);
   return { location: isVillage ? pick(VILLAGES) : pick(CITIES), isVillage };
 }
 
