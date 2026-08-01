@@ -286,10 +286,12 @@ export default async function KalenderPage({
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-      <h1 className="text-3xl font-bold">Kalender</h1>
-      <p className="mt-2 text-text-muted">
-        Anstehende Infotage, Besuchstage und Veranstaltungen aller Projekte.
-      </p>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold leading-tight sm:text-5xl">Kalender</h1>
+        <p className="mt-3 text-text-muted sm:text-lg">
+          Anstehende Infotage, Besuchstage und Veranstaltungen aller Projekte.
+        </p>
+      </div>
 
       <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
         <div className="lg:w-[380px] lg:shrink-0">

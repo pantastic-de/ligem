@@ -476,10 +476,12 @@ export default async function ProjektePage({
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-      <h1 className="text-3xl font-bold">Wohnprojekte</h1>
-      <p className="mt-2 text-text-muted">
-        Veröffentlichte Wohngemeinschaften und Projekte auf LiGem.
-      </p>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold leading-tight sm:text-5xl">Wohnprojekte</h1>
+        <p className="mt-3 text-text-muted sm:text-lg">
+          Veröffentlichte Wohngemeinschaften und Projekte auf LiGem.
+        </p>
+      </div>
 
       <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
         <div className="lg:w-[380px] lg:shrink-0">
