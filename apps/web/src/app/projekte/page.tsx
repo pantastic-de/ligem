@@ -176,7 +176,13 @@ function buildProjekteHref(
     }
   }
   const query = qs.toString();
-  return query ? `/projekte?${query}` : "/projekte";
+  // #ergebnisse anchors every navigation built from this helper (opening a
+  // result's detail, stepping prev/next, going back to the list) to the top
+  // of the two-column results/sidebar section rather than the very top of
+  // the page — so the h1/intro text above it never has to be scrolled past
+  // again once you're browsing, giving a consistent "same height every
+  // time" view without it acting like a repeating hero banner.
+  return (query ? `/projekte?${query}` : "/projekte") + "#ergebnisse";
 }
 
 export default async function ProjektePage({
@@ -498,7 +504,7 @@ export default async function ProjektePage({
           />
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div id="ergebnisse" className="min-w-0 flex-1 scroll-mt-4">
           {selectedListing ? (
             <div className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
               <ListingDetail
