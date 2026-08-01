@@ -191,7 +191,7 @@ export function ListingDetail({
       ) : null}
 
       {prevItem || nextItem ? (
-        <div className="mb-4 flex items-center justify-between gap-4 text-sm">
+        <div className="mb-4 flex items-center justify-between gap-4 pr-[50px] text-sm">
           {prevItem ? (
             <Link
               href={prevItem.href}

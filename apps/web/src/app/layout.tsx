@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { DemoDataRibbon } from "@/components/demo-data-ribbon";
+import { ScrollToTopButton } from "@/components/scroll-to-top-button";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 
@@ -68,6 +69,7 @@ export default function RootLayout({
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={websiteJsonLd} />
         <DemoDataRibbon />
+        <ScrollToTopButton />
         <SiteHeader />
         <main className="flex flex-1 flex-col">{children}</main>
         <footer className="border-t border-text/10 px-6 py-8 text-center text-sm text-text-muted">
