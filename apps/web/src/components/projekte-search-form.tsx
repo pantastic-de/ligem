@@ -111,17 +111,6 @@ export function ProjekteSearchForm({
           Erweiterte Suche
         </summary>
         <div className="flex flex-col gap-6 border-t border-text/10 p-4">
-          {categories.length > 0 ? (
-            <MultiSelectDropdown
-              label="Art des Projektinserates"
-              name="kategorie"
-              options={categories}
-              defaultSelected={defaults.kategorieIds}
-              counts={categoryCounts}
-              onChange={submitNow}
-            />
-          ) : null}
-
           <fieldset className="flex flex-col gap-2">
             <legend className="font-medium">Suchzeitraum</legend>
             <EventDateFilter
@@ -132,6 +121,17 @@ export function ProjekteSearchForm({
               emptyHint="Kein bestimmter Suchzeitraum — zum Eingrenzen einen Beginn-Tag anklicken."
             />
           </fieldset>
+
+          {categories.length > 0 ? (
+            <MultiSelectDropdown
+              label="Art des Projektinserates"
+              name="kategorie"
+              options={categories}
+              defaultSelected={defaults.kategorieIds}
+              counts={categoryCounts}
+              onChange={submitNow}
+            />
+          ) : null}
 
           {advancedGroups.map((group) => (
             <MultiSelectDropdown
