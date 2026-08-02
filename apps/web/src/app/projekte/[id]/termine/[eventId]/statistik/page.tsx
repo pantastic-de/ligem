@@ -5,13 +5,13 @@ import { Eye, MousePointerClick, Bot } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing, isAdmin } from "@/lib/authz";
+import { canManageEvent, isAdmin } from "@/lib/authz";
 import {
-  getListingGeoBreakdown,
-  getListingSearchBreakdown,
-  getListingViewSourceBreakdown,
-  getListingViewTypeCounts,
-  getListingViewsOverTime,
+  getEventFilterBreakdown,
+  getEventGeoBreakdown,
+  getEventViewSourceBreakdown,
+  getEventViewTypeCounts,
+  getEventViewsOverTime,
 } from "@/lib/view-stats";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
@@ -21,47 +21,50 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function ProjektStatistikPage({
+export default async function TerminStatistikPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; eventId: string }>;
 }) {
-  const { id } = await params;
+  const { id: listingId, eventId } = await params;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
   }
 
-  const listing = await prisma.listing.findUnique({
-    where: { id },
-    select: { id: true, projectName: true, createdById: true },
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { id: true, title: true, listingId: true, createdById: true },
   });
-  if (!listing) {
+  if (!event || event.listingId !== listingId) {
     notFound();
   }
 
-  const canView = await canManageListing(session.user.id, listing.id, listing.createdById);
+  const canView = await canManageEvent(session.user.id, event);
   if (!canView) {
     notFound();
   }
   const viewerIsAdmin = await isAdmin(session.user.id);
 
-  const [{ overview, detail }, breakdown, timeline, geo, searchBreakdown] = await Promise.all([
-    getListingViewTypeCounts({ listingId: listing.id }),
-    getListingViewSourceBreakdown({ listingId: listing.id }),
-    getListingViewsOverTime({ listingId: listing.id }),
-    getListingGeoBreakdown({ listingId: listing.id }),
-    getListingSearchBreakdown({ listingId: listing.id }),
+  const [{ overview, detail }, breakdown, timeline, geo, filters] = await Promise.all([
+    getEventViewTypeCounts({ eventId: event.id }),
+    getEventViewSourceBreakdown({ eventId: event.id }),
+    getEventViewsOverTime({ eventId: event.id }),
+    getEventGeoBreakdown({ eventId: event.id }),
+    getEventFilterBreakdown({ eventId: event.id }),
   ]);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
-      <Link href={`/projekte/${listing.id}`} className="text-sm font-medium text-primary hover:underline">
-        ← Zurück zum Projekt
+      <Link
+        href={`/projekte/${listingId}/termine`}
+        className="text-sm font-medium text-primary hover:underline"
+      >
+        ← Zurück zu den Terminen
       </Link>
-      <h1 className="mt-2 text-3xl font-bold">Statistik: {listing.projectName}</h1>
+      <h1 className="mt-2 text-3xl font-bold">Statistik: {event.title}</h1>
       <p className="mt-2 text-text-muted">
-        Wie oft dieses Projekt in der Übersicht aufgetaucht ist und wie oft die
+        Wie oft dieser Termin im Kalender aufgetaucht ist und wie oft die
         Detailansicht geöffnet wurde — inklusive einer Auswertung, woher die
         Zugriffe kamen.
       </p>
@@ -70,7 +73,7 @@ export default async function ProjektStatistikPage({
         <div className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
           <div className="flex items-center gap-2 text-text-muted">
             <Eye className="h-4 w-4" aria-hidden="true" />
-            <span className="text-sm font-medium">Zugriffe in der Übersicht</span>
+            <span className="text-sm font-medium">Zugriffe im Kalender</span>
           </div>
           <div className="mt-2 text-3xl font-bold">{overview}</div>
         </div>
@@ -120,26 +123,14 @@ export default async function ProjektStatistikPage({
         </section>
       ) : null}
 
-      {searchBreakdown.searchTerms.length > 0 ? (
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold">Meistgesuchte Suchbegriffe</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Mit welchem Stichwort dieses Projekt in der Freitextsuche gefunden wurde.
-          </p>
-          <div className="mt-4">
-            <ViewSourceBreakdown sources={searchBreakdown.searchTerms} viewerIsAdmin={viewerIsAdmin} />
-          </div>
-        </section>
-      ) : null}
-
-      {searchBreakdown.filters.length > 0 ? (
+      {filters.length > 0 ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">Meistgenutzte Filterkombinationen</h2>
           <p className="mt-1 text-sm text-text-muted">
-            Mit welchen aktiven Filtern dieses Projekt gefunden wurde.
+            Mit welchen aktiven Filtern dieser Termin im Kalender gefunden wurde.
           </p>
           <div className="mt-4">
-            <ViewSourceBreakdown sources={searchBreakdown.filters} viewerIsAdmin={viewerIsAdmin} />
+            <ViewSourceBreakdown sources={filters} viewerIsAdmin={viewerIsAdmin} />
           </div>
         </section>
       ) : null}

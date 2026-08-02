@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { EventDetail } from "@/components/event-detail";
 import { stripHtml } from "@/lib/sanitize-html";
+import { recordEventViews } from "@/lib/event-views";
 
 // Shared between generateMetadata and the page body via React's cache() so
 // the identical query only hits the database once per request instead of
@@ -62,6 +63,10 @@ export default async function TerminDetailPage({
   if (!event || event.status !== "PUBLISHED") {
     notFound();
   }
+
+  // No search/filter context here (see /termine/page.tsx for the version
+  // that has one) — a standalone visit didn't come from that filter form.
+  await recordEventViews([event.id], "DETAIL");
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">

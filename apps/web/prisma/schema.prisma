@@ -61,6 +61,8 @@ model User {
   // Views this user contributed while logged in (see ListingView above) —
   // named, with a link to their account, in a listing's statistics view.
   listingViews        ListingView[]
+  eventViews          EventView[]
+  pageViews           PageView[]
 }
 
 // Grants a second (or third, ...) user edit rights on a Listing they didn't
@@ -195,11 +197,13 @@ enum ListingViewType {
 }
 
 // One row per listing view (see ListingViewType) for the "Meine Projekte"
-// statistics feature — deliberately no IP address or session id at all:
-// this only needs raw counts plus "who" when it's actually knowable (a
-// logged-in viewer, or a named bot/search engine from its User-Agent), not
-// unique-visitor dedup, so there's no reason to take on the privacy
-// tradeoffs of storing a raw IP for something nobody asked for.
+// statistics feature. No session id, and — per explicit product decision —
+// the raw client IP itself is never persisted either: only its two derived,
+// less-identifying summaries (`hostname` via reverse DNS, `country` via a
+// local GeoIP lookup, see src/lib/ip-lookup.ts) are stored, and neither on
+// its own reconstructs the address. This still isn't nothing from a DSGVO
+// standpoint — flag it for /datenschutz's eventual legal review alongside
+// every other data point already listed there.
 model ListingView {
   id           String          @id @default(cuid())
   listingId    String
@@ -224,8 +228,95 @@ model ListingView {
   // a full URL can carry another site's own query-string/path details that
   // have nothing to do with this app and aren't this app's to store.
   referrerHost String?
+  // The *viewer's own* reverse-DNS hostname and GeoIP country (ISO code,
+  // e.g. "DE") — both derived from the request's IP address at record
+  // time via src/lib/ip-lookup.ts, which never stores the IP itself. Either
+  // can be null: no PTR record for that IP, GeoIP has no match, or the IP
+  // couldn't be determined at all (see getClientIp — requires the reverse
+  // proxy to forward X-Forwarded-For, see DEPLOYMENT.md's Apache section;
+  // absent entirely in local dev without a proxy in front of it).
+  hostname     String?
+  country      String?
+  // The active `suche` keyword (lowercased, so "Garten"/"garten" aggregate
+  // together) and a human-readable summary of every other active filter —
+  // both only ever set for a view recorded while /projekte's search/filter
+  // form actually produced this listing (OVERVIEW, or the DETAIL view
+  // reached by clicking into the inline ?projekt= pane from that same
+  // search); a standalone /projekte/[id] visit has no search context at
+  // all, so both stay null there. `filtersSummary` reuses the exact same
+  // `activeFilters` array /projekte/page.tsx already builds for its
+  // "N Projekte gefunden für ..." results heading, joined with ", " —
+  // rather than re-deriving filter option names from raw ids again here.
+  searchTerm     String?
+  filtersSummary String?
 
   @@index([listingId, viewType])
+}
+
+// Mirrors ListingViewType exactly, for the same statistics feature applied
+// to Events instead of Listings (see EventView below) — kept as its own
+// enum rather than reusing ListingViewType, matching how this app already
+// keeps Listing/Event infrastructure as parallel-but-separate models
+// throughout (ListingAttributeOption/EventAttributeOption, ListingCategory
+// having no Event equivalent, etc.) rather than introducing a shared
+// polymorphic abstraction for two content types with otherwise different
+// permission/ownership shapes.
+enum EventViewType {
+  OVERVIEW
+  DETAIL
+}
+
+// Mirrors ListingView exactly (see there for the full rationale — reverse-
+// DNS hostname + GeoIP country instead of the raw IP itself, etc.) for
+// Events instead of Listings. No `searchTerm` field here: /termine has no
+// keyword-search field at all (only Zeitraum/Art/Zielgruppe/Umkreis),
+// unlike /projekte's header keyword search.
+model EventView {
+  id             String        @id @default(cuid())
+  eventId        String
+  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  viewType       EventViewType
+  viewedAt       DateTime      @default(now())
+  viewerId       String?
+  viewer         User?         @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+  isBot          Boolean       @default(false)
+  botName        String?
+  referrerHost   String?
+  hostname       String?
+  country        String?
+  // Human-readable summary of active Zeitraum/Art/Zielgruppe/Umkreis
+  // filters at record time — see ListingView.filtersSummary, same rationale
+  // and same reuse of /termine/page.tsx's own activeFilters array.
+  filtersSummary String?
+
+  @@index([eventId, viewType])
+}
+
+// Generic site-wide page-view tracker (src/middleware.ts) — every route
+// EXCEPT /projekte* and /termine*, which already get the much more detailed
+// ListingView/EventView tracking above and would otherwise be double-
+// counted. Recorded from Middleware rather than per-page, since that's the
+// only place in the App Router that sees every request without having to
+// individually instrument every single page.tsx across the site. Same
+// no-raw-IP shape as ListingView/EventView (see there for the rationale);
+// no viewType (OVERVIEW/DETAIL only makes sense for the search-results/
+// detail-pane distinction Listings/Events have) and no searchTerm/
+// filtersSummary (no comparable concept on a generic page).
+model PageView {
+  id           String   @id @default(cuid())
+  // Pathname only (e.g. "/hilfe/rollen"), never the query string — a page
+  // like /mein-konto?fotos=1 is still the same "page" for this purpose.
+  path         String
+  viewedAt     DateTime @default(now())
+  viewerId     String?
+  viewer       User?    @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+  isBot        Boolean  @default(false)
+  botName      String?
+  referrerHost String?
+  hostname     String?
+  country      String?
+
+  @@index([path])
 }
 
 // A Wohnprojekt/WG listing. Only projectName + owner are required. Structural
@@ -488,6 +579,7 @@ model Event {
   registrations    EventRegistration[]
   media            Media[]
   reports          Report[]               @relation("ReportOnEvent")
+  views            EventView[]
 
   @@index([startAt])
   @@index([status])

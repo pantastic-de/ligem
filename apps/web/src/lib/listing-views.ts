@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { detectBot } from "@/lib/bot-detect";
+import { getClientIp, lookupIpInfo } from "@/lib/ip-lookup";
 import type { ListingViewType } from "@/generated/prisma/client";
 
 function referrerHostOf(referrer: string | null): string | null {
@@ -32,16 +33,34 @@ function referrerHostOf(referrer: string | null): string | null {
  * data is effectively free and callers should await this function so it
  * runs (and registers its after() callback) while the request is still
  * active.
+ *
+ * `searchContext` carries the active `suche` keyword + a human-readable
+ * summary of every other active filter, straight from /projekte/page.tsx's
+ * own already-computed `suche`/`activeFilters` — only meaningful for a view
+ * recorded while that search/filter form actually produced this listing
+ * (both OVERVIEW and the DETAIL reached via the inline ?projekt= pane from
+ * that same search); a standalone /projekte/[id] visit has no search
+ * context, so its caller just omits this argument.
  */
-export async function recordListingViews(listingIds: string[], viewType: ListingViewType): Promise<void> {
+export async function recordListingViews(
+  listingIds: string[],
+  viewType: ListingViewType,
+  searchContext?: { searchTerm: string | null; filtersSummary: string | null },
+): Promise<void> {
   if (listingIds.length === 0) return;
   const [session, hdrs] = await Promise.all([auth(), headers()]);
   const { isBot, botName } = detectBot(hdrs.get("user-agent"));
   const referrerHost = referrerHostOf(hdrs.get("referer"));
   const viewerId = session?.user?.id ?? null;
+  const searchTerm = searchContext?.searchTerm ?? null;
+  const filtersSummary = searchContext?.filtersSummary ?? null;
+  // The IP itself is only ever read here to hand off to lookupIpInfo below
+  // — never stored (see ListingView.hostname/country in schema.prisma).
+  const clientIp = getClientIp(hdrs);
 
   after(async () => {
     try {
+      const { hostname, country } = await lookupIpInfo(clientIp);
       await prisma.listingView.createMany({
         data: listingIds.map((listingId) => ({
           listingId,
@@ -50,6 +69,10 @@ export async function recordListingViews(listingIds: string[], viewType: Listing
           isBot,
           botName,
           referrerHost,
+          searchTerm,
+          filtersSummary,
+          hostname,
+          country,
         })),
       });
     } catch (err) {

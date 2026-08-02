@@ -7,6 +7,7 @@ import { TermineSearchForm } from "@/components/termine-search-form";
 import { EventDetail, type EventDetailData } from "@/components/event-detail";
 import { colorForCategory } from "@/lib/category-color";
 import { haversineDistanceKm } from "@/lib/distance";
+import { recordEventViews } from "@/lib/event-views";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -360,6 +361,23 @@ export default async function KalenderPage({
     activeFilters.length > 0
       ? `${events.length} ${eventLabel} gefunden für ${activeFilters.join(", ")}.`
       : `${events.length} ${eventLabel} gefunden.`;
+
+  // Statistics (see CLAUDE.md's Statistik section) — mirrors /projekte/
+  // page.tsx's recordListingViews call exactly: only the selected event
+  // gets a DETAIL view while the inline pane is open (the results list
+  // isn't rendered then), otherwise every listed event gets an OVERVIEW
+  // view, both carrying the same activeFilters summary this page already
+  // built for its own "N Termine gefunden für ..." heading.
+  const filtersSummary = activeFilters.length > 0 ? activeFilters.join(", ") : null;
+  if (selectedEvent) {
+    await recordEventViews([selectedEvent.id], "DETAIL", filtersSummary);
+  } else if (events.length > 0) {
+    await recordEventViews(
+      events.map((e) => e.id),
+      "OVERVIEW",
+      filtersSummary,
+    );
+  }
 
   // Computed once, outside the results map below — an explicit "von" in the
   // past (see above) can surface events that already happened, and those

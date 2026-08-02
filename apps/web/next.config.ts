@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // geoip-lite (src/lib/ip-lookup.ts, used by the Statistik feature) loads
+  // its bundled .dat database via a runtime path.join(__dirname, ...) —
+  // Turbopack's bundler rewrites module paths into its own virtual "/ROOT/"
+  // namespace and doesn't carry that data file along, which broke it with
+  // "ENOENT ... geoip-country.dat" even from a plain Route Handler (not
+  // middleware-specific). Marking it external makes Next.js load it via a
+  // plain, unbundled require() at its real on-disk location instead.
+  serverExternalPackages: ["geoip-lite"],
   experimental: {
     // Without this, a mutate-then-redirect-to-the-same-list-URL flow (e.g.
     // approve a listing, redirect back to the same status tab) can render

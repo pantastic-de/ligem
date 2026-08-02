@@ -1,24 +1,33 @@
 import Link from "next/link";
-import { Bot, UserRound, Globe2 } from "lucide-react";
+import { Bot, UserRound, Globe2, Flag, Server, Search, Filter } from "lucide-react";
 
-import type { ViewSource } from "@/lib/listing-view-stats";
+import type { ViewSource } from "@/lib/view-stats";
 
-const KIND_ICON = { bot: Bot, user: UserRound, referrer: Globe2 } as const;
+const KIND_ICON = {
+  bot: Bot,
+  user: UserRound,
+  referrer: Globe2,
+  country: Flag,
+  hostname: Server,
+  search: Search,
+  filter: Filter,
+} as const;
 
 /**
- * The "woher kamen die Zugriffe" leaderboard — plain CSS bars (no charting
- * library) sized relative to the largest single source, each row combining
- * an icon (bot/registered user/referrer), the source's name, and its share
- * of the total. Shared between a single listing's /statistik page and the
- * admin's site-wide statistics page.
+ * A leaderboard of ViewSource rows — plain CSS bars (no charting library)
+ * sized relative to the largest single entry, each row combining an icon
+ * (bot/registered user/referrer/country/hostname/search term/filter
+ * combination), the entry's label, and its share of this SAME list's own
+ * total (not some other, unrelated total the caller might also be
+ * tracking) — reused for every breakdown across the Listing/Event/site-wide
+ * statistics pages, one call per distinct breakdown (bot/user/referrer;
+ * countries; hostnames; search terms; filter combinations).
  */
 export function ViewSourceBreakdown({
   sources,
-  total,
   viewerIsAdmin,
 }: {
   sources: ViewSource[];
-  total: number;
   // A registered viewer's name only links to /admin/nutzer when whoever is
   // looking at THIS statistics page is themselves an admin — that page is
   // admin-only, so the link would just 403 for a plain listing owner; they
@@ -26,9 +35,10 @@ export function ViewSourceBreakdown({
   viewerIsAdmin: boolean;
 }) {
   if (sources.length === 0) {
-    return <p className="text-text-muted">Noch keine Zugriffe erfasst.</p>;
+    return <p className="text-text-muted">Noch keine Daten erfasst.</p>;
   }
 
+  const total = sources.reduce((sum, s) => sum + s.count, 0);
   const max = Math.max(...sources.map((s) => s.count));
 
   return (

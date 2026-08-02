@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { Eye, MousePointerClick } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -45,6 +46,27 @@ export default async function TerminePage({
     include: { _count: { select: { registrations: true } } },
   });
 
+  // View-count summary (see /projekte/[id]/termine/[eventId]/statistik for
+  // the full breakdown) — one grouped query across every event shown here
+  // rather than one query per row, mirrors /meine-projekte's listing
+  // equivalent.
+  const eventIds = events.map((e) => e.id);
+  const viewCounts =
+    eventIds.length > 0
+      ? await prisma.eventView.groupBy({
+          by: ["eventId", "viewType"],
+          where: { eventId: { in: eventIds } },
+          _count: true,
+        })
+      : [];
+  const countsByEvent: Record<string, { overview: number; detail: number }> = {};
+  for (const row of viewCounts) {
+    const entry = countsByEvent[row.eventId] ?? { overview: 0, detail: 0 };
+    if (row.viewType === "OVERVIEW") entry.overview = row._count;
+    else entry.detail = row._count;
+    countsByEvent[row.eventId] = entry;
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -66,48 +88,67 @@ export default async function TerminePage({
         </p>
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
-          {events.map((event) => (
-            <li
-              key={event.id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
-            >
-              <div>
-                <h2 className="font-semibold">
-                  <Link href={`/termine/${event.id}`} className="hover:underline">
-                    {event.title}
-                  </Link>
-                </h2>
-                <p className="text-sm text-text-muted">
-                  {dateTimeFormat.format(event.startAt)}
-                  {event.addressText ? ` · ${event.addressText}` : ""}
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Link
-                  href={`/projekte/${listingId}/termine/${event.id}/anmeldungen`}
-                  className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
-                >
-                  Anmeldungen ({event._count.registrations})
-                </Link>
-                <Link
-                  href={`/projekte/${listingId}/termine/${event.id}/bearbeiten`}
-                  className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
-                >
-                  Bearbeiten
-                </Link>
-                <form action={deleteEvent}>
-                  <input type="hidden" name="listingId" value={listingId} />
-                  <input type="hidden" name="eventId" value={event.id} />
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
+          {events.map((event) => {
+            const counts = countsByEvent[event.id] ?? { overview: 0, detail: 0 };
+            return (
+              <li
+                key={event.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
+              >
+                <div>
+                  <h2 className="font-semibold">
+                    <Link href={`/termine/${event.id}`} className="hover:underline">
+                      {event.title}
+                    </Link>
+                  </h2>
+                  <p className="text-sm text-text-muted">
+                    {dateTimeFormat.format(event.startAt)}
+                    {event.addressText ? ` · ${event.addressText}` : ""}
+                  </p>
+                  <p className="mt-1 flex items-center gap-3 text-xs text-text-muted">
+                    <span className="flex items-center gap-1" title="Zugriffe im Kalender">
+                      <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                      {counts.overview}
+                    </span>
+                    <span className="flex items-center gap-1" title="Detailansichten">
+                      <MousePointerClick className="h-3.5 w-3.5" aria-hidden="true" />
+                      {counts.detail}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href={`/projekte/${listingId}/termine/${event.id}/statistik`}
+                    className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
                   >
-                    Löschen
-                  </button>
-                </form>
-              </div>
-            </li>
-          ))}
+                    Statistik
+                  </Link>
+                  <Link
+                    href={`/projekte/${listingId}/termine/${event.id}/anmeldungen`}
+                    className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+                  >
+                    Anmeldungen ({event._count.registrations})
+                  </Link>
+                  <Link
+                    href={`/projekte/${listingId}/termine/${event.id}/bearbeiten`}
+                    className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+                  >
+                    Bearbeiten
+                  </Link>
+                  <form action={deleteEvent}>
+                    <input type="hidden" name="listingId" value={listingId} />
+                    <input type="hidden" name="eventId" value={event.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
+                    >
+                      Löschen
+                    </button>
+                  </form>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

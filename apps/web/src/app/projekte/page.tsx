@@ -542,21 +542,6 @@ export default async function ProjektePage({
       ? sortedListings[selectedIndex + 1]
       : null;
 
-  // "Meine Projekte" statistics (see CLAUDE.md's Statistik section): the
-  // inline pane replaces the results list entirely while a selection is
-  // active (see the master-detail mechanism above), so only the one
-  // selected listing gets a DETAIL view then — never both, and never an
-  // OVERVIEW view for the other listings that aren't actually being shown
-  // in that render.
-  if (selectedListing) {
-    await recordListingViews([selectedListing.id], "DETAIL");
-  } else if (sortedListings.length > 0) {
-    await recordListingViews(
-      sortedListings.map((l) => l.id),
-      "OVERVIEW",
-    );
-  }
-
   // Human-readable summary of which filters produced this result count, so
   // the list above doesn't just show a number without context for how it
   // came about — mirrors /termine/page.tsx's resultsSummary.
@@ -604,6 +589,29 @@ export default async function ProjektePage({
     activeFilters.length > 0
       ? `${listings.length} ${listingLabel} gefunden für ${activeFilters.join(", ")}.`
       : `${listings.length} ${listingLabel} gefunden.`;
+
+  // "Meine Projekte" statistics (see CLAUDE.md's Statistik section): the
+  // inline pane replaces the results list entirely while a selection is
+  // active (see the master-detail mechanism above), so only the one
+  // selected listing gets a DETAIL view then — never both, and never an
+  // OVERVIEW view for the other listings that aren't actually being shown
+  // in that render. Reuses the same suche/activeFilters this page already
+  // computed for its own "N Projekte gefunden für ..." heading, so a
+  // listing's statistics can show which search terms/filter combinations
+  // actually surfaced it, not just raw counts.
+  const searchContext = {
+    searchTerm: suche ? suche.toLowerCase() : null,
+    filtersSummary: activeFilters.length > 0 ? activeFilters.join(", ") : null,
+  };
+  if (selectedListing) {
+    await recordListingViews([selectedListing.id], "DETAIL", searchContext);
+  } else if (sortedListings.length > 0) {
+    await recordListingViews(
+      sortedListings.map((l) => l.id),
+      "OVERVIEW",
+      searchContext,
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
