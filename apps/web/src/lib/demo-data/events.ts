@@ -437,9 +437,13 @@ const DETAIL_SENTENCES = [
 // HTML (matching what RichTextField's reduced editor can produce, see
 // sanitizeRichText()'s tag allowlist), since this feeds the same
 // `description` field a real submission would. "mehrtaegig" events get a
-// real `<ol>` day-by-day program instead of newline-joined plain text.
+// real `<ol>` day-by-day program instead of newline-joined plain text. The
+// occasional detail sentence is wrapped in `<u>` (mirroring how a real
+// organizer might underline a practical aside), and the multi-day program
+// gets an `<h3>Programm</h3>` heading — both exercise RichTextField's
+// underline/heading options alongside the existing list/paragraph usage.
 function buildDescriptionCandidate(theme: EventTheme, duration: DurationCategory): string {
-  const detail = chance(0.35) ? ` ${pick(DETAIL_SENTENCES)}` : "";
+  const detail = chance(0.35) ? ` <u>${pick(DETAIL_SENTENCES)}</u>` : "";
   if (duration === "kurz") {
     const base = chance(0.5) ? pick(theme.short) : `${pick(theme.short)} ${pick(theme.flavor)}`;
     return `<p>${base}${detail}</p>`;
@@ -453,7 +457,7 @@ function buildDescriptionCandidate(theme: EventTheme, duration: DurationCategory
   // mehrtaegig: opener, ein Tag-für-Tag-Ablauf als Liste, dann ein Abschluss.
   const days = randomInt(2, 4);
   const program = Array.from({ length: days }, (_, i) => `<li>Tag ${i + 1}: ${pick(theme.flavor)}</li>`).join("");
-  return `<p>${pick(theme.opening)}</p><ol>${program}</ol><p>${pick(theme.closing)}${detail}</p>`;
+  return `<p>${pick(theme.opening)}</p><h3>Programm</h3><ol>${program}</ol><p>${pick(theme.closing)}${detail}</p>`;
 }
 
 function pickDurationCategory(): DurationCategory {

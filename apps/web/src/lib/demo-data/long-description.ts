@@ -552,12 +552,19 @@ const CITY_REGION_FLAVOR = [
 /**
  * Composes a long (~200-400 word), deliberately absurd/over-the-top "So
  * leben wir" text: one random theme's opener, two region-flavor sentences
- * (village or city framing, see pickLocation() in shared.ts), three building
- * and three people sentences (each distinct within the text), and two
- * closers — as HTML (one `<p>` per section: intro, building, people,
- * closing), matching what RichTextField's reduced editor can produce (see
+ * (village or city framing, see pickLocation() in shared.ts), building and
+ * people sentences (each distinct within the text), and two closers — as
+ * HTML matching what RichTextField's editor can produce (see
  * sanitizeRichText()'s tag allowlist), since this feeds the same
- * `howWeLive` field a real submission would.
+ * `howWeLive` field a real submission would. Beyond the plain `<p>`
+ * sections, this now also exercises the editor's other formatting options:
+ * `<h3>` subheadings divide the text into "Das Zuhause"/"Die Menschen
+ * hier" sections, the theme's illustrative "Zuletzt gab es eine
+ * Diskussion…" vignette (see the THEMES bank above — present on the nine
+ * substance-themes, absent on the lighter personality-flavor ones) renders
+ * as a `<blockquote>` instead of plain paragraph text since it already
+ * reads like a quoted anecdote, and the closing paragraph is wrapped in
+ * `<u>` for a touch of emphasis.
  */
 export function buildLongDescriptionCandidate(cityName: string, isVillage: boolean): string {
   const theme = pick(THEMES);
@@ -567,8 +574,24 @@ export function buildLongDescriptionCandidate(cityName: string, isVillage: boole
 
   const intro = [pick(theme.opener), ...pickNDistinct(regionBank, 2)].map(fill).join(" ");
   const building = pickNDistinct(theme.building, 4).map(fill).join(" ");
-  const people = pickNDistinct(theme.people, 4).map(fill).join(" ");
+
+  const vignette = theme.people.find((s) => s.includes("Zuletzt gab es"));
+  const remainingPeople = theme.people.filter((s) => s !== vignette);
+  const people = pickNDistinct(remainingPeople, vignette ? 3 : 4).map(fill).join(" ");
+
   const closing = pickNDistinct(theme.closer, 2).map(fill).join(" ");
 
-  return [intro, building, people, closing].map((paragraph) => `<p>${paragraph}</p>`).join("");
+  const parts = [
+    `<p>${intro}</p>`,
+    `<h3>Das Zuhause</h3>`,
+    `<p>${building}</p>`,
+    `<h3>Die Menschen hier</h3>`,
+    `<p>${people}</p>`,
+  ];
+  if (vignette) {
+    parts.push(`<blockquote><p>${fill(vignette)}</p></blockquote>`);
+  }
+  parts.push(`<p><u>${closing}</u></p>`);
+
+  return parts.join("");
 }

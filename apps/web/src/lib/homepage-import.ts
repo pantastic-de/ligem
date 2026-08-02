@@ -19,7 +19,7 @@ const EXTRACTION_SCHEMA = {
     motto: nullableString("Kurzer, einprägsamer Claim/Untertitel des Projekts (wenige Worte), oder null falls nicht erkennbar."),
     howWeLive: nullableString(
       "Ein Profiltext von ca. 400-600 Wörtern über das Projekt/die Gemeinschaft, auf Deutsch, in mehrere Absätze gegliedert. " +
-        "Als HTML formatiert und dabei AUSSCHLIESSLICH die Tags <p>, <strong>, <em>, <ul>, <ol>, <li>, <br> verwenden - keine anderen Tags, keine Attribute, kein <html>/<body>. " +
+        "Als HTML formatiert und dabei AUSSCHLIESSLICH die Tags <p>, <strong>, <em>, <u>, <h2>, <h3>, <blockquote>, <ul>, <ol>, <li>, <br> verwenden - keine anderen Tags, keine Attribute, kein <html>/<body>. " +
         "null, falls die Seite keine sinnvollen Inhalte dafür hergibt.",
     ),
     contactPhone: nullableString(),

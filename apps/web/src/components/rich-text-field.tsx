@@ -3,7 +3,16 @@
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useState } from "react";
-import { Bold, Italic, List, ListOrdered } from "lucide-react";
+import {
+  Bold,
+  Heading2,
+  Heading3,
+  Italic,
+  List,
+  ListOrdered,
+  Quote,
+  Underline as UnderlineIcon,
+} from "lucide-react";
 
 function ToolbarButton({
   onClick,
@@ -59,6 +68,34 @@ function Toolbar({ editor }: { editor: Editor | null }) {
         <Italic className="h-4 w-4" aria-hidden="true" />
       </ToolbarButton>
       <ToolbarButton
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        isActive={editor.isActive("underline")}
+        label="Unterstrichen"
+      >
+        <UnderlineIcon className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        isActive={editor.isActive("heading", { level: 2 })}
+        label="Überschrift"
+      >
+        <Heading2 className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        isActive={editor.isActive("heading", { level: 3 })}
+        label="Zwischenüberschrift"
+      >
+        <Heading3 className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        isActive={editor.isActive("blockquote")}
+        label="Zitat"
+      >
+        <Quote className="h-4 w-4" aria-hidden="true" />
+      </ToolbarButton>
+      <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         isActive={editor.isActive("bulletList")}
         label="Aufzählung"
@@ -77,15 +114,17 @@ function Toolbar({ editor }: { editor: Editor | null }) {
 }
 
 /**
- * A deliberately reduced rich-text input — bold, italic, and the two list
- * types, nothing else (no headings/tables/images/colors/links) — built on
- * Tiptap. Renders a real `<textarea>`-shaped bordered box with a small
- * toolbar on top, and syncs its HTML into a hidden `<input>` of the given
- * `name` on every change, so it drops into the existing plain
- * `<form action={serverAction}>` convention (see CLAUDE.md's Pages section)
- * exactly like the `<textarea>` it replaces — the server action still just
- * reads `formData.get(name)`, now getting sanitized-on-save HTML instead of
- * plain text (see `src/lib/sanitize-html.ts`).
+ * A deliberately reduced rich-text input — bold, italic, underline,
+ * headings (H2/H3), blockquote, and the two list types, nothing else (no
+ * tables/images/colors/links/code) — built on Tiptap. Renders a real
+ * `<textarea>`-shaped bordered box with a small toolbar on top, and syncs
+ * its HTML into a hidden `<input>` of the given `name` on every change, so
+ * it drops into the existing plain `<form action={serverAction}>`
+ * convention (see CLAUDE.md's Pages section) exactly like the `<textarea>`
+ * it replaces — the server action still just reads `formData.get(name)`,
+ * now getting sanitized-on-save HTML instead of plain text (see
+ * `src/lib/sanitize-html.ts`, whose allowlist must stay in sync with
+ * whatever tags this toolbar can produce).
  */
 export function RichTextField({
   id,
@@ -103,13 +142,13 @@ export function RichTextField({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: false,
-        blockquote: false,
+        heading: { levels: [2, 3] },
+        blockquote: {},
+        underline: {},
         code: false,
         codeBlock: false,
         horizontalRule: false,
         strike: false,
-        underline: false,
         link: false,
       }),
     ],
@@ -118,7 +157,8 @@ export function RichTextField({
     editorProps: {
       attributes: {
         id,
-        class: "min-h-28 px-4 py-3 focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+        class:
+          "min-h-28 px-4 py-3 focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic",
       },
     },
     onUpdate: ({ editor }) => {

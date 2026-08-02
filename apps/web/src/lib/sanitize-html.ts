@@ -1,11 +1,14 @@
 import DOMPurify from "isomorphic-dompurify";
 
 // Allowlist matches exactly what RichTextField's reduced Tiptap toolbar can
-// produce (bold, italic, bullet/numbered lists, paragraphs, line breaks) —
-// anything else is stripped regardless of what a client actually submits,
-// since the editor's own UI restrictions are not a security boundary by
-// themselves (a request can always be sent directly, bypassing the browser).
-const ALLOWED_TAGS = ["p", "strong", "em", "ul", "ol", "li", "br"];
+// produce (bold, italic, underline, headings H2/H3, blockquote,
+// bullet/numbered lists, paragraphs, line breaks) — anything else is
+// stripped regardless of what a client actually submits, since the editor's
+// own UI restrictions are not a security boundary by themselves (a request
+// can always be sent directly, bypassing the browser). No attributes are
+// allowed on any tag (ALLOWED_ATTR: [] below), so there's no id/class/style
+// injection surface even via these otherwise-benign tags.
+const ALLOWED_TAGS = ["p", "strong", "em", "u", "h2", "h3", "blockquote", "ul", "ol", "li", "br"];
 
 /**
  * Sanitizes rich-text HTML from a RichTextField before it's persisted.
