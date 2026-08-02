@@ -1,15 +1,20 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { HeaderSearchForm } from "@/components/header-search-form";
+import { AccountMenu } from "@/components/account-menu";
 
 export async function SiteHeader() {
   const session = await auth();
   const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
+
+  async function handleSignOut() {
+    "use server";
+    await signOut({ redirectTo: "/" });
+  }
 
   return (
     <header className="border-b border-text/10">
@@ -49,53 +54,14 @@ export async function SiteHeader() {
           </Link>
 
           {session?.user ? (
-            // A native <details>/<summary> account menu — no client JS
-            // needed, consistent with every other collapsed-disclosure
-            // pattern in this app (see MultiSelectDropdown). "Projekt
-            // eintragen"/"Termin eintragen" used to be separate top-level
-            // nav entries; they're now reached via /meine-projekte instead,
-            // which lists both alongside the user's own listings.
-            <details className="relative">
-              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
-                {displayName}
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-              </summary>
-              <div className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg">
-                <Link
-                  href="/mein-konto"
-                  className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
-                >
-                  Mein Konto
-                </Link>
-                <Link
-                  href="/meine-projekte"
-                  className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
-                >
-                  Meine Projekte
-                </Link>
-                {admin ? (
-                  <Link
-                    href="/admin"
-                    className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
-                  >
-                    Admin
-                  </Link>
-                ) : null}
-                <form
-                  action={async () => {
-                    "use server";
-                    await signOut({ redirectTo: "/" });
-                  }}
-                >
-                  <button
-                    type="submit"
-                    className="min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg"
-                  >
-                    Abmelden
-                  </button>
-                </form>
-              </div>
-            </details>
+            // "Projekt eintragen"/"Termin eintragen" used to be separate
+            // top-level nav entries; they're now reached via /meine-projekte
+            // instead, which lists both alongside the user's own listings.
+            // The menu itself is a small client island (AccountMenu) purely
+            // so it can close after a click on one of its own items — see
+            // that component for why a plain <details> alone doesn't do
+            // that across a client-side navigation.
+            <AccountMenu displayName={displayName} admin={admin} signOutAction={handleSignOut} />
           ) : (
             // "Registrieren" isn't a separate nav entry — /anmelden already
             // offers it as an option ("Noch kein Konto? Registrieren") right
