@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { authenticate, signInWithGoogle } from "./actions";
+import { PasswordField } from "@/components/password-field";
 
 export const metadata: Metadata = {
   title: "Anmelden",
@@ -56,14 +57,7 @@ export default async function AnmeldenPage({
           <label htmlFor="password" className="font-medium">
             Passwort
           </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text"
-          />
+          <PasswordField id="password" name="password" autoComplete="current-password" />
         </div>
         <button
           type="submit"

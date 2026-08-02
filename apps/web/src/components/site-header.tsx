@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { HeaderSearchForm } from "@/components/header-search-form";
@@ -8,10 +9,11 @@ import { HeaderSearchForm } from "@/components/header-search-form";
 export async function SiteHeader() {
   const session = await auth();
   const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
+  const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
 
   return (
     <header className="border-b border-text/10">
-      <div className="mx-auto flex max-w-4xl flex-row flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 sm:flex-col sm:gap-y-3 sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-x-4 gap-y-1 px-4 py-2 sm:gap-y-3 sm:px-6 sm:py-3">
         <Link href="/" className="shrink-0">
           <Image
             src="/logo.png"
@@ -47,47 +49,53 @@ export async function SiteHeader() {
           </Link>
 
           {session?.user ? (
-            <>
-              <Link
-                href="/projekte/neu"
-                className="inline-flex min-h-11 items-center"
-              >
-                Projekt eintragen
-              </Link>
-              <Link
-                href="/termine/neu"
-                className="inline-flex min-h-11 items-center"
-              >
-                Termin eintragen
-              </Link>
-              <Link
-                href="/meine-projekte"
-                className="inline-flex min-h-11 items-center"
-              >
-                Meine Projekte
-              </Link>
-              {admin ? (
+            // A native <details>/<summary> account menu — no client JS
+            // needed, consistent with every other collapsed-disclosure
+            // pattern in this app (see MultiSelectDropdown). "Projekt
+            // eintragen"/"Termin eintragen" used to be separate top-level
+            // nav entries; they're now reached via /meine-projekte instead,
+            // which lists both alongside the user's own listings.
+            <details className="relative">
+              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
+                {displayName}
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
+              </summary>
+              <div className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg">
                 <Link
-                  href="/admin"
-                  className="inline-flex min-h-11 items-center"
+                  href="/mein-konto"
+                  className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
                 >
-                  Admin
+                  Mein Konto
                 </Link>
-              ) : null}
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut({ redirectTo: "/" });
-                }}
-              >
-                <button
-                  type="submit"
-                  className="inline-flex min-h-11 items-center"
+                <Link
+                  href="/meine-projekte"
+                  className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
                 >
-                  Abmelden
-                </button>
-              </form>
-            </>
+                  Meine Projekte
+                </Link>
+                {admin ? (
+                  <Link
+                    href="/admin"
+                    className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg"
+                  >
+                    Admin
+                  </Link>
+                ) : null}
+                <form
+                  action={async () => {
+                    "use server";
+                    await signOut({ redirectTo: "/" });
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg"
+                  >
+                    Abmelden
+                  </button>
+                </form>
+              </div>
+            </details>
           ) : (
             // "Registrieren" isn't a separate nav entry — /anmelden already
             // offers it as an option ("Noch kein Konto? Registrieren") right
