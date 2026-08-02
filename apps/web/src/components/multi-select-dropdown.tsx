@@ -99,7 +99,7 @@ export function MultiSelectDropdown({
         <span>{label}</span>
         {summaryText ? (
           <span className="relative mr-2 inline-flex max-w-[65%] items-center rounded-full bg-bg px-2 py-0.5 text-sm font-normal text-text-muted">
-            <span className="truncate">{summaryText}</span>
+            <span className="mr-[5px] truncate">{summaryText}</span>
             <button
               type="button"
               onClick={clearAll}
