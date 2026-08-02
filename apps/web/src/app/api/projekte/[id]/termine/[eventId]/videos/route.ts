@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageEvent } from "@/lib/authz";
 import { MAX_VIDEO_SIZE, isAllowedVideoType, storeVideo } from "@/lib/media";
 
 // Mirrors src/app/api/projekte/[id]/videos/route.ts for events — see there
@@ -20,12 +20,12 @@ export async function POST(
   }
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { createdById: true },
+    select: { createdById: true, listingId: true },
   });
   if (!event) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
-  if (event.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageEvent(session.user.id, event))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

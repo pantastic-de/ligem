@@ -22,9 +22,19 @@ model User {
   emailVerified DateTime?
   passwordHash  String?
   name          String?
+  // Profile picture — reused as-is from the Auth.js/PrismaAdapter default
+  // shape (auto-populated from the provider's profile for Google sign-in).
+  // For local uploads (see /mein-konto), this holds an `/api/media/<key>`
+  // proxy path exactly like every other MinIO-backed image in this app,
+  // not a raw storage key — so it can be used directly as an <img src>
+  // regardless of whether it came from Google or from an upload.
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Updated on every successful sign-in (see auth.ts's `events.signIn`) —
+  // deliberately just a single timestamp, not a full login-history log,
+  // matching this app's otherwise lightweight trust/safety footprint.
+  lastLoginAt   DateTime?
 
   roles UserRoleAssignment[]
 
@@ -43,6 +53,31 @@ model User {
   appointmentsHosted  Appointment[]     @relation("AppointmentHost")
   appointmentsBooked  Appointment[]     @relation("AppointmentRequestedBy")
   eventRegistrations  EventRegistration[] @relation("EventRegistrationSender")
+  // Listings this user co-manages on someone else's behalf — see
+  // ListingManager below. Distinct from createdListings (the original
+  // owner/creator), which always keeps full rights including managing
+  // this list itself.
+  listingManagerships ListingManager[]
+}
+
+// Grants a second (or third, ...) user edit rights on a Listing they didn't
+// create — content-editing rights only (see canManageListing/canManageEvent
+// in src/lib/authz.ts): a manager can edit the listing and its events, but
+// cannot add/remove other managers — only the original creator
+// (Listing.createdById) or an ADMIN can. A Listing's own events inherit
+// this automatically (an Event with a listingId checks its listing's
+// managers too), so there's no separate EventManager table — sharing a
+// project also shares its calendar, per product decision. Managed from
+// /mein-konto by the listing's original creator.
+model ListingManager {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+
+  @@unique([listingId, userId])
 }
 
 enum UserRole {
@@ -247,6 +282,7 @@ model Listing {
   reports           Report[]           @relation("ReportOnListing")
   contactRequests   ContactRequest[]
   appointments      Appointment[]
+  managers          ListingManager[]
 
   @@index([status])
   @@index([organizationId])

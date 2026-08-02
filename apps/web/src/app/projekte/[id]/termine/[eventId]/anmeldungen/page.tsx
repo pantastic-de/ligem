@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageEvent } from "@/lib/authz";
 
 export const metadata: Metadata = {
   title: "Anmeldungen",
@@ -34,7 +34,7 @@ export default async function AnmeldungenPage({
   if (!event || event.listingId !== listingId) {
     notFound();
   }
-  if (event.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageEvent(session.user.id, event))) {
     notFound();
   }
 

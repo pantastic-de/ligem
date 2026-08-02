@@ -143,3 +143,28 @@ export async function storeThumbnailOnly(buffer: Buffer, keyPrefix: string): Pro
     return null;
   }
 }
+
+const AVATAR_SIZE = 256;
+
+/**
+ * Resizes an uploaded profile picture into a fixed 256×256 square (cropped
+ * to fill, not letterboxed — matches how avatars are conventionally
+ * displayed everywhere, unlike gallery photos which keep their own aspect
+ * ratio) and stores it under `users/<userId>/`. Returns null for anything
+ * unreadable, same fail-soft convention as the other store* helpers here.
+ */
+export async function storeAvatar(file: File, userId: string): Promise<string | null> {
+  try {
+    const original = Buffer.from(await file.arrayBuffer());
+    const resized = await sharp(original)
+      .rotate()
+      .resize({ width: AVATAR_SIZE, height: AVATAR_SIZE, fit: "cover" })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    const key = `users/${userId}/${randomUUID()}-avatar.jpg`;
+    await putObject(key, resized, "image/jpeg");
+    return key;
+  } catch {
+    return null;
+  }
+}

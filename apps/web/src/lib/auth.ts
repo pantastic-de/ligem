@@ -36,6 +36,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+  events: {
+    // Fires on every successful sign-in (Credentials and Google alike) —
+    // deliberately just this one timestamp, not a full login-history log,
+    // matching this app's otherwise lightweight trust/safety footprint
+    // (see User.lastLoginAt in schema.prisma).
+    async signIn({ user }) {
+      if (!user.id) return;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+    },
+  },
   providers: [
     Credentials({
       credentials: {

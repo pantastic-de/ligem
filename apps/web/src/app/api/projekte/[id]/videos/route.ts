@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { MAX_VIDEO_SIZE, isAllowedVideoType, storeVideo } from "@/lib/media";
 
 // Deliberately a plain Route Handler rather than a Server Action, called
@@ -29,7 +29,7 @@ export async function POST(
   if (!listing) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

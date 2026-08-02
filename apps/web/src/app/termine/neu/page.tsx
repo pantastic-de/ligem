@@ -29,7 +29,12 @@ export default async function TerminEintragenEinstiegPage() {
   }
 
   const listings = await prisma.listing.findMany({
-    where: { createdById: session.user.id },
+    where: {
+      OR: [
+        { createdById: session.user.id },
+        { managers: { some: { userId: session.user.id } } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
   });
 

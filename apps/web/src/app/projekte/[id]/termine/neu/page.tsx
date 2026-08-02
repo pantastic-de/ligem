@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
 import { createEvent } from "../actions";
 
@@ -33,7 +33,7 @@ export default async function NeuerTerminPage({
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
 

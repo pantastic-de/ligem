@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageEvent, canManageListing } from "@/lib/authz";
 import { setEventLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 
@@ -20,7 +20,7 @@ async function requireListingOwner(listingId: string) {
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
   return session.user.id;
@@ -33,12 +33,12 @@ async function requireEventAccess(eventId: string) {
   }
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { createdById: true },
+    select: { createdById: true, listingId: true },
   });
   if (!event) {
     notFound();
   }
-  if (event.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageEvent(session.user.id, event))) {
     notFound();
   }
 }

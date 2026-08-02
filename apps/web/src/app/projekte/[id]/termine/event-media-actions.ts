@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageEvent } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
 import {
   MAX_PANORAMA_SIZE,
@@ -28,7 +28,7 @@ async function requireEventAccess(eventId: string) {
   if (!event) {
     notFound();
   }
-  if (event.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageEvent(session.user.id, event))) {
     notFound();
   }
   return { userId: session.user.id, listingId: event.listingId };

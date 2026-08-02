@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
@@ -13,6 +14,15 @@ export const metadata: Metadata = {
 };
 
 const BULK_FORM_ID = "bulk-nutzer-form";
+const dateTimeFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" });
+
+const statusLabels: Record<string, string> = {
+  DRAFT: "Entwurf",
+  PENDING_REVIEW: "Wird geprüft",
+  PUBLISHED: "Veröffentlicht",
+  REJECTED: "Abgelehnt",
+  ARCHIVED: "Archiviert",
+};
 
 const roleOptions: { value: string; label: string }[] = [
   { value: "SUCHENDE", label: "Suchende" },
@@ -37,7 +47,20 @@ export default async function AdminNutzerPage({
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "asc" },
-    include: { roles: true },
+    include: {
+      roles: true,
+      createdListings: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, projectName: true, status: true, _count: { select: { managers: true } } },
+      },
+      createdEvents: {
+        orderBy: { startAt: "desc" },
+        select: { id: true, title: true, listingId: true },
+      },
+      listingManagerships: {
+        select: { listing: { select: { id: true, projectName: true } } },
+      },
+    },
   });
 
   const isDemoEmail = (email: string) => email.endsWith(`@${DEMO_EMAIL_DOMAIN}`);
@@ -148,8 +171,73 @@ export default async function AdminNutzerPage({
                     ) : null}
                   </span>
                 </span>
-                <span className="text-sm text-text-muted">{user.email}</span>
+                <span className="text-right text-sm text-text-muted">
+                  {user.email}
+                  <br />
+                  <span className="text-xs">
+                    {user.lastLoginAt
+                      ? `Letzter Login: ${dateTimeFormat.format(user.lastLoginAt)}`
+                      : "Noch nie eingeloggt"}
+                  </span>
+                </span>
               </div>
+
+              {user.createdListings.length > 0 ||
+              user.createdEvents.length > 0 ||
+              user.listingManagerships.length > 0 ? (
+                <details className="mt-3">
+                  <summary className="cursor-pointer select-none text-sm font-medium text-primary">
+                    Projekte ({user.createdListings.length}) &amp; Termine ({user.createdEvents.length})
+                    {user.listingManagerships.length > 0
+                      ? ` · verwaltet ${user.listingManagerships.length} fremde(s) Projekt(e) mit`
+                      : ""}
+                  </summary>
+                  <div className="mt-2 flex flex-col gap-3 rounded-xl bg-bg p-3 text-sm">
+                    {user.createdListings.length > 0 ? (
+                      <ul className="flex flex-col gap-1">
+                        {user.createdListings.map((listing) => (
+                          <li key={listing.id} className="flex items-center justify-between gap-2">
+                            <Link href={`/projekte/${listing.id}`} className="text-primary">
+                              {listing.projectName}
+                            </Link>
+                            <span className="text-text-muted">
+                              {statusLabels[listing.status] ?? listing.status}
+                              {listing._count.managers > 0 ? (
+                                <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium align-middle">
+                                  {listing._count.managers} Mitverwalter
+                                </span>
+                              ) : null}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {user.createdEvents.length > 0 ? (
+                      <ul className="flex flex-col gap-1">
+                        {user.createdEvents.map((event) => (
+                          <li key={event.id}>
+                            <span className="text-text-muted">Termin: </span>
+                            {event.title}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {user.listingManagerships.length > 0 ? (
+                      <ul className="flex flex-col gap-1">
+                        {user.listingManagerships.map((m) => (
+                          <li key={m.listing.id}>
+                            <span className="text-text-muted">Mitverwaltet: </span>
+                            <Link href={`/projekte/${m.listing.id}`} className="text-primary">
+                              {m.listing.projectName}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+
               <form action={updateUserRoles} className="mt-4 flex flex-wrap items-center gap-4">
                 <input type="hidden" name="userId" value={user.id} />
                 {roleOptions.map((role) => (

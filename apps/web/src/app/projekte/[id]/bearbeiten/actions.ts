@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { setListingLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
@@ -48,7 +48,7 @@ export async function updateListing(formData: FormData): Promise<void> {
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
 

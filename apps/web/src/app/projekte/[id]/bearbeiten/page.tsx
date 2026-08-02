@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
@@ -65,8 +65,7 @@ export default async function ProjektBearbeitenPage({
   if (!listing) {
     notFound();
   }
-  const canEdit =
-    listing.createdById === session.user.id || (await isAdmin(session.user.id));
+  const canEdit = await canManageListing(session.user.id, id, listing.createdById);
   if (!canEdit) {
     notFound();
   }

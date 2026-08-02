@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
 import type { Event, Prisma } from "@/generated/prisma/client";
 import { ProjekteSearchForm } from "@/components/projekte-search-form";
 import { ProjekteSortSelect } from "@/components/projekte-sort-select";
@@ -427,7 +427,9 @@ export default async function ProjektePage({
       const session = await auth();
       const isOwner = session?.user?.id === listing.createdById;
       const viewerIsAdmin = session?.user?.id ? await isAdmin(session.user.id) : false;
-      const canManage = isOwner || viewerIsAdmin;
+      const canManage = session?.user?.id
+        ? await canManageListing(session.user.id, listing.id, listing.createdById)
+        : false;
 
       if (listing.status === "PUBLISHED" || canManage) {
         selectedListing = listing;

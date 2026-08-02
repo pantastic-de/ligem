@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageEvent } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
@@ -64,8 +64,7 @@ export default async function TerminBearbeitenPage({
   if (!event || event.listingId !== listingId) {
     notFound();
   }
-  const userIsAdmin = await isAdmin(session.user.id);
-  if (event.createdById !== session.user.id && !userIsAdmin) {
+  if (!(await canManageEvent(session.user.id, event))) {
     notFound();
   }
 

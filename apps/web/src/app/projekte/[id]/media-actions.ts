@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
 import {
   MAX_PANORAMA_SIZE,
@@ -28,7 +28,7 @@ async function requireListingAccess(listingId: string) {
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
   return session.user.id;

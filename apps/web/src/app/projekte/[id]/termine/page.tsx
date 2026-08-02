@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { deleteEvent } from "./actions";
 
 export const metadata: Metadata = {
@@ -35,7 +35,7 @@ export default async function TerminePage({
   if (!listing) {
     notFound();
   }
-  if (listing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+  if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
 

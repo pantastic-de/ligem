@@ -32,3 +32,45 @@ export async function requireAdminAction(): Promise<Session> {
   }
   return session;
 }
+
+/**
+ * Content-edit rights on a Listing: the original creator, any co-manager
+ * added via ListingManager (see /mein-konto — content-editing rights only,
+ * a manager can't add/remove other managers), or an ADMIN. Takes the
+ * listing's already-known `createdById` rather than re-fetching it, since
+ * every call site already has the listing loaded for other reasons.
+ */
+export async function canManageListing(
+  userId: string,
+  listingId: string,
+  listingCreatedById: string,
+): Promise<boolean> {
+  if (userId === listingCreatedById) return true;
+  if (await isAdmin(userId)) return true;
+  const manager = await prisma.listingManager.findUnique({
+    where: { listingId_userId: { listingId, userId } },
+  });
+  return Boolean(manager);
+}
+
+/**
+ * Content-edit rights on an Event: the original creator, an ADMIN, or —
+ * since a Listing's managers automatically also manage its events (see
+ * ListingManager in schema.prisma) — anyone who can manage the event's
+ * listing, if it has one (organization-only events with no listingId have
+ * no such fallback). Takes the event's already-known createdById/listingId
+ * rather than re-fetching it, since every call site already has the event
+ * loaded for other reasons.
+ */
+export async function canManageEvent(
+  userId: string,
+  event: { createdById: string; listingId: string | null },
+): Promise<boolean> {
+  if (userId === event.createdById) return true;
+  if (await isAdmin(userId)) return true;
+  if (!event.listingId) return false;
+  const manager = await prisma.listingManager.findUnique({
+    where: { listingId_userId: { listingId: event.listingId, userId } },
+  });
+  return Boolean(manager);
+}

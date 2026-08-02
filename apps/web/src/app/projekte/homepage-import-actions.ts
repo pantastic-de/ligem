@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing } from "@/lib/authz";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
 import { runHomepageImport } from "@/lib/homepage-import";
 
@@ -63,7 +63,7 @@ export async function importFromHomepage(input: {
     if (!existing) {
       redirect("/projekte/neu");
     }
-    if (existing.createdById !== session.user.id && !(await isAdmin(session.user.id))) {
+    if (!(await canManageListing(session.user.id, listingId, existing.createdById))) {
       redirect("/projekte/neu");
     }
     if (existing.lastAiImportAt && Date.now() - existing.lastAiImportAt.getTime() < COOLDOWN_MS) {

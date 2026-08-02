@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
 import { ListingDetail } from "@/components/listing-detail";
 import { stripHtml } from "@/lib/sanitize-html";
 
@@ -74,7 +74,9 @@ export default async function ProjektDetailPage({
   const session = await auth();
   const isOwner = session?.user?.id === listing.createdById;
   const viewerIsAdmin = session?.user?.id ? await isAdmin(session.user.id) : false;
-  const canManage = isOwner || viewerIsAdmin;
+  const canManage = session?.user?.id
+    ? await canManageListing(session.user.id, listing.id, listing.createdById)
+    : false;
 
   if (listing.status !== "PUBLISHED" && !canManage) {
     notFound();
