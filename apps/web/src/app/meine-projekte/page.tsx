@@ -55,6 +55,20 @@ export default async function MeineProjektePage() {
     countsByListing[row.listingId] = entry;
   }
 
+  // Open (PENDING) Kontaktanfragen per listing — same batched-groupBy
+  // approach as the view counts above, feeding both this page's per-listing
+  // badge and (summed across every listing a user owns/co-manages) the
+  // header nav's red notification badge (see AccountMenu).
+  const pendingRequestGroups =
+    listingIds.length > 0
+      ? await prisma.contactRequest.groupBy({
+          by: ["listingId"],
+          where: { listingId: { in: listingIds }, status: "PENDING" },
+          _count: true,
+        })
+      : [];
+  const pendingByListing = Object.fromEntries(pendingRequestGroups.map((g) => [g.listingId, g._count]));
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -84,6 +98,7 @@ export default async function MeineProjektePage() {
           {listings.map((listing) => {
             const isCoManaged = listing.createdById !== session.user.id;
             const counts = countsByListing[listing.id] ?? { overview: 0, detail: 0 };
+            const pendingRequests = pendingByListing[listing.id] ?? 0;
             return (
               <li key={listing.id} className="rounded-2xl bg-surface shadow-sm">
                 <Link
@@ -118,12 +133,25 @@ export default async function MeineProjektePage() {
                       {counts.detail}
                     </span>
                   </span>
-                  <Link
-                    href={`/projekte/${listing.id}/statistik`}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    Statistik ansehen →
-                  </Link>
+                  <span className="flex items-center gap-4">
+                    <Link
+                      href={`/projekte/${listing.id}/anfragen`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Kontaktanfragen
+                      {pendingRequests > 0 ? (
+                        <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-error px-1.5 text-xs font-semibold text-white">
+                          {pendingRequests}
+                        </span>
+                      ) : null}
+                    </Link>
+                    <Link
+                      href={`/projekte/${listing.id}/statistik`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Statistik ansehen →
+                    </Link>
+                  </span>
                 </div>
               </li>
             );

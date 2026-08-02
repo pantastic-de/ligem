@@ -19,10 +19,17 @@ import { ChevronDown } from "lucide-react";
 export function AccountMenu({
   displayName,
   admin,
+  openRequestsCount,
   signOutAction,
 }: {
   displayName: string;
   admin: boolean;
+  // Combined count of pending ContactRequests + not-yet-viewed
+  // EventRegistrations across every listing/event this user owns/co-
+  // manages (see src/lib/open-requests.ts) — shown as a small red badge on
+  // the menu trigger itself so it's visible without opening the dropdown,
+  // mirroring a typical notification-bell pattern.
+  openRequestsCount: number;
   signOutAction: () => Promise<void>;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -33,9 +40,17 @@ export function AccountMenu({
 
   return (
     <details ref={detailsRef} className="relative">
-      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
+      <summary className="relative inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
         {displayName}
         <ChevronDown className="h-4 w-4" aria-hidden="true" />
+        {openRequestsCount > 0 ? (
+          <span
+            className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white"
+            aria-label={`${openRequestsCount} offene Anfragen`}
+          >
+            {openRequestsCount}
+          </span>
+        ) : null}
       </summary>
       <div
         onClick={close}

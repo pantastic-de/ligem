@@ -38,6 +38,16 @@ export default async function AnmeldungenPage({
     notFound();
   }
 
+  // Marks every still-unseen registration as read the moment the organizer
+  // opens this list — EventRegistration otherwise has no read/status concept
+  // at all, but the header nav's notification badge (see AccountMenu) needs
+  // *some* notion of "still open" to count for Termine, mirroring
+  // ContactRequest.status === PENDING for the same badge.
+  await prisma.eventRegistration.updateMany({
+    where: { eventId, viewedAt: null },
+    data: { viewedAt: new Date() },
+  });
+
   const totalParticipants = event.registrations.reduce(
     (sum, r) => sum + r.participantCount,
     0,

@@ -35,6 +35,12 @@ model User {
   // deliberately just a single timestamp, not a full login-history log,
   // matching this app's otherwise lightweight trust/safety footprint.
   lastLoginAt   DateTime?
+  // Opt-in toggle (see /mein-konto) — forwards a copy of every new
+  // ContactRequest on any Listing this user owns/co-manages to this User's
+  // own real `email`, via SMTP (src/lib/mailer.ts), since otherwise a
+  // contact request only ever shows up inside the app itself (the
+  // Kontaktanfragen page) with no notification at all.
+  notifyContactRequestsByEmail Boolean @default(false)
 
   roles UserRoleAssignment[]
 
@@ -599,6 +605,13 @@ model EventRegistration {
   participantCount Int      @default(1)
   message          String?
   createdAt        DateTime @default(now())
+  // Null until the organizer opens this event's /anmeldungen list (which
+  // batch-marks every then-still-null row as viewed) — EventRegistration
+  // otherwise has no status/read concept at all (see CLAUDE.md: "no accept/
+  // decline workflow, the organizer just sees a list"), but the header nav
+  // badge (see AccountMenu) needs *some* notion of "still open" to count,
+  // mirroring ContactRequest.status === PENDING for that same badge.
+  viewedAt         DateTime?
 }
 
 // --- Saved searches ---------------------------------------------------------

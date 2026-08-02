@@ -3,12 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
+import { getOpenRequestsCount } from "@/lib/open-requests";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
 
 export async function SiteHeader() {
   const session = await auth();
   const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
+  const openRequestsCount = session?.user?.id ? await getOpenRequestsCount(session.user.id) : 0;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
 
   async function handleSignOut() {
@@ -61,7 +63,12 @@ export async function SiteHeader() {
             // so it can close after a click on one of its own items — see
             // that component for why a plain <details> alone doesn't do
             // that across a client-side navigation.
-            <AccountMenu displayName={displayName} admin={admin} signOutAction={handleSignOut} />
+            <AccountMenu
+              displayName={displayName}
+              admin={admin}
+              openRequestsCount={openRequestsCount}
+              signOutAction={handleSignOut}
+            />
           ) : (
             // "Registrieren" isn't a separate nav entry — /anmelden already
             // offers it as an option ("Noch kein Konto? Registrieren") right

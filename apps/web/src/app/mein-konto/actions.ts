@@ -16,6 +16,7 @@ export async function updateProfile(formData: FormData): Promise<void> {
 
   const name = formData.get("name")?.toString().trim();
   const email = formData.get("email")?.toString().trim().toLowerCase();
+  const notifyContactRequestsByEmail = formData.get("notifyContactRequestsByEmail") === "1";
   if (!email) {
     redirect("/mein-konto?error=email-fehlt");
   }
@@ -23,7 +24,7 @@ export async function updateProfile(formData: FormData): Promise<void> {
   try {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name || null, email },
+      data: { name: name || null, email, notifyContactRequestsByEmail },
     });
   } catch {
     // Almost certainly the unique-email constraint (another account already

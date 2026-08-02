@@ -267,6 +267,12 @@ export function ListingDetail({
           >
             Termine verwalten
           </Link>
+          <Link
+            href={`/projekte/${listing.id}/anfragen`}
+            className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 text-sm font-medium transition-colors hover:bg-surface"
+          >
+            Kontaktanfragen
+          </Link>
         </div>
       ) : null}
 

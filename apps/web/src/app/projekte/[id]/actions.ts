@@ -1,9 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendMail } from "@/lib/mailer";
+import { SITE_URL } from "@/lib/site";
 
 // The contact form is rendered both on the standalone /projekte/[id] page
 // and inline in /projekte's results column (see listing-detail.tsx /
@@ -16,6 +19,51 @@ function sanitizeReturnTo(value: string | undefined, fallback: string): string {
     return value;
   }
   return fallback;
+}
+
+// Fires a best-effort email to every owner/co-manager of this listing who
+// opted in via /mein-konto's "Kontaktanfragen per E-Mail weiterhilfen"
+// checkbox (User.notifyContactRequestsByEmail) — otherwise a new contact
+// request only ever shows up inside the app itself (/projekte/[id]/anfragen),
+// with no notification at all. The actual SMTP send is deferred via after()
+// (see recordListingViews for the same pattern) so a slow/failing mail
+// server can't hold up the redirect this action already does.
+async function notifyContactRequest(
+  listingId: string,
+  senderName: string,
+  senderEmail: string,
+  message: string,
+): Promise<void> {
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: {
+      projectName: true,
+      createdBy: { select: { email: true, notifyContactRequestsByEmail: true } },
+      managers: { select: { user: { select: { email: true, notifyContactRequestsByEmail: true } } } },
+    },
+  });
+  if (!listing) return;
+
+  // Deduped — a co-manager row for the same user as the creator shouldn't
+  // normally exist, but nothing actively prevents it, and this is a one-line
+  // guard against ever double-sending the same notification.
+  const recipients = [
+    ...new Set(
+      [listing.createdBy, ...listing.managers.map((m) => m.user)]
+        .filter((u) => u.notifyContactRequestsByEmail)
+        .map((u) => u.email),
+    ),
+  ];
+  if (recipients.length === 0) return;
+
+  const subject = `Neue Kontaktanfrage für „${listing.projectName}"`;
+  const text = `${senderName} (${senderEmail}) hat über LiGem eine Nachricht zu „${listing.projectName}" geschickt:\n\n${message}\n\nDu kannst direkt per E-Mail an ${senderEmail} antworten, oder die Anfrage annehmen/ablehnen unter:\n${SITE_URL}/projekte/${listingId}/anfragen`;
+
+  after(async () => {
+    for (const to of recipients) {
+      await sendMail({ to, subject, text });
+    }
+  });
 }
 
 export async function submitContactRequest(formData: FormData): Promise<void> {
@@ -44,6 +92,7 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
       senderUserId: session?.user?.id ?? null,
     },
   });
+  await notifyContactRequest(listingId, senderName, senderEmail, message);
 
   redirect(`${returnTo}${separator}kontakt=1`);
 }

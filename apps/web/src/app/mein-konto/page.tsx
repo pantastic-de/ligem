@@ -162,6 +162,17 @@ export default async function MeinKontoPage({
               ? ` Letzter Login: ${dateTimeFormat.format(user.lastLoginAt)}.`
               : ""}
           </p>
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="notifyContactRequestsByEmail"
+              value="1"
+              defaultChecked={user.notifyContactRequestsByEmail}
+              className="h-5 w-5"
+            />
+            Bei neuen Kontaktanfragen für meine Projekte per E-Mail
+            benachrichtigen
+          </label>
           <button
             type="submit"
             className="min-h-12 self-start rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
