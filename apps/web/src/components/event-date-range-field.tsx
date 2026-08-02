@@ -56,6 +56,11 @@ export function EventDateRangeField({
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
 
+  // Computed once per render (cheap) rather than memoized — used to ring-
+  // highlight today's cell in the day grid below, independent of whichever
+  // day(s) are actually selected.
+  const todayKey = toDateKey(new Date());
+
   const days = useMemo(() => {
     const year = viewMonth.getFullYear();
     const month = viewMonth.getMonth();
@@ -135,6 +140,11 @@ export function EventDateRangeField({
             const inRange = Boolean(
               startDate && endDate && key > startDate && key < endDate,
             );
+            const isToday = key === todayKey;
+            // Past days are still clickable (no hard restriction), but
+            // greyed out since a new event's start/end date in the past
+            // isn't a meaningful choice.
+            const isPast = key < todayKey;
             return (
               <button
                 key={key}
@@ -146,6 +156,8 @@ export function EventDateRangeField({
                   "min-h-9 rounded-lg text-sm transition-colors hover:bg-bg",
                   isStart || isEnd ? "bg-primary text-white hover:bg-primary" : "",
                   inRange && !isStart && !isEnd ? "bg-primary/15" : "",
+                  isToday ? "ring-2 ring-inset ring-secondary" : "",
+                  isPast && !isStart && !isEnd ? "text-text-muted/50" : "",
                 ].join(" ")}
               >
                 {day.getDate()}

@@ -75,6 +75,11 @@ export function EventDateFilter({
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
 
+  // Computed once per render (cheap) rather than memoized — used to ring-
+  // highlight today's cell in the day grid below, independent of whichever
+  // day(s) are actually selected.
+  const todayKey = toDateKey(new Date());
+
   const days = useMemo(() => {
     const year = viewMonth.getFullYear();
     const month = viewMonth.getMonth();
@@ -197,6 +202,7 @@ export function EventDateFilter({
             );
             const dayColors = eventDayColors?.[key] ?? [];
             const selected = isStart || isEnd;
+            const isToday = key === todayKey;
             return (
               <button
                 key={key}
@@ -212,6 +218,7 @@ export function EventDateFilter({
                   "flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg text-sm transition-colors hover:bg-bg",
                   selected ? "bg-primary text-white hover:bg-primary" : "",
                   inRange && !selected ? "bg-primary/15" : "",
+                  isToday ? "ring-2 ring-inset ring-secondary" : "",
                 ].join(" ")}
               >
                 <span>{day.getDate()}</span>
