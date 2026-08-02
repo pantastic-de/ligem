@@ -1,14 +1,28 @@
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
 import { fetchPublicBuffer, fetchPublicText } from "@/lib/safe-fetch";
+import { SITE_URL } from "@/lib/site";
 
 const YOUTUBE_ID = /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{6,})/i;
 const VIMEO_ID = /vimeo\.com\/(\d+)/i;
+const OWN_HOSTNAME = new URL(SITE_URL).hostname;
 
 /** Same scheme validation/normalization as the homepage-URL field (reject
  * javascript:/data:/etc., auto-prepend https:// if missing) — a video link
- * is just another user-supplied URL with the same input-safety needs. */
+ * is just another user-supplied URL with the same input-safety needs.
+ * Additionally rejects a URL that resolves to this site's own domain (or
+ * any subdomain of it, e.g. "www.ligem.de") — the lightbox's iframe embeds
+ * a video link with `sandbox="allow-scripts ..."` (no `allow-same-origin`,
+ * deliberately, see photo-gallery.tsx), but a same-origin URL embedded that
+ * way would still be a bad idea to allow at all, and there's no legitimate
+ * reason a "video link" would ever point back at this site itself. */
 export function normalizeVideoLinkUrl(raw: string | null | undefined): string | null {
-  return normalizeHomepageUrl(raw);
+  const normalized = normalizeHomepageUrl(raw);
+  if (!normalized) return null;
+  const hostname = new URL(normalized).hostname;
+  if (hostname === OWN_HOSTNAME || hostname.endsWith(`.${OWN_HOSTNAME}`)) {
+    return null;
+  }
+  return normalized;
 }
 
 /**

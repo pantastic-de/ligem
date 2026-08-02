@@ -184,9 +184,17 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
             // — embedded directly regardless of provider, per explicit
             // product decision (not restricted to a trusted-provider
             // allowlist, even though framing an arbitrary third-party page
-            // carries real tracking/clickjacking risk). The sandbox
-            // attribute still blocks the framed page from navigating the
-            // top-level window or escaping via other means.
+            // carries real tracking/clickjacking risk). Deliberately
+            // `allow-scripts` WITHOUT `allow-same-origin`: that combination
+            // is a well-known sandbox-escape — a framed page that is (or
+            // redirects to) the same origin as the parent gets real
+            // same-origin access to the parent document once it also has
+            // script execution rights, defeating the sandbox entirely. Any
+            // legitimate video embed (YouTube/Vimeo/etc.) plays fine
+            // without same-origin access; only a same-origin "video link"
+            // would need it to do anything malicious — see
+            // normalizeVideoLinkUrl's same-origin rejection for the other
+            // half of this defense.
             <div
               className="h-full max-h-[90vh] w-full max-w-5xl"
               onClick={(e) => e.stopPropagation()}
@@ -198,7 +206,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
                 referrerPolicy="strict-origin-when-cross-origin"
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                sandbox="allow-scripts allow-presentation allow-popups"
                 className="h-full w-full border-0"
               />
             </div>
