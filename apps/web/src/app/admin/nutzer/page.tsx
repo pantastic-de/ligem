@@ -40,12 +40,27 @@ const errorMessages: Record<string, string> = {
 export default async function AdminNutzerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; suche?: string; ausblendenDemo?: string }>;
 }) {
   const session = await requireAdminPage();
-  const { error, ok } = await searchParams;
+  const { error, ok, suche, ausblendenDemo } = await searchParams;
+  const sucheValue = typeof suche === "string" ? suche.trim() : "";
+  const hideDemos = ausblendenDemo === "1";
+
+  const isDemoEmail = (email: string) => email.endsWith(`@${DEMO_EMAIL_DOMAIN}`);
 
   const users = await prisma.user.findMany({
+    where: {
+      ...(sucheValue
+        ? {
+            OR: [
+              { name: { contains: sucheValue, mode: "insensitive" } },
+              { email: { contains: sucheValue, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+      ...(hideDemos ? { email: { not: { endsWith: `@${DEMO_EMAIL_DOMAIN}` } } } : {}),
+    },
     orderBy: { createdAt: "asc" },
     include: {
       roles: true,
@@ -63,7 +78,6 @@ export default async function AdminNutzerPage({
     },
   });
 
-  const isDemoEmail = (email: string) => email.endsWith(`@${DEMO_EMAIL_DOMAIN}`);
   const demoCount = users.filter((u) => isDemoEmail(u.email)).length;
 
   return (
@@ -85,6 +99,42 @@ export default async function AdminNutzerPage({
         </p>
       ) : null}
 
+      {/* Plain GET form — no JS needed, matches this app's convention for
+          search/filter that isn't wired up for auto-submit (unlike
+          /projekte's/termine's sidebar forms). Reloading with the same
+          suche/ausblendenDemo params re-runs the query above server-side. */}
+      <form method="GET" className="mt-6 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="suche" className="text-sm font-medium">
+            Suche
+          </label>
+          <input
+            id="suche"
+            type="text"
+            name="suche"
+            defaultValue={sucheValue}
+            placeholder="Name oder E-Mail"
+            className="min-h-11 rounded-xl border border-text/20 bg-bg px-4 text-sm"
+          />
+        </div>
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="ausblendenDemo"
+            value="1"
+            defaultChecked={hideDemos}
+            className="h-5 w-5"
+          />
+          Demo-Nutzer ausblenden
+        </label>
+        <button
+          type="submit"
+          className="inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+        >
+          Suchen
+        </button>
+      </form>
+
       {/* Checkboxes in each row below reference this form via the `form`
           attribute rather than DOM nesting — each row already has its own
           Rollen-speichern form, and a literal nested <form> would be
@@ -93,6 +143,10 @@ export default async function AdminNutzerPage({
         id={BULK_FORM_ID}
         className="mt-8 flex flex-col gap-3 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
       >
+        {/* Carried along so a bulk action's redirect (see bulkDeleteUsers)
+            lands back on the same filtered view instead of resetting it. */}
+        <input type="hidden" name="suche" value={sucheValue} />
+        <input type="hidden" name="ausblendenDemo" value={hideDemos ? "1" : ""} />
         <div>
           <h2 className="font-semibold">
             Auswahl
@@ -179,6 +233,8 @@ export default async function AdminNutzerPage({
                   {user.email}
                   <br />
                   <span className="text-xs">
+                    Registriert: {dateTimeFormat.format(user.createdAt)}
+                    <br />
                     {user.lastLoginAt
                       ? `Letzter Login: ${dateTimeFormat.format(user.lastLoginAt)}`
                       : "Noch nie eingeloggt"}

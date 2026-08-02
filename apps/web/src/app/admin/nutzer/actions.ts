@@ -82,9 +82,20 @@ export async function bulkDeleteUsers(formData: FormData): Promise<void> {
   const session = await requireAdminAction();
   const ids = selectedIds(formData, session.user.id);
 
+  // Carried along from the bulk form's own hidden suche/ausblendenDemo
+  // fields (see page.tsx) so this redirect lands back on the same filtered
+  // view instead of silently resetting it back to the unfiltered list.
+  const filterParams = new URLSearchParams();
+  const suche = formData.get("suche")?.toString();
+  if (suche) filterParams.set("suche", suche);
+  if (formData.get("ausblendenDemo")?.toString() === "1") {
+    filterParams.set("ausblendenDemo", "1");
+  }
+
   let target: string;
   if (ids.length === 0) {
-    target = "/admin/nutzer?error=keine-auswahl";
+    filterParams.set("error", "keine-auswahl");
+    target = `/admin/nutzer?${filterParams}`;
   } else {
     try {
       // Listing.createdById/Event.createdById are ON DELETE RESTRICT (see
@@ -95,9 +106,11 @@ export async function bulkDeleteUsers(formData: FormData): Promise<void> {
       // account would be a much bigger, more surprising destructive action
       // than the admin asked for.
       const result = await prisma.user.deleteMany({ where: { id: { in: ids } } });
-      target = `/admin/nutzer?ok=${result.count}`;
+      filterParams.set("ok", String(result.count));
+      target = `/admin/nutzer?${filterParams}`;
     } catch {
-      target = "/admin/nutzer?error=besitzt-inhalte";
+      filterParams.set("error", "besitzt-inhalte");
+      target = `/admin/nutzer?${filterParams}`;
     }
   }
 
