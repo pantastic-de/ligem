@@ -97,22 +97,6 @@ export default async function ProjektBearbeitenPage({
           Dateien wählen.
         </p>
       ) : null}
-      {error === "homepage-ungueltig" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Diese Homepage-Adresse konnte nicht erkannt werden.
-        </p>
-      ) : null}
-      {error === "warte" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Bitte warte kurz, bevor du den KI-Import erneut startest.
-        </p>
-      ) : null}
-      {error === "import-fehlgeschlagen" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Die Homepage konnte nicht durchsucht werden. Bitte prüfe die
-          Adresse oder versuche es später erneut.
-        </p>
-      ) : null}
       {error === "panorama-format" ? (
         <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
           Dieses Bild hat nicht das für 360°-Panoramen nötige Seitenverhältnis

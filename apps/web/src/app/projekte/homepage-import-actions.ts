@@ -1,31 +1,43 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing } from "@/lib/authz";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
-import { runHomepageImport } from "@/lib/homepage-import";
+import { runHomepageExtraction, applyHomepageImportResult, type HomepageImportResult } from "@/lib/homepage-import";
+import {
+  createImportJob,
+  updateImportJob,
+  completeImportJob,
+  failImportJob,
+  getImportJob,
+  scheduleImportJobCleanup,
+  type HomepageImportJob,
+} from "@/lib/homepage-import-progress";
 
 const COOLDOWN_MS = 60_000;
 
 /**
- * Runs the "KI-Import" for a listing's homepage. Called directly from
- * client code (HomepageImportField), not through a <form> — same pattern
- * as reorderListingMedia in media-actions.ts. Handles both entry points:
- * with no listingId (called from /projekte/neu, before anything is saved)
- * it first creates a minimal draft listing, then imports into it; with an
- * existing listingId (called from /projekte/[id]/bearbeiten) it imports
- * directly into that listing. Either way it redirects to the edit page so
- * every field re-renders fresh from the database — see the plan's "Bekannte
- * Einschränkung" for why this is a deliberate simplification.
+ * Starts the "KI-Import" extraction (see homepage-import.ts) — kicks the
+ * actual work off in the background via after() (same mechanism the demo-
+ * data generator uses for its own long-running work, see CLAUDE.md) and
+ * returns a job id immediately so the client can poll getHomepageImportStatus
+ * for a live "was gerade passiert" status. Handles both entry points: with
+ * no listingId (called from /projekte/neu, before anything is saved) it
+ * first creates a minimal draft listing, then extracts from it; with an
+ * existing listingId (from /projekte/[id]/bearbeiten) it extracts directly.
+ * Nothing about the Listing's *content* fields changes here — only the
+ * extraction runs; applying the result is a separate, explicit step (see
+ * applyHomepageImport) once the user has reviewed it.
  */
-export async function importFromHomepage(input: {
+export async function startHomepageImport(input: {
   listingId?: string;
   homepageUrl: string;
   projectName: string;
-}): Promise<void> {
+}): Promise<{ ok: true; jobId: string; listingId: string } | { ok: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
@@ -33,10 +45,7 @@ export async function importFromHomepage(input: {
 
   const normalizedUrl = normalizeHomepageUrl(input.homepageUrl);
   if (!normalizedUrl) {
-    const back = input.listingId
-      ? `/projekte/${input.listingId}/bearbeiten`
-      : "/projekte/neu";
-    redirect(`${back}?error=homepage-ungueltig`);
+    return { ok: false, error: "homepage-ungueltig" };
   }
 
   let listingId = input.listingId;
@@ -44,7 +53,7 @@ export async function importFromHomepage(input: {
   if (!listingId) {
     const projectName = input.projectName.trim();
     if (!projectName) {
-      redirect("/projekte/neu?error=name-fehlt");
+      return { ok: false, error: "name-fehlt" };
     }
     const listing = await prisma.listing.create({
       data: {
@@ -61,25 +70,82 @@ export async function importFromHomepage(input: {
       select: { createdById: true, lastAiImportAt: true },
     });
     if (!existing) {
-      redirect("/projekte/neu");
+      return { ok: false, error: "nicht-gefunden" };
     }
     if (!(await canManageListing(session.user.id, listingId, existing.createdById))) {
-      redirect("/projekte/neu");
+      return { ok: false, error: "keine-berechtigung" };
     }
     if (existing.lastAiImportAt && Date.now() - existing.lastAiImportAt.getTime() < COOLDOWN_MS) {
-      redirect(`/projekte/${listingId}/bearbeiten?error=warte`);
+      return { ok: false, error: "warte" };
     }
-    await prisma.listing.update({
-      where: { id: listingId },
-      data: { homepageUrl: normalizedUrl },
-    });
+    await prisma.listing.update({ where: { id: listingId }, data: { homepageUrl: normalizedUrl } });
   }
 
-  const result = await runHomepageImport(listingId, normalizedUrl, session.user.id);
+  // Set immediately (not only once extraction succeeds) — this is the only
+  // real abuse guard on an otherwise free-standing, paid LLM call, so it
+  // must gate the *attempt*, not just a successful one.
+  await prisma.listing.update({ where: { id: listingId }, data: { lastAiImportAt: new Date() } });
 
-  if (!result.ok) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=import-fehlgeschlagen`);
+  const jobId = createImportJob();
+  const finalListingId = listingId;
+  after(async () => {
+    try {
+      const extraction = await runHomepageExtraction(jobId, finalListingId, normalizedUrl);
+      if (!extraction.ok) {
+        failImportJob(jobId, extraction.error);
+      } else {
+        updateImportJob(jobId, "Fertig.");
+        completeImportJob(jobId, extraction.result);
+        // imageUrls travel alongside the result via a side channel keyed by
+        // jobId, since HomepageImportJob's `result` field is the public,
+        // client-facing shape — see getHomepageImportStatus.
+        pendingImageUrls.set(jobId, extraction.imageUrls);
+      }
+    } catch (err) {
+      console.error("Fehler beim KI-Import", err);
+      failImportJob(jobId, "extraktion-fehlgeschlagen");
+    }
+    scheduleImportJobCleanup(jobId);
+  });
+
+  return { ok: true, jobId, listingId };
+}
+
+// image URLs found during extraction, kept server-side only (never sent to
+// the client — no reason to expose scraped image URLs) until applyHomepageImport
+// needs them; cleaned up alongside the job itself.
+const pendingImageUrls = new Map<string, string[]>();
+
+export async function getHomepageImportStatus(jobId: string): Promise<HomepageImportJob | null> {
+  return getImportJob(jobId) ?? null;
+}
+
+/**
+ * Persists exactly the fields the user checked in the review UI (see
+ * HomepageImportField) and redirects to the edit page, same as the
+ * pipeline's original one-shot version did — the review step just runs
+ * *before* this now, entirely in the client's own state, rather than before
+ * a mutation Server Actions would otherwise have already made.
+ */
+export async function applyHomepageImport(
+  listingId: string,
+  jobId: string,
+  result: HomepageImportResult,
+  selections: Record<string, boolean>,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden");
   }
+  const listing = await prisma.listing.findUnique({ where: { id: listingId }, select: { createdById: true } });
+  if (!listing || !(await canManageListing(session.user.id, listingId, listing.createdById))) {
+    redirect("/projekte/neu");
+  }
+
+  const imageUrls = pendingImageUrls.get(jobId) ?? [];
+  pendingImageUrls.delete(jobId);
+
+  await applyHomepageImportResult(listingId, session.user.id, result, imageUrls, selections);
 
   const termineParam = result.eventHints.length
     ? `&termine=${encodeURIComponent(result.eventHints.join("; "))}`
