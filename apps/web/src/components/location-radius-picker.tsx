@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
+import { TILE_URL, TILE_ATTRIBUTION } from "@/lib/map-tiles";
 
 const RADIUS_STEPS: (number | null)[] = [1, 5, 10, 20, 50, 75, 100, 150, 200, 300, null];
 
@@ -290,8 +291,8 @@ export function LocationRadiusPicker({
         [startLat, startLng],
         lat != null ? 11 : 6,
       );
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
+      L.tileLayer(TILE_URL, {
+        attribution: TILE_ATTRIBUTION,
         maxZoom: 18,
       }).addTo(map);
 

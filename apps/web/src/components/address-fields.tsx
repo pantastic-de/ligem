@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
 import { useEffect, useRef, useState } from "react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
+import { TILE_URL, TILE_ATTRIBUTION } from "@/lib/map-tiles";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -69,8 +70,8 @@ export function AddressFields({
         scrollWheelZoom: false,
         gestureHandling: true,
       }).setView([startLat, startLng], lat != null ? 13 : 5);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
+      L.tileLayer(TILE_URL, {
+        attribution: TILE_ATTRIBUTION,
         maxZoom: 18,
       }).addTo(map);
 
