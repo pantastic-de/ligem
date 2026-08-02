@@ -190,7 +190,10 @@ export default async function AdminTerminePage({
                 </div>
 
                 {event.description ? (
-                  <p className="mt-3 whitespace-pre-line text-sm text-text-muted">{event.description}</p>
+                  <div
+                    className="mt-3 text-sm text-text-muted [&>*+*]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_h2]:text-base [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic"
+                    dangerouslySetInnerHTML={{ __html: event.description }}
+                  />
                 ) : null}
 
                 <div className="mt-4 flex flex-wrap items-center gap-3">

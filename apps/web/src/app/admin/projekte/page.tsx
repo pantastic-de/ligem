@@ -202,16 +202,22 @@ export default async function AdminProjektePage({
                 </div>
 
                 {listing.howWeLive ? (
-                  <p className="mt-3 whitespace-pre-line text-sm text-text-muted">
-                    <strong className="font-medium text-text">So leben wir: </strong>
-                    {listing.howWeLive}
-                  </p>
+                  <div className="mt-3 text-sm">
+                    <strong className="font-medium text-text">So leben wir:</strong>
+                    <div
+                      className="mt-1 text-text-muted [&>*+*]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_h2]:text-base [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic"
+                      dangerouslySetInnerHTML={{ __html: listing.howWeLive }}
+                    />
+                  </div>
                 ) : null}
                 {listing.whoWeAreLooking ? (
-                  <p className="mt-2 whitespace-pre-line text-sm text-text-muted">
-                    <strong className="font-medium text-text">Wen wir suchen: </strong>
-                    {listing.whoWeAreLooking}
-                  </p>
+                  <div className="mt-3 text-sm">
+                    <strong className="font-medium text-text">Wen wir suchen:</strong>
+                    <div
+                      className="mt-1 text-text-muted [&>*+*]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_h2]:text-base [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic"
+                      dangerouslySetInnerHTML={{ __html: listing.whoWeAreLooking }}
+                    />
+                  </div>
                 ) : null}
                 {listing.moderationNote ? (
                   <p className="mt-2 rounded-xl bg-warning/10 px-3 py-2 text-sm text-warning">
