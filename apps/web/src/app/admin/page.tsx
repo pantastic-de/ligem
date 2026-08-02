@@ -73,6 +73,16 @@ export default async function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/admin/statistik"
+          className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+        >
+          <h2 className="text-lg font-semibold">Statistik</h2>
+          <p className="mt-1 text-text-muted">
+            Zugriffe über alle Projekte hinweg, Meistgesehene Projekte und
+            woher die Zugriffe kommen.
+          </p>
+        </Link>
+        <Link
           href="/admin/demo-daten"
           className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
         >

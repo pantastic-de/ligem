@@ -11,6 +11,7 @@ import { ListingDetail, type ListingDetailData } from "@/components/listing-deta
 import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
 import { escapeHtml } from "@/lib/map-result-item";
 import { HighlightText } from "@/components/highlight-text";
+import { recordListingViews } from "@/lib/listing-views";
 
 // Bare list page (any filters, no ?projekt= selection) stays indexable with
 // a self-canonical stripped of query params entirely — indexing every
@@ -540,6 +541,21 @@ export default async function ProjektePage({
     selectedIndex >= 0 && selectedIndex < sortedListings.length - 1
       ? sortedListings[selectedIndex + 1]
       : null;
+
+  // "Meine Projekte" statistics (see CLAUDE.md's Statistik section): the
+  // inline pane replaces the results list entirely while a selection is
+  // active (see the master-detail mechanism above), so only the one
+  // selected listing gets a DETAIL view then — never both, and never an
+  // OVERVIEW view for the other listings that aren't actually being shown
+  // in that render.
+  if (selectedListing) {
+    await recordListingViews([selectedListing.id], "DETAIL");
+  } else if (sortedListings.length > 0) {
+    await recordListingViews(
+      sortedListings.map((l) => l.id),
+      "OVERVIEW",
+    );
+  }
 
   // Human-readable summary of which filters produced this result count, so
   // the list above doesn't just show a number without context for how it

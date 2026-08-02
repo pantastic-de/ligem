@@ -58,6 +58,9 @@ model User {
   // owner/creator), which always keeps full rights including managing
   // this list itself.
   listingManagerships ListingManager[]
+  // Views this user contributed while logged in (see ListingView above) —
+  // named, with a link to their account, in a listing's statistics view.
+  listingViews        ListingView[]
 }
 
 // Grants a second (or third, ...) user edit rights on a Listing they didn't
@@ -180,6 +183,51 @@ enum ListingStatus {
   ARCHIVED
 }
 
+enum ListingViewType {
+  // Recorded once per PUBLISHED listing whenever it's rendered as a card in
+  // the /projekte results list (see recordListingViews in src/lib/
+  // listing-views.ts) — an "impression", not a click.
+  OVERVIEW
+  // Recorded once whenever the listing's full detail is actually opened,
+  // either the standalone /projekte/[id] page or the inline ?projekt=<id>
+  // pane on /projekte (both render the same ListingDetail component).
+  DETAIL
+}
+
+// One row per listing view (see ListingViewType) for the "Meine Projekte"
+// statistics feature — deliberately no IP address or session id at all:
+// this only needs raw counts plus "who" when it's actually knowable (a
+// logged-in viewer, or a named bot/search engine from its User-Agent), not
+// unique-visitor dedup, so there's no reason to take on the privacy
+// tradeoffs of storing a raw IP for something nobody asked for.
+model ListingView {
+  id           String          @id @default(cuid())
+  listingId    String
+  listing      Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  viewType     ListingViewType
+  viewedAt     DateTime        @default(now())
+  // Set only when the viewer was logged in at the time — shown by name
+  // with a link to their profile in the statistics view (see
+  // src/app/projekte/[id]/statistik/page.tsx). SetNull rather than Cascade:
+  // deleting a user account shouldn't retroactively erase the historical
+  // view counts they contributed.
+  viewerId     String?
+  viewer       User?           @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+  // Classified from the request's User-Agent header (src/lib/bot-detect.ts)
+  // — known search engines/AI agents get a real name in botName (e.g.
+  // "Googlebot", "GPTBot"); an unrecognized bot-like UA still sets isBot
+  // with botName null ("Sonstiger Bot"); a normal browser leaves both at
+  // their defaults.
+  isBot        Boolean         @default(false)
+  botName      String?
+  // Hostname only (e.g. "www.google.com"), never the full referrer URL —
+  // a full URL can carry another site's own query-string/path details that
+  // have nothing to do with this app and aren't this app's to store.
+  referrerHost String?
+
+  @@index([listingId, viewType])
+}
+
 // A Wohnprojekt/WG listing. Only projectName + owner are required. Structural
 // fields needed for search/map/browsing (location, group size, cost,
 // availability) are real columns; open-ended categorical filters (Projekt Typ,
@@ -283,6 +331,7 @@ model Listing {
   contactRequests   ContactRequest[]
   appointments      Appointment[]
   managers          ListingManager[]
+  views             ListingView[]
 
   @@index([status])
   @@index([organizationId])

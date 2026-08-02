@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { ListingDetail } from "@/components/listing-detail";
 import { stripHtml } from "@/lib/sanitize-html";
+import { recordListingViews } from "@/lib/listing-views";
 
 // Shared between generateMetadata and the page body via React's cache() so
 // the identical query only hits the database once per request instead of
@@ -80,6 +81,14 @@ export default async function ProjektDetailPage({
 
   if (listing.status !== "PUBLISHED" && !canManage) {
     notFound();
+  }
+
+  // Only real, public-audience views count for the "Meine Projekte"
+  // statistics feature (see CLAUDE.md's Statistik section) — a pending/
+  // rejected/archived listing being previewed by its own owner/an admin for
+  // moderation purposes isn't a "detail view" in that sense.
+  if (listing.status === "PUBLISHED") {
+    await recordListingViews([listing.id], "DETAIL");
   }
 
   const upcomingEvents =

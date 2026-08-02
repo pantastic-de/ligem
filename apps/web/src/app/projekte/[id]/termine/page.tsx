@@ -72,7 +72,11 @@ export default async function TerminePage({
               className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
             >
               <div>
-                <h2 className="font-semibold">{event.title}</h2>
+                <h2 className="font-semibold">
+                  <Link href={`/termine/${event.id}`} className="hover:underline">
+                    {event.title}
+                  </Link>
+                </h2>
                 <p className="text-sm text-text-muted">
                   {dateTimeFormat.format(event.startAt)}
                   {event.addressText ? ` · ${event.addressText}` : ""}

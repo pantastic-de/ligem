@@ -146,7 +146,11 @@ export default async function AdminNutzerPage({
           const isSelf = user.id === session.user.id;
           const isDemo = isDemoEmail(user.email);
           return (
-            <li key={user.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+            <li
+              key={user.id}
+              id={`user-${user.id}`}
+              className="scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <input

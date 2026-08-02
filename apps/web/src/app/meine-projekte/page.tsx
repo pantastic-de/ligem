@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { Eye, MousePointerClick } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,26 @@ export default async function MeineProjektePage() {
     orderBy: { createdAt: "desc" },
   });
 
+  // View-count summary (see /projekte/[id]/statistik for the full
+  // breakdown) — one grouped query across every listing shown here rather
+  // than one query per listing card.
+  const listingIds = listings.map((l) => l.id);
+  const viewCounts =
+    listingIds.length > 0
+      ? await prisma.listingView.groupBy({
+          by: ["listingId", "viewType"],
+          where: { listingId: { in: listingIds } },
+          _count: true,
+        })
+      : [];
+  const countsByListing: Record<string, { overview: number; detail: number }> = {};
+  for (const row of viewCounts) {
+    const entry = countsByListing[row.listingId] ?? { overview: 0, detail: 0 };
+    if (row.viewType === "OVERVIEW") entry.overview = row._count;
+    else entry.detail = row._count;
+    countsByListing[row.listingId] = entry;
+  }
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -62,11 +83,12 @@ export default async function MeineProjektePage() {
         <ul className="mt-8 flex flex-col gap-4">
           {listings.map((listing) => {
             const isCoManaged = listing.createdById !== session.user.id;
+            const counts = countsByListing[listing.id] ?? { overview: 0, detail: 0 };
             return (
-              <li key={listing.id}>
+              <li key={listing.id} className="rounded-2xl bg-surface shadow-sm">
                 <Link
                   href={`/projekte/${listing.id}`}
-                  className="flex items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm transition-colors hover:bg-bg"
+                  className="flex items-center justify-between gap-4 rounded-t-2xl p-4 transition-colors hover:bg-bg sm:p-6"
                 >
                   <span className="font-semibold">
                     {listing.projectName}
@@ -80,6 +102,29 @@ export default async function MeineProjektePage() {
                     {statusLabels[listing.status] ?? listing.status}
                   </span>
                 </Link>
+                {/* Compact view-count summary (see CLAUDE.md's Statistik
+                    section) — the full breakdown by source lives on its own
+                    /statistik page, linked here rather than inlined, since
+                    that breakdown is too much content to show for every
+                    listing at once on this overview. */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-text/10 px-4 py-3 text-sm text-text-muted sm:px-6">
+                  <span className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5" title="Zugriffe in der Übersicht">
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                      {counts.overview}
+                    </span>
+                    <span className="flex items-center gap-1.5" title="Detailansichten">
+                      <MousePointerClick className="h-4 w-4" aria-hidden="true" />
+                      {counts.detail}
+                    </span>
+                  </span>
+                  <Link
+                    href={`/projekte/${listing.id}/statistik`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Statistik ansehen →
+                  </Link>
+                </div>
               </li>
             );
           })}
