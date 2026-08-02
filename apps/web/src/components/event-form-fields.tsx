@@ -2,6 +2,7 @@ import type { AttributeGroup, AttributeOption } from "@/generated/prisma/client"
 import { AddressFields } from "@/components/address-fields";
 import { EventDateRangeField } from "@/components/event-date-range-field";
 import { RichTextField } from "@/components/rich-text-field";
+import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -41,6 +42,8 @@ export function EventFormFields({
   const multiSelectGroups = attributeGroups.filter((g) => g.allowMultiple);
   const veranstaltungsart = groupBySlug("veranstaltungsart");
   const selectedOptionIds = new Set(defaults.selectedOptionIds ?? []);
+  const selectedInGroup = (group: AttributeGroupWithOptions) =>
+    group.options.filter((o) => selectedOptionIds.has(o.id)).map((o) => o.id);
 
   return (
     <>
@@ -60,23 +63,13 @@ export function EventFormFields({
       </div>
 
       {veranstaltungsart ? (
-        <div className="flex flex-col gap-2">
-          <span className="font-medium">{veranstaltungsart.name}</span>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {veranstaltungsart.options.map((option) => (
-              <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name={`attr-${veranstaltungsart.slug}`}
-                  value={option.id}
-                  defaultChecked={selectedOptionIds.has(option.id)}
-                  className="h-5 w-5"
-                />
-                {option.name}
-              </label>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          label={veranstaltungsart.name}
+          name={`attr-${veranstaltungsart.slug}`}
+          options={veranstaltungsart.options}
+          defaultSelected={selectedInGroup(veranstaltungsart)}
+          multiple={veranstaltungsart.allowMultiple}
+        />
       ) : null}
 
       <EventDateRangeField
@@ -174,23 +167,13 @@ export function EventFormFields({
       />
 
       {multiSelectGroups.map((group) => (
-        <div key={group.id} className="flex flex-col gap-2">
-          <span className="font-medium">{group.name}</span>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {group.options.map((option) => (
-              <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name={`attr-${group.slug}`}
-                  value={option.id}
-                  defaultChecked={selectedOptionIds.has(option.id)}
-                  className="h-5 w-5"
-                />
-                {option.name}
-              </label>
-            ))}
-          </div>
-        </div>
+        <MultiSelectDropdown
+          key={group.id}
+          label={group.name}
+          name={`attr-${group.slug}`}
+          options={group.options}
+          defaultSelected={selectedInGroup(group)}
+        />
       ))}
     </>
   );

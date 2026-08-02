@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 
@@ -83,6 +84,28 @@ export async function SiteHeader() {
             </>
           )}
         </nav>
+
+        {/*
+          Plain GET form — no JS needed, the browser navigates to
+          /projekte?suche=... on submit. Matches against a listing's own
+          text fields as well as its events' title/description (see
+          /projekte/page.tsx), so a keyword found in either a project's own
+          content or one of its Termine surfaces that project in the
+          results list.
+        */}
+        <form action="/projekte" method="GET" className="relative w-full sm:w-64">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            name="suche"
+            placeholder="Projekte & Termine durchsuchen…"
+            aria-label="Projekte & Termine durchsuchen"
+            className="min-h-11 w-full rounded-full border border-text/20 bg-bg py-2 pl-9 pr-3 text-sm"
+          />
+        </form>
       </div>
     </header>
   );

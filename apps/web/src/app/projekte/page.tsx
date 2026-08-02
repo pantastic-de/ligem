@@ -239,6 +239,35 @@ export default async function ProjektePage({
     });
   }
 
+  // Keyword search from the header's global search box (see SiteHeader) —
+  // matches either the listing's own text fields, or the title/description
+  // of any of its (published) events, so a project whose Termin mentions
+  // the keyword still surfaces here even if the project's own text doesn't.
+  const suche = typeof params.suche === "string" ? params.suche.trim() : "";
+  if (suche) {
+    attributeFilters.push({
+      OR: [
+        { projectName: { contains: suche, mode: "insensitive" } },
+        { motto: { contains: suche, mode: "insensitive" } },
+        { howWeLive: { contains: suche, mode: "insensitive" } },
+        { whoWeAreLooking: { contains: suche, mode: "insensitive" } },
+        { regionDescription: { contains: suche, mode: "insensitive" } },
+        { city: { contains: suche, mode: "insensitive" } },
+        {
+          events: {
+            some: {
+              status: "PUBLISHED",
+              OR: [
+                { title: { contains: suche, mode: "insensitive" } },
+                { description: { contains: suche, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
+      ],
+    });
+  }
+
   const where: Prisma.ListingWhereInput = {
     status: "PUBLISHED",
     ...(attributeFilters.length > 0 ? { AND: attributeFilters } : {}),
@@ -433,6 +462,8 @@ export default async function ProjektePage({
   // came about — mirrors /termine/page.tsx's resultsSummary.
   const activeFilters: string[] = [];
 
+  if (suche) activeFilters.push(`Stichwort „${suche}"`);
+
   const selectedTypName = typId
     ? projektTyp?.options.find((o) => o.id === typId)?.name
     : undefined;
@@ -500,6 +531,7 @@ export default async function ProjektePage({
               sortierung: sortBy,
               von,
               bis,
+              suche: suche || undefined,
             }}
             resultItems={listingMapItems}
             selectedId={selectedId}

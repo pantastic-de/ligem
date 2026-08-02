@@ -6,6 +6,7 @@ import type {
 import { AddressFields } from "@/components/address-fields";
 import { RichTextField } from "@/components/rich-text-field";
 import { HomepageImportField } from "@/components/homepage-import-field";
+import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -68,6 +69,8 @@ export function ListingFormFields({
   const geschlechterverteilung = groupBySlug("geschlechterverteilung");
   const selectedOptionIds = new Set(defaults.selectedOptionIds ?? []);
   const selectedCategoryIds = new Set(defaults.selectedCategoryIds ?? []);
+  const selectedInGroup = (group: AttributeGroupWithOptions) =>
+    group.options.filter((o) => selectedOptionIds.has(o.id)).map((o) => o.id);
 
   return (
     <>
@@ -109,63 +112,32 @@ export function ListingFormFields({
         />
 
         {projektTyp ? (
-          <div className="flex flex-col gap-2">
-            <span className="font-medium">{projektTyp.name}</span>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {projektTyp.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name={`attr-${projektTyp.slug}`}
-                    value={option.id}
-                    defaultChecked={selectedOptionIds.has(option.id)}
-                    className="h-5 w-5"
-                  />
-                  {option.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          <MultiSelectDropdown
+            label={projektTyp.name}
+            name={`attr-${projektTyp.slug}`}
+            options={projektTyp.options}
+            defaultSelected={selectedInGroup(projektTyp)}
+            multiple={projektTyp.allowMultiple}
+          />
         ) : null}
 
         {projektStatus ? (
-          <div className="flex flex-col gap-2">
-            <span className="font-medium">{projektStatus.name}</span>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {projektStatus.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name={`attr-${projektStatus.slug}`}
-                    value={option.id}
-                    defaultChecked={selectedOptionIds.has(option.id)}
-                    className="h-5 w-5"
-                  />
-                  {option.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          <MultiSelectDropdown
+            label={projektStatus.name}
+            name={`attr-${projektStatus.slug}`}
+            options={projektStatus.options}
+            defaultSelected={selectedInGroup(projektStatus)}
+            multiple={projektStatus.allowMultiple}
+          />
         ) : null}
 
         {categories.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <span className="font-medium">Art des Projektinserates</span>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {categories.map((category) => (
-                <label key={category.id} className="flex min-h-11 items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="categoryIds"
-                    value={category.id}
-                    defaultChecked={selectedCategoryIds.has(category.id)}
-                    className="h-5 w-5"
-                  />
-                  {category.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          <MultiSelectDropdown
+            label="Art des Projektinserates"
+            name="categoryIds"
+            options={categories}
+            defaultSelected={[...selectedCategoryIds]}
+          />
         ) : null}
 
         <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -346,23 +318,13 @@ export function ListingFormFields({
         </div>
 
         {geschlechterverteilung ? (
-          <div className="flex flex-col gap-2">
-            <span className="font-medium">{geschlechterverteilung.name}</span>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {geschlechterverteilung.options.map((option) => (
-                <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name={`attr-${geschlechterverteilung.slug}`}
-                    value={option.id}
-                    defaultChecked={selectedOptionIds.has(option.id)}
-                    className="h-5 w-5"
-                  />
-                  {option.name}
-                </label>
-              ))}
-            </div>
-          </div>
+          <MultiSelectDropdown
+            label={geschlechterverteilung.name}
+            name={`attr-${geschlechterverteilung.slug}`}
+            options={geschlechterverteilung.options}
+            defaultSelected={selectedInGroup(geschlechterverteilung)}
+            multiple={geschlechterverteilung.allowMultiple}
+          />
         ) : null}
       </fieldset>
 
@@ -428,26 +390,16 @@ export function ListingFormFields({
       </fieldset>
 
       {multiSelectGroups.length > 0 ? (
-        <fieldset className="flex flex-col gap-8">
+        <fieldset className="flex flex-col gap-4">
           <legend className="text-lg font-semibold">Ausrichtung &amp; Werte</legend>
           {multiSelectGroups.map((group) => (
-            <div key={group.id} className="flex flex-col gap-2">
-              <span className="font-medium">{group.name}</span>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {group.options.map((option) => (
-                  <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name={`attr-${group.slug}`}
-                      value={option.id}
-                      defaultChecked={selectedOptionIds.has(option.id)}
-                      className="h-5 w-5"
-                    />
-                    {option.name}
-                  </label>
-                ))}
-              </div>
-            </div>
+            <MultiSelectDropdown
+              key={group.id}
+              label={group.name}
+              name={`attr-${group.slug}`}
+              options={group.options}
+              defaultSelected={selectedInGroup(group)}
+            />
           ))}
         </fieldset>
       ) : null}

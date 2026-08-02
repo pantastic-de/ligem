@@ -20,7 +20,7 @@ function toDateKey(d: Date): string {
 }
 
 type TermineSearchParams = {
-  art?: string;
+  art?: string | string[];
   zielgruppe?: string | string[];
   lat?: string;
   lng?: string;
@@ -116,6 +116,7 @@ export default async function KalenderPage({
   searchParams: Promise<TermineSearchParams>;
 }) {
   const params = await searchParams;
+  const artIds = Array.isArray(params.art) ? params.art : params.art ? [params.art] : [];
   const zielgruppeIds = Array.isArray(params.zielgruppe)
     ? params.zielgruppe
     : params.zielgruppe
@@ -136,23 +137,30 @@ export default async function KalenderPage({
   const von = params.von ? new Date(`${params.von}T00:00:00`) : null;
   const bis = params.bis ? new Date(`${params.bis}T23:59:59`) : null;
 
+  // Each selected group is its own separate `some` existence-check, ANDed
+  // together — attributeOptions is one shared join table across every
+  // attribute group, so a single merged `some` clause here would silently
+  // require one row to match both an Art AND a Zielgruppe optionId at once
+  // (impossible, since those are different groups), rather than "at least
+  // one matching row for Art" AND "at least one matching row for
+  // Zielgruppe" independently. Mirrors /projekte/page.tsx's attributeFilters
+  // pattern.
+  const attributeFilters: Prisma.EventWhereInput[] = [];
+  if (artIds.length > 0) {
+    attributeFilters.push({ attributeOptions: { some: { optionId: { in: artIds } } } });
+  }
+  if (zielgruppeIds.length > 0) {
+    attributeFilters.push({ attributeOptions: { some: { optionId: { in: zielgruppeIds } } } });
+  }
+
   const where: Prisma.EventWhereInput = {
     status: "PUBLISHED",
     startAt: {
       gte: von && !Number.isNaN(von.getTime()) ? von : new Date(),
       ...(bis && !Number.isNaN(bis.getTime()) ? { lte: bis } : {}),
     },
+    ...(attributeFilters.length > 0 ? { AND: attributeFilters } : {}),
   };
-
-  if (params.art) {
-    where.attributeOptions = { some: { optionId: params.art } };
-  }
-  if (zielgruppeIds.length > 0) {
-    where.attributeOptions = {
-      ...where.attributeOptions,
-      some: { optionId: { in: zielgruppeIds } },
-    };
-  }
 
   const lat = params.lat ? Number.parseFloat(params.lat) : null;
   const lng = params.lng ? Number.parseFloat(params.lng) : null;
@@ -254,10 +262,12 @@ export default async function KalenderPage({
   // came about.
   const activeFilters: string[] = [];
 
-  const selectedArtName = params.art
-    ? veranstaltungsart?.options.find((o) => o.id === params.art)?.name
-    : undefined;
-  if (selectedArtName) activeFilters.push(`Art „${selectedArtName}"`);
+  const selectedArtNames = artIds
+    .map((id) => veranstaltungsart?.options.find((o) => o.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  if (selectedArtNames.length > 0) {
+    activeFilters.push(`Art „${selectedArtNames.join(", ")}"`);
+  }
 
   const selectedZielgruppeNames = zielgruppeIds
     .map((id) => zielgruppe?.options.find((o) => o.id === id)?.name)
@@ -284,6 +294,11 @@ export default async function KalenderPage({
       ? `${events.length} ${eventLabel} gefunden für ${activeFilters.join(", ")}.`
       : `${events.length} ${eventLabel} gefunden.`;
 
+  // Computed once, outside the results map below — an explicit "von" in the
+  // past (see above) can surface events that already happened, and those
+  // get dimmed slightly in the list rather than hidden outright.
+  const nowMs = new Date().getTime();
+
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <div className="text-center">
@@ -302,7 +317,7 @@ export default async function KalenderPage({
             eventDayColors={eventDayColors}
             selectedId={selectedId}
             defaults={{
-              art: params.art,
+              artIds,
               zielgruppeIds,
               lat: params.lat,
               lng: params.lng,
@@ -360,11 +375,12 @@ export default async function KalenderPage({
                 <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                   {events.map((event) => {
                     const thumbnail = event.media[0];
+                    const isPast = event.startAt.getTime() < nowMs;
                     return (
                       <li key={event.id}>
                         <Link
                           href={buildTermineHref(params, { termin: event.id, angemeldet: undefined })}
-                          className="flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg"
+                          className={`flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg ${isPast ? "opacity-60" : ""}`}
                         >
                           {thumbnail ? (
                             // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object

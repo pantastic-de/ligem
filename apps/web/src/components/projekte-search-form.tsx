@@ -7,6 +7,7 @@ import type {
 } from "@/generated/prisma/client";
 import { LocationRadiusPicker } from "@/components/location-radius-picker";
 import { EventDateFilter } from "@/components/event-date-filter";
+import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 import { type MapResultItem } from "@/lib/map-result-item";
 import { useAutoSubmitForm } from "@/lib/use-auto-submit-form";
 
@@ -34,6 +35,7 @@ export function ProjekteSearchForm({
     sortierung: string;
     von?: string;
     bis?: string;
+    suche?: string;
   };
   anyAdvancedFilterActive: boolean;
   resultItems: MapResultItem[];
@@ -88,6 +90,13 @@ export function ProjekteSearchForm({
         rather than being lost/reset back to the default each time.
       */}
       <input type="hidden" name="sortierung" value={defaults.sortierung} />
+      {/*
+        The header's global keyword search (see SiteHeader) sets `suche` via
+        a plain GET navigation to /projekte — it isn't a field inside this
+        form, so it needs the same hidden-field treatment as `sortierung`
+        above to survive a sidebar filter change re-submitting this form.
+      */}
+      <input type="hidden" name="suche" value={defaults.suche ?? ""} />
 
       <details className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
         <summary className="cursor-pointer select-none px-4 py-3 font-medium">
@@ -95,23 +104,12 @@ export function ProjekteSearchForm({
         </summary>
         <div className="flex flex-col gap-6 border-t border-text/10 p-4">
           {categories.length > 0 ? (
-            <fieldset className="flex flex-col gap-2">
-              <legend className="font-medium">Art des Projektinserates</legend>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {categories.map((category) => (
-                  <label key={category.id} className="flex min-h-11 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="kategorie"
-                      value={category.id}
-                      defaultChecked={defaults.kategorieIds.includes(category.id)}
-                      className="h-5 w-5"
-                    />
-                    {category.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <MultiSelectDropdown
+              label="Art des Projektinserates"
+              name="kategorie"
+              options={categories}
+              defaultSelected={defaults.kategorieIds}
+            />
           ) : null}
 
           <fieldset className="flex flex-col gap-2">
@@ -125,43 +123,15 @@ export function ProjekteSearchForm({
             />
           </fieldset>
 
-          {advancedGroups.map((group) => {
-            const selected = defaults.attrSelected[group.slug] ?? [];
-            return (
-              <fieldset key={group.id} className="flex flex-col gap-2">
-                <legend className="font-medium">{group.name}</legend>
-                {group.allowMultiple ? (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {group.options.map((option) => (
-                      <label key={option.id} className="flex min-h-11 items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          name={`attr-${group.slug}`}
-                          value={option.id}
-                          defaultChecked={selected.includes(option.id)}
-                          className="h-5 w-5"
-                        />
-                        {option.name}
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <select
-                    name={`attr-${group.slug}`}
-                    defaultValue={selected[0] ?? ""}
-                    className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
-                  >
-                    <option value="">Alle</option>
-                    {group.options.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </fieldset>
-            );
-          })}
+          {advancedGroups.map((group) => (
+            <MultiSelectDropdown
+              key={group.id}
+              label={group.name}
+              name={`attr-${group.slug}`}
+              options={group.options}
+              defaultSelected={defaults.attrSelected[group.slug] ?? []}
+            />
+          ))}
         </div>
       </details>
 
