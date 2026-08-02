@@ -65,6 +65,7 @@ export function TermineSearchForm({
           name="art"
           options={veranstaltungsart.options}
           defaultSelected={defaults.artIds}
+          onChange={submitNow}
         />
       ) : null}
 
@@ -74,6 +75,7 @@ export function TermineSearchForm({
           name="zielgruppe"
           options={zielgruppe.options}
           defaultSelected={defaults.zielgruppeIds}
+          onChange={submitNow}
         />
       ) : null}
 

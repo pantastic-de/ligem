@@ -19,6 +19,8 @@ export function ProjekteSearchForm({
   advancedGroups,
   defaults,
   anyAdvancedFilterActive,
+  categoryCounts,
+  attrCounts,
   resultItems,
   selectedId,
 }: {
@@ -38,6 +40,12 @@ export function ProjekteSearchForm({
     suche?: string;
   };
   anyAdvancedFilterActive: boolean;
+  // Faceted result counts for every checkbox in "Erweiterte Suche" — how
+  // many results selecting that specific option would produce combined with
+  // every other currently active filter (see /projekte/page.tsx's
+  // facetWhere). Passed straight through to each MultiSelectDropdown.
+  categoryCounts: Record<string, number>;
+  attrCounts: Record<string, Record<string, number>>;
   resultItems: MapResultItem[];
   // Id of the listing currently shown in the detail pane, if any — see
   // LocationRadiusPicker's selectedId prop.
@@ -109,6 +117,8 @@ export function ProjekteSearchForm({
               name="kategorie"
               options={categories}
               defaultSelected={defaults.kategorieIds}
+              counts={categoryCounts}
+              onChange={submitNow}
             />
           ) : null}
 
@@ -130,6 +140,8 @@ export function ProjekteSearchForm({
               name={`attr-${group.slug}`}
               options={group.options}
               defaultSelected={defaults.attrSelected[group.slug] ?? []}
+              counts={attrCounts[group.slug]}
+              onChange={submitNow}
             />
           ))}
         </div>

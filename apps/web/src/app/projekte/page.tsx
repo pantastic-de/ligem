@@ -206,17 +206,21 @@ export default async function ProjektePage({
   const projektTyp = attributeGroups.find((g) => g.slug === "projekt-typ");
   const advancedGroups = attributeGroups.filter((g) => g.slug !== "projekt-typ");
 
-  const attributeFilters: Prisma.ListingWhereInput[] = [];
-  if (typId) {
-    attributeFilters.push({ attributeOptions: { some: { optionId: typId } } });
-  }
+  // Each named filter fragment is kept separate (rather than pushed
+  // straight into one flat array, as before) so the facet-count computation
+  // below can rebuild the "every other filter, minus this one group's own"
+  // where clause per group — see buildFacetWhere.
+  const typFilter: Prisma.ListingWhereInput | null = typId
+    ? { attributeOptions: { some: { optionId: typId } } }
+    : null;
+
+  const groupFilters: Record<string, Prisma.ListingWhereInput | null> = {};
+  const groupSelectedIds: Record<string, string[]> = {};
   for (const group of advancedGroups) {
     const selected = paramValues(params, `attr-${group.slug}`);
-    if (selected.length > 0) {
-      attributeFilters.push({
-        attributeOptions: { some: { optionId: { in: selected } } },
-      });
-    }
+    groupSelectedIds[group.slug] = selected;
+    groupFilters[group.slug] =
+      selected.length > 0 ? { attributeOptions: { some: { optionId: { in: selected } } } } : null;
   }
 
   // Zeitraum filter (same EventDateFilter component as /termine, reused
@@ -229,13 +233,14 @@ export default async function ProjektePage({
   const bis = typeof params.bis === "string" ? params.bis : undefined;
   const filterStart = von ? new Date(`${von}T00:00:00`) : null;
   const filterEnd = bis ? new Date(`${bis}T23:59:59`) : null;
+  const zeitraumFilters: Prisma.ListingWhereInput[] = [];
   if (filterEnd) {
-    attributeFilters.push({
+    zeitraumFilters.push({
       OR: [{ searchPeriodStart: null }, { searchPeriodStart: { lte: filterEnd } }],
     });
   }
   if (filterStart) {
-    attributeFilters.push({
+    zeitraumFilters.push({
       OR: [{ searchPeriodEnd: null }, { searchPeriodEnd: { gte: filterStart } }],
     });
   }
@@ -245,36 +250,44 @@ export default async function ProjektePage({
   // of any of its (published) events, so a project whose Termin mentions
   // the keyword still surfaces here even if the project's own text doesn't.
   const suche = typeof params.suche === "string" ? params.suche.trim() : "";
-  if (suche) {
-    attributeFilters.push({
-      OR: [
-        { projectName: { contains: suche, mode: "insensitive" } },
-        { motto: { contains: suche, mode: "insensitive" } },
-        { howWeLive: { contains: suche, mode: "insensitive" } },
-        { whoWeAreLooking: { contains: suche, mode: "insensitive" } },
-        { regionDescription: { contains: suche, mode: "insensitive" } },
-        { city: { contains: suche, mode: "insensitive" } },
-        {
-          events: {
-            some: {
-              status: "PUBLISHED",
-              OR: [
-                { title: { contains: suche, mode: "insensitive" } },
-                { description: { contains: suche, mode: "insensitive" } },
-              ],
+  const sucheFilter: Prisma.ListingWhereInput | null = suche
+    ? {
+        OR: [
+          { projectName: { contains: suche, mode: "insensitive" } },
+          { motto: { contains: suche, mode: "insensitive" } },
+          { howWeLive: { contains: suche, mode: "insensitive" } },
+          { whoWeAreLooking: { contains: suche, mode: "insensitive" } },
+          { regionDescription: { contains: suche, mode: "insensitive" } },
+          { city: { contains: suche, mode: "insensitive" } },
+          {
+            events: {
+              some: {
+                status: "PUBLISHED",
+                OR: [
+                  { title: { contains: suche, mode: "insensitive" } },
+                  { description: { contains: suche, mode: "insensitive" } },
+                ],
+              },
             },
           },
-        },
-      ],
-    });
-  }
+        ],
+      }
+    : null;
+
+  const kategorieFilter: Prisma.ListingWhereInput | null =
+    kategorieIds.length > 0 ? { categories: { some: { categoryId: { in: kategorieIds } } } } : null;
+
+  const attributeFilters: Prisma.ListingWhereInput[] = [
+    typFilter,
+    ...Object.values(groupFilters),
+    ...zeitraumFilters,
+    sucheFilter,
+  ].filter((f): f is Prisma.ListingWhereInput => f !== null);
 
   const where: Prisma.ListingWhereInput = {
     status: "PUBLISHED",
     ...(attributeFilters.length > 0 ? { AND: attributeFilters } : {}),
-    ...(kategorieIds.length > 0
-      ? { categories: { some: { categoryId: { in: kategorieIds } } } }
-      : {}),
+    ...(kategorieFilter ?? {}),
   };
 
   const lat = params.lat ? Number.parseFloat(String(params.lat)) : null;
@@ -282,6 +295,7 @@ export default async function ProjektePage({
   const radiusKm = params.radius ? Number.parseFloat(String(params.radius)) : null;
   const originSet = lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng);
   let radiusSearchActive = false;
+  let nearbyIds: string[] | null = null;
 
   if (originSet && radiusKm != null && !Number.isNaN(radiusKm)) {
     radiusSearchActive = true;
@@ -294,7 +308,8 @@ export default async function ProjektePage({
           ${radiusKm * 1000}
         )
     `;
-    where.id = { in: nearby.map((row) => row.id) };
+    nearbyIds = nearby.map((row) => row.id);
+    where.id = { in: nearbyIds };
   }
 
   const sortParam = typeof params.sortierung === "string" ? params.sortierung : "";
@@ -308,10 +323,76 @@ export default async function ProjektePage({
     advancedGroups.some((g) => paramValues(params, `attr-${g.slug}`).length > 0) ||
     Boolean(von || bis);
 
-  const attrSelected: Record<string, string[]> = {};
-  for (const group of advancedGroups) {
-    attrSelected[group.slug] = paramValues(params, `attr-${group.slug}`);
+  const attrSelected: Record<string, string[]> = groupSelectedIds;
+
+  // Facet counts for every checkbox in "Erweiterte Suche" (ListingCategory +
+  // each advanced AttributeGroup): how many results selecting *this specific
+  // option* would produce once combined with every OTHER currently active
+  // filter — not the group's own raw total, and not just the current result
+  // count either (a group already having some options selected should show,
+  // for a not-yet-checked option, the count if that option were ALSO
+  // OR-combined into the selection, matching how the real filter works).
+  // One query per group (fetching that group's own option assignments for
+  // the candidate set matching every OTHER filter) rather than one query per
+  // option, since a group can hold many options.
+  function facetWhere(excludeGroupSlug?: string, excludeKategorie = false): Prisma.ListingWhereInput {
+    const filters = [
+      typFilter,
+      ...Object.entries(groupFilters)
+        .filter(([slug]) => slug !== excludeGroupSlug)
+        .map(([, f]) => f),
+      ...zeitraumFilters,
+      sucheFilter,
+    ].filter((f): f is Prisma.ListingWhereInput => f !== null);
+    return {
+      status: "PUBLISHED",
+      ...(nearbyIds ? { id: { in: nearbyIds } } : {}),
+      ...(filters.length > 0 ? { AND: filters } : {}),
+      ...(excludeKategorie ? {} : (kategorieFilter ?? {})),
+    };
   }
+
+  const [categoryCandidates, groupCandidatesList] = await Promise.all([
+    categories.length > 0
+      ? prisma.listing.findMany({
+          where: facetWhere(undefined, true),
+          select: { id: true, categories: { select: { categoryId: true } } },
+        })
+      : Promise.resolve([]),
+    Promise.all(
+      advancedGroups.map((group) =>
+        prisma.listing.findMany({
+          where: facetWhere(group.slug),
+          select: {
+            id: true,
+            attributeOptions: { where: { option: { groupId: group.id } }, select: { optionId: true } },
+          },
+        }),
+      ),
+    ),
+  ]);
+
+  const categoryCounts: Record<string, number> = {};
+  for (const category of categories) {
+    const targetIds = new Set([...kategorieIds, category.id]);
+    categoryCounts[category.id] = categoryCandidates.filter((c) =>
+      c.categories.some((rel) => targetIds.has(rel.categoryId)),
+    ).length;
+  }
+
+  const attrCounts: Record<string, Record<string, number>> = {};
+  advancedGroups.forEach((group, i) => {
+    const candidates = groupCandidatesList[i];
+    const selected = groupSelectedIds[group.slug] ?? [];
+    const counts: Record<string, number> = {};
+    for (const option of group.options) {
+      const targetIds = new Set([...selected, option.id]);
+      counts[option.id] = candidates.filter((c) =>
+        c.attributeOptions.some((a) => targetIds.has(a.optionId)),
+      ).length;
+    }
+    attrCounts[group.slug] = counts;
+  });
 
   const listings = await prisma.listing.findMany({
     where,
@@ -524,6 +605,8 @@ export default async function ProjektePage({
             projektTyp={projektTyp}
             advancedGroups={advancedGroups}
             anyAdvancedFilterActive={anyAdvancedFilterActive}
+            categoryCounts={categoryCounts}
+            attrCounts={attrCounts}
             defaults={{
               typId,
               kategorieIds,
