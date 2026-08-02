@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
+import { HeaderSearchForm } from "@/components/header-search-form";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -22,12 +23,29 @@ export async function SiteHeader() {
           />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">
+          {/*
+            Placed first in the nav row (before "Projekte"/"Kalender") so it
+            shares their line whenever there's room, wrapping along with the
+            rest of the nav on narrow viewports like any other item here.
+            Suspense is required here because HeaderSearchForm calls
+            useSearchParams() in a Client Component rendered from this
+            server-rendered layout — without it, Next.js would opt the
+            entire route into fully client-side rendering just for this one
+            small field. Nothing above/below it depends on the search
+            params, so an empty fallback (invisible either way, given how
+            fast this resolves) is fine.
+          */}
+          <Suspense fallback={null}>
+            <HeaderSearchForm />
+          </Suspense>
+
           <Link href="/projekte" className="inline-flex min-h-11 items-center">
             Projekte
           </Link>
           <Link href="/termine" className="inline-flex min-h-11 items-center">
             Kalender
           </Link>
+
           {session?.user ? (
             <>
               <Link
@@ -71,41 +89,17 @@ export async function SiteHeader() {
               </form>
             </>
           ) : (
-            <>
-              <Link href="/anmelden" className="inline-flex min-h-11 items-center">
-                Anmelden
-              </Link>
-              <Link
-                href="/registrieren"
-                className="inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-white transition-colors hover:bg-primary-hover"
-              >
-                Registrieren
-              </Link>
-            </>
+            // "Registrieren" isn't a separate nav entry — /anmelden already
+            // offers it as an option ("Noch kein Konto? Registrieren") right
+            // below the login form, so the nav only needs one entry point.
+            <Link
+              href="/anmelden"
+              className="inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-white transition-colors hover:bg-primary-hover"
+            >
+              Anmelden
+            </Link>
           )}
         </nav>
-
-        {/*
-          Plain GET form — no JS needed, the browser navigates to
-          /projekte?suche=... on submit. Matches against a listing's own
-          text fields as well as its events' title/description (see
-          /projekte/page.tsx), so a keyword found in either a project's own
-          content or one of its Termine surfaces that project in the
-          results list.
-        */}
-        <form action="/projekte" method="GET" className="relative w-full sm:w-64">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-            aria-hidden="true"
-          />
-          <input
-            type="search"
-            name="suche"
-            placeholder="Projekte & Termine durchsuchen…"
-            aria-label="Projekte & Termine durchsuchen"
-            className="min-h-11 w-full rounded-full border border-text/20 bg-bg py-2 pl-9 pr-3 text-sm"
-          />
-        </form>
       </div>
     </header>
   );
