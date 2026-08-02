@@ -164,6 +164,25 @@ Run Caddy directly on the host (or as another container on the same Docker
 network, proxying to `web:3000`). Nginx + certbot works equally well if
 that's already your standard setup.
 
+**If you use Apache instead**: `auth.ts` sets `trustHost: true`, so Auth.js
+derives its own public URL from the `Host`/`X-Forwarded-Host` header it
+receives — but a plain Apache `ProxyPass`/`ProxyPassReverse` vhost does
+*not* forward the original Host header by default (unlike Caddy/Nginx,
+which do). Without it, every login redirect (and the CSRF callback-url
+cookie) ends up pointing at the backend's own address — observed in
+practice as `Location: https://localhost:3000/anmelden?error=...` after a
+login attempt, breaking sign-in entirely. Add to the vhost:
+
+```apache
+ProxyPreserveHost On
+RequestHeader set X-Forwarded-Proto "https"
+RequestHeader set X-Forwarded-Host "your-domain.tld"
+```
+
+`ProxyPreserveHost On` is the important line — it makes Apache forward the
+real Host header through to the `web` container. Reload Apache
+(`apachectl graceful`) after changing this; no app restart needed.
+
 ## 7. Updating
 
 ```bash
