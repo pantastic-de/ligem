@@ -20,10 +20,20 @@ export function HeaderSearchForm() {
 
   return (
     <form action="/projekte" method="GET" className="relative w-44 sm:w-56">
-      <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
-        aria-hidden="true"
-      />
+      {/*
+        An actual <button type="submit"> here, not just a decorative icon —
+        relying solely on the browser's implicit "Enter submits the lone
+        text field" behavior is less robust across browsers/mobile
+        keyboards than having a real submit control, and gives a
+        click/tap-based way to submit regardless.
+      */}
+      <button
+        type="submit"
+        aria-label="Suchen"
+        className="absolute left-3 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center text-text-muted"
+      >
+        <Search className="h-4 w-4" aria-hidden="true" />
+      </button>
       <input
         type="search"
         name="suche"
