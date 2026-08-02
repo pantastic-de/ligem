@@ -503,21 +503,44 @@ export function LocationRadiusPicker({
       </div>
       {message ? <p className="text-sm text-error">{message}</p> : null}
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="radiusSlider" className="text-sm font-medium">
-          Umkreis: {radiusValue == null ? "Alle" : `${radiusValue} km`}
-        </label>
-        <input
-          id="radiusSlider"
-          type="range"
-          min={0}
-          max={RADIUS_STEPS.length - 1}
-          step={1}
-          value={radiusIndex}
-          onChange={(e) => setRadiusIndex(Number(e.target.value))}
-          className="ligem-radius-slider w-full"
-        />
-      </div>
+      {/* Only meaningful once a search origin exists — a radius without a
+          center point doesn't filter anything, so the slider stays hidden
+          (in both the sidebar and this same block reused in the expanded/
+          "popup" map overlay, see searchControls above) until a location
+          has actually been set via place search, geolocation, or a map
+          click. */}
+      {lat != null && lng != null ? (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="radiusSlider" className="text-sm font-medium">
+            Umkreis: {radiusValue == null ? "Alle" : `${radiusValue} km`}
+          </label>
+          <input
+            id="radiusSlider"
+            type="range"
+            min={0}
+            max={RADIUS_STEPS.length - 1}
+            step={1}
+            value={radiusIndex}
+            onChange={(e) => setRadiusIndex(Number(e.target.value))}
+            className="ligem-radius-slider w-full"
+          />
+          {/* The scale of every step the slider can land on (matching
+              RADIUS_STEPS) — otherwise only the currently selected value is
+              ever visible, with no indication of what the other positions
+              along the slider actually mean. */}
+          <div className="relative h-4 text-[10px] text-text-muted">
+            {RADIUS_STEPS.map((step, i) => (
+              <span
+                key={i}
+                className="absolute -translate-x-1/2"
+                style={{ left: `${(i / (RADIUS_STEPS.length - 1)) * 100}%` }}
+              >
+                {step == null ? "Alle" : step}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 
