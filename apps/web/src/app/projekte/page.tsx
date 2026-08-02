@@ -10,6 +10,7 @@ import { ProjekteSortSelect } from "@/components/projekte-sort-select";
 import { ListingDetail, type ListingDetailData } from "@/components/listing-detail";
 import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
 import { escapeHtml } from "@/lib/map-result-item";
+import { HighlightText } from "@/components/highlight-text";
 
 // Bare list page (any filters, no ?projekt= selection) stays indexable with
 // a self-canonical stripped of query params entirely — indexing every
@@ -552,6 +553,7 @@ export default async function ProjektePage({
                 returnTo={buildProjekteHref(params, {})}
                 backHref={buildProjekteHref(params, { projekt: undefined, kontakt: undefined })}
                 kontaktSuccess={Boolean(params.kontakt)}
+                searchTerm={suche || undefined}
                 distanceKm={
                   lat != null && lng != null && selectedListing.latitude != null && selectedListing.longitude != null
                     ? haversineDistanceKm(lat, lng, selectedListing.latitude, selectedListing.longitude)
@@ -618,13 +620,17 @@ export default async function ProjektePage({
                           ) : null}
                           <div className="min-w-0 flex-1 p-4 sm:p-6">
                             <h2 className="text-lg font-semibold">
-                              {listing.projectName}
+                              <HighlightText text={listing.projectName} query={suche} />
                             </h2>
                             {listing.motto ? (
-                              <p className="mt-1 text-text-muted">{listing.motto}</p>
+                              <p className="mt-1 text-text-muted">
+                                <HighlightText text={listing.motto} query={suche} />
+                              </p>
                             ) : null}
                             {locationLine ? (
-                              <p className="mt-1 text-sm text-text-muted">{locationLine}</p>
+                              <p className="mt-1 text-sm text-text-muted">
+                                <HighlightText text={locationLine} query={suche} />
+                              </p>
                             ) : null}
                             {listing.categories.length > 0 || projectType ? (
                               <div className="mt-3 flex flex-wrap gap-2">

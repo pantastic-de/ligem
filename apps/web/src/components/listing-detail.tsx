@@ -22,6 +22,8 @@ import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
+import { HighlightText } from "@/components/highlight-text";
+import { highlightHtml } from "@/lib/highlight";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -104,6 +106,7 @@ export function ListingDetail({
   returnTo,
   backHref,
   kontaktSuccess,
+  searchTerm,
   distanceKm,
   prevItem,
   nextItem,
@@ -116,6 +119,12 @@ export function ListingDetail({
   returnTo: string;
   backHref?: string;
   kontaktSuccess?: boolean;
+  // The active /projekte keyword search term (see that page's `suche`
+  // param), if any — highlighted wherever it appears below so a match is
+  // still visible once a viewer opens a result's detail pane, including
+  // while stepping through results with the prev/next buttons (this prop is
+  // just re-derived from the current page's own param on every render).
+  searchTerm?: string;
   // Distance from the viewer's current search origin, if one is set (see
   // /projekte/page.tsx) — only ever known in the context of an active
   // Umkreissuche, never on a bare visit to the standalone page.
@@ -261,9 +270,19 @@ export function ListingDetail({
         </div>
       ) : null}
 
-      <h1 className="text-3xl font-bold">{listing.projectName}</h1>
-      {listing.motto ? <p className="mt-1 text-lg text-text-muted">{listing.motto}</p> : null}
-      {locationLine ? <p className="mt-2 text-text-muted">{locationLine}</p> : null}
+      <h1 className="text-3xl font-bold">
+        <HighlightText text={listing.projectName} query={searchTerm} />
+      </h1>
+      {listing.motto ? (
+        <p className="mt-1 text-lg text-text-muted">
+          <HighlightText text={listing.motto} query={searchTerm} />
+        </p>
+      ) : null}
+      {locationLine ? (
+        <p className="mt-2 text-text-muted">
+          <HighlightText text={locationLine} query={searchTerm} />
+        </p>
+      ) : null}
 
       {panoramaPhoto ? (
         <div className="mt-6 overflow-hidden rounded-2xl">
@@ -292,7 +311,9 @@ export function ListingDetail({
           <h2 className="text-lg font-semibold">So leben wir</h2>
           <div
             className="mt-2 text-text-muted [&>*+*]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic"
-            dangerouslySetInnerHTML={{ __html: listing.howWeLive }}
+            dangerouslySetInnerHTML={{
+              __html: searchTerm ? highlightHtml(listing.howWeLive, searchTerm) : listing.howWeLive,
+            }}
           />
         </section>
       ) : null}
@@ -302,7 +323,9 @@ export function ListingDetail({
           <h2 className="text-lg font-semibold">Wen wir suchen</h2>
           <div
             className="mt-2 text-text-muted [&>*+*]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:font-semibold [&_blockquote]:border-l-4 [&_blockquote]:border-text/20 [&_blockquote]:pl-4 [&_blockquote]:italic"
-            dangerouslySetInnerHTML={{ __html: listing.whoWeAreLooking }}
+            dangerouslySetInnerHTML={{
+              __html: searchTerm ? highlightHtml(listing.whoWeAreLooking, searchTerm) : listing.whoWeAreLooking,
+            }}
           />
         </section>
       ) : null}
@@ -397,7 +420,9 @@ export function ListingDetail({
                   href={`/termine?termin=${event.id}`}
                   className="block rounded-xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
                 >
-                  <div className="font-medium">{event.title}</div>
+                  <div className="font-medium">
+                    <HighlightText text={event.title} query={searchTerm} />
+                  </div>
                   <div className="text-sm text-text-muted">
                     {eventDateFormat.format(event.startAt)}
                     {event.addressText ? ` · ${event.addressText}` : ""}
