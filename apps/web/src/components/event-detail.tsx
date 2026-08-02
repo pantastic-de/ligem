@@ -140,7 +140,7 @@ export function EventDetail({
           {prevItem ? (
             <Link
               href={prevItem.href}
-              className="inline-flex min-w-0 items-center gap-1 font-medium text-primary hover:underline"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full border border-text/20 px-4 font-medium transition-colors hover:bg-bg"
             >
               <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{prevItem.label}</span>
@@ -151,7 +151,7 @@ export function EventDetail({
           {nextItem ? (
             <Link
               href={nextItem.href}
-              className="inline-flex min-w-0 items-center gap-1 text-right font-medium text-primary hover:underline"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full border border-text/20 px-4 text-right font-medium transition-colors hover:bg-bg"
             >
               <span className="truncate">{nextItem.label}</span>
               <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
