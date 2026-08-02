@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RotateCw } from "lucide-react";
+import { PlayCircle, RotateCw } from "lucide-react";
 
 import { PanoramaViewer } from "@/components/panorama-viewer";
 
 type GalleryPhoto = {
   id: string;
   storageKey: string;
+  thumbnailKey?: string | null;
   caption?: string | null;
   isPanorama?: boolean;
+  isVideoLink?: boolean;
+  type?: string;
 };
 
 function PanoramaBadge() {
@@ -18,6 +21,53 @@ function PanoramaBadge() {
       <RotateCw className="h-3 w-3" aria-hidden="true" />
       360°
     </span>
+  );
+}
+
+// Videos with no client-extracted poster frame (see extractVideoThumbnail
+// in video-upload-form.tsx — capture can fail for an unsupported codec, or
+// the upload predates that feature) fall back to this placeholder instead
+// of trying to <img>-render the raw video file.
+function VideoTile() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-text/10 text-text-muted">
+      <PlayCircle className="h-10 w-10" aria-hidden="true" />
+    </div>
+  );
+}
+
+// Overlaid on a video's actual poster-frame thumbnail (when one exists) to
+// signal "this plays" — YouTube-style centered play button over the frame.
+function VideoPlayBadge() {
+  return (
+    <span className="absolute inset-0 flex items-center justify-center">
+      <PlayCircle className="h-10 w-10 text-white drop-shadow" aria-hidden="true" />
+    </span>
+  );
+}
+
+function GalleryTileMedia({ photo }: { photo: GalleryPhoto }) {
+  if (photo.type === "VIDEO") {
+    if (!photo.thumbnailKey) return <VideoTile />;
+    return (
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+        <img
+          src={`/api/media/${photo.thumbnailKey}`}
+          alt={photo.caption ?? ""}
+          className="h-full w-full object-cover"
+        />
+        <VideoPlayBadge />
+      </>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+    <img
+      src={`/api/media/${photo.storageKey}`}
+      alt={photo.caption ?? ""}
+      className="h-full w-full object-cover"
+    />
   );
 }
 
@@ -56,12 +106,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
           onClick={() => setOpenIndex(0)}
           className={`relative h-56 min-h-0 overflow-hidden rounded-xl sm:h-full ${stacked.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
-          <img
-            src={`/api/media/${hero.storageKey}`}
-            alt={hero.caption ?? ""}
-            className="h-full w-full object-cover"
-          />
+          <GalleryTileMedia photo={hero} />
           {hero.isPanorama ? <PanoramaBadge /> : null}
         </button>
         {stacked.length > 0 ? (
@@ -73,12 +118,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 onClick={() => setOpenIndex(i + 1)}
                 className="relative h-28 min-h-0 flex-1 overflow-hidden rounded-xl sm:h-auto"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
-                <img
-                  src={`/api/media/${photo.storageKey}`}
-                  alt={photo.caption ?? ""}
-                  className="h-full w-full object-cover"
-                />
+                <GalleryTileMedia photo={photo} />
                 {photo.isPanorama ? <PanoramaBadge /> : null}
               </button>
             ))}
@@ -98,12 +138,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 onClick={() => setOpenIndex(index)}
                 className="relative h-20 overflow-hidden rounded-xl"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
-                <img
-                  src={`/api/media/${photo.storageKey}`}
-                  alt={photo.caption ?? ""}
-                  className="h-full w-full object-cover"
-                />
+                <GalleryTileMedia photo={photo} />
                 {isLast ? (
                   <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm font-semibold text-white">
                     + {extraCount} Fotos
@@ -143,7 +178,48 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
               ‹
             </button>
           ) : null}
-          {photos[openIndex].isPanorama ? (
+          {photos[openIndex].type === "VIDEO" && photos[openIndex].isVideoLink ? (
+            // storageKey already holds the embeddable player URL for a
+            // video-link row (see toEmbeddableUrl in src/lib/video-link.ts)
+            // — embedded directly regardless of provider, per explicit
+            // product decision (not restricted to a trusted-provider
+            // allowlist, even though framing an arbitrary third-party page
+            // carries real tracking/clickjacking risk). The sandbox
+            // attribute still blocks the framed page from navigating the
+            // top-level window or escaping via other means.
+            <div
+              className="h-full max-h-[90vh] w-full max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                key={photos[openIndex].id}
+                src={photos[openIndex].storageKey}
+                title="Video"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                className="h-full w-full border-0"
+              />
+            </div>
+          ) : photos[openIndex].type === "VIDEO" ? (
+            // Interacting with the native <video> controls (play/pause/seek)
+            // is itself a sequence of clicks on this element — without
+            // stopping propagation here, they'd bubble up to the backdrop's
+            // onClick above and immediately close the lightbox, exactly like
+            // the plain <img> below already guards against.
+            <div
+              className="h-full max-h-[90vh] w-full max-w-5xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <video
+                key={photos[openIndex].id}
+                src={`/api/media/${photos[openIndex].storageKey}`}
+                controls
+                className="h-full w-full object-contain"
+              />
+            </div>
+          ) : photos[openIndex].isPanorama ? (
             // Dragging inside the panorama viewer to look around is itself a
             // sequence of mouse/touch events on this element — without
             // stopping propagation here, every one of them bubbles up to the

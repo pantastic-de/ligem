@@ -6,8 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { EventFormFields } from "@/components/event-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
+import { VideoUploadForm } from "@/components/video-upload-form";
 import { deleteEvent, updateEvent } from "../../actions";
 import {
+  addEventVideoLink,
   deleteEventMedia,
   reorderEventMedia,
   uploadEventMedia,
@@ -31,7 +33,11 @@ export default async function TerminBearbeitenPage({
   searchParams,
 }: {
   params: Promise<{ id: string; eventId: string }>;
-  searchParams: Promise<{ error?: string; fotos?: string; uebersprungen?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    fotos?: string;
+    uebersprungen?: string;
+  }>;
 }) {
   const { id: listingId, eventId } = await params;
   const { error, fotos, uebersprungen } = await searchParams;
@@ -109,6 +115,17 @@ export default async function TerminBearbeitenPage({
           von ca. 2:1. Bitte ein equirektangulares Panoramabild hochladen.
         </p>
       ) : null}
+      {error === "panorama-toobig" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Dieses Bild ist größer als 12 MB. Bitte ein kleineres Panoramabild
+          hochladen.
+        </p>
+      ) : null}
+      {error === "videolink-ungueltig" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Dieser Video-Link konnte nicht erkannt werden.
+        </p>
+      ) : null}
 
       <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Fotos</h2>
@@ -156,7 +173,7 @@ export default async function TerminBearbeitenPage({
           Ein einzelnes equirektangulares Panoramabild im Format ca. 2:1 —
           wird in der Galerie mit einem 360°-Symbol hervorgehoben und in der
           Termin-Ansicht als Ausschnitt mit leichter automatischer Drehung
-          angezeigt.
+          angezeigt. Maximal 12 MB.
         </p>
 
         <form
@@ -179,6 +196,44 @@ export default async function TerminBearbeitenPage({
             360°-Bild hochladen
           </button>
         </form>
+      </section>
+
+      <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Videos</h2>
+        <p className="mt-1 text-sm text-text-muted">
+          Videos werden in der Galerie mit einem Vorschaubild angezeigt und
+          beim Anklicken direkt abgespielt. Maximal 200 MB pro Video (MP4,
+          WebM, QuickTime oder Ogg).
+        </p>
+
+        <VideoUploadForm endpoint={`/api/projekte/${listingId}/termine/${event.id}/videos`} />
+
+        <div className="mt-6 border-t border-text/10 pt-4">
+          <p className="text-sm text-text-muted">
+            Oder ein Video von YouTube, Vimeo oder einem anderen Anbieter
+            verlinken:
+          </p>
+          <form
+            action={addEventVideoLink}
+            className="mt-3 flex flex-wrap items-center gap-3"
+          >
+            <input type="hidden" name="listingId" value={listingId} />
+            <input type="hidden" name="eventId" value={event.id} />
+            <input
+              type="url"
+              name="videoUrl"
+              placeholder="https://www.youtube.com/watch?v=..."
+              required
+              className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
+            >
+              Video-Link hinzufügen
+            </button>
+          </form>
+        </div>
       </section>
 
       <form action={updateEvent} className="mt-10 flex flex-col gap-5">

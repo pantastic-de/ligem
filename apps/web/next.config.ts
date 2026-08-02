@@ -13,7 +13,11 @@ const nextConfig: NextConfig = {
     // Server Actions default to a 1MB request body limit. Photo uploads
     // (see uploadListingMedia) allow up to 8MB per image and several files
     // per submission, so the whole-request cap needs to be well above that;
-    // the per-file 8MB rule is enforced in the action itself.
+    // the per-file 8MB rule is enforced in the action itself. Video uploads
+    // (up to 200MB) deliberately go through a plain Route Handler instead of
+    // a Server Action (see src/app/api/projekte/[id]/videos/route.ts) so the
+    // upload can report progress via XHR — Route Handlers aren't subject to
+    // this bodySizeLimit at all, so it doesn't need to account for video.
     serverActions: {
       bodySizeLimit: "50mb",
     },

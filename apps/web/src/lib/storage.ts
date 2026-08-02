@@ -37,13 +37,20 @@ export async function putObject(
   });
 }
 
-export async function getObjectBuffer(key: string): Promise<Buffer> {
-  const stream = await minioClient.getObject(MEDIA_BUCKET, key);
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk as Buffer);
+// Returns a Node Readable stream for the whole object, or — when `range` is
+// given — just the requested byte range via MinIO's getPartialObject. Used
+// by the /api/media proxy so large files (notably videos, up to 200MB) are
+// streamed straight through rather than buffered fully into memory, and so
+// <video> playback can seek via HTTP Range requests instead of always
+// downloading the entire file.
+export async function getObjectStream(
+  key: string,
+  range?: { start: number; end: number },
+) {
+  if (range) {
+    return minioClient.getPartialObject(MEDIA_BUCKET, key, range.start, range.end - range.start + 1);
   }
-  return Buffer.concat(chunks);
+  return minioClient.getObject(MEDIA_BUCKET, key);
 }
 
 export async function deleteObject(key: string): Promise<void> {

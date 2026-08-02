@@ -7,7 +7,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
-import { MAX_IMAGE_SIZE, isPanoramaAspectRatio, processAndStoreImage, splitBySize } from "@/lib/media";
+import {
+  MAX_PANORAMA_SIZE,
+  isPanoramaAspectRatio,
+  processAndStoreImage,
+  splitBySize,
+  storeThumbnailOnly,
+} from "@/lib/media";
+import { fetchVideoLinkThumbnail, normalizeVideoLinkUrl, toEmbeddableUrl } from "@/lib/video-link";
 
 async function requireEventAccess(eventId: string) {
   const session = await auth();
@@ -91,8 +98,8 @@ export async function uploadEventPanorama(formData: FormData): Promise<void> {
   if (!(file instanceof File) || file.size === 0) {
     redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=nofile`);
   }
-  if (file.size > MAX_IMAGE_SIZE) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=toobig`);
+  if (file.size > MAX_PANORAMA_SIZE) {
+    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=panorama-toobig`);
   }
   if (!(await isPanoramaAspectRatio(file))) {
     redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=panorama-format`);
@@ -123,6 +130,48 @@ export async function uploadEventPanorama(formData: FormData): Promise<void> {
   redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1`);
 }
 
+/**
+ * Adds a video by external link — mirrors addListingVideoLink in
+ * media-actions.ts (see there for the rationale: type stays "VIDEO",
+ * isVideoLink flag, best-effort provider thumbnail).
+ */
+export async function addEventVideoLink(formData: FormData): Promise<void> {
+  const listingId = formData.get("listingId")?.toString();
+  const eventId = formData.get("eventId")?.toString();
+  if (!listingId || !eventId) return;
+  const { userId } = await requireEventAccess(eventId);
+
+  const normalized = normalizeVideoLinkUrl(formData.get("videoUrl")?.toString());
+  if (!normalized) {
+    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=videolink-ungueltig`);
+  }
+  const embeddable = toEmbeddableUrl(normalized);
+
+  const thumbnailBuffer = await fetchVideoLinkThumbnail(normalized);
+  const thumbnailKey = thumbnailBuffer
+    ? await storeThumbnailOnly(thumbnailBuffer, `events/${eventId}`)
+    : null;
+
+  const lastPosition = await prisma.media.aggregate({
+    where: { eventId },
+    _max: { position: true },
+  });
+
+  await prisma.media.create({
+    data: {
+      eventId,
+      type: "VIDEO",
+      isVideoLink: true,
+      storageKey: embeddable,
+      thumbnailKey,
+      position: (lastPosition._max.position ?? -1) + 1,
+      uploadedById: userId,
+    },
+  });
+
+  redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1`);
+}
+
 export async function deleteEventMedia(formData: FormData): Promise<void> {
   const listingId = formData.get("listingId")?.toString();
   const eventId = formData.get("eventId")?.toString();
@@ -132,7 +181,9 @@ export async function deleteEventMedia(formData: FormData): Promise<void> {
 
   const media = await prisma.media.findUnique({ where: { id: mediaId } });
   if (media && media.eventId === eventId) {
-    await deleteObject(media.storageKey);
+    if (!media.isVideoLink) {
+      await deleteObject(media.storageKey);
+    }
     if (media.thumbnailKey) {
       await deleteObject(media.thumbnailKey);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { RotateCw } from "lucide-react";
+import { PlayCircle, RotateCw, Video } from "lucide-react";
 
 type MediaItem = {
   id: string;
@@ -9,6 +9,8 @@ type MediaItem = {
   storageKey: string;
   caption: string | null;
   isPanorama?: boolean;
+  isVideoLink?: boolean;
+  type?: string;
 };
 
 /**
@@ -67,12 +69,19 @@ export function ReorderablePhotoGallery({
           className="flex cursor-grab flex-col gap-2 active:cursor-grabbing"
         >
           <div className="relative aspect-square overflow-hidden rounded-xl bg-bg">
-            {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset */}
-            <img
-              src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
-              alt={item.caption ?? ""}
-              className="h-full w-full object-cover"
-            />
+            {item.type === "VIDEO" && !item.thumbnailKey ? (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-text/5 text-text-muted">
+                <Video className="h-8 w-8" aria-hidden="true" />
+                <span className="text-xs font-medium">{item.isVideoLink ? "Video-Link" : "Video"}</span>
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset
+              <img
+                src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
+                alt={item.caption ?? ""}
+                className="h-full w-full object-cover"
+              />
+            )}
             {index === 0 ? (
               <span className="absolute left-1 top-1 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">
                 Vorschau
@@ -82,6 +91,11 @@ export function ReorderablePhotoGallery({
               <span className="absolute bottom-1 left-1 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
                 <RotateCw className="h-3 w-3" aria-hidden="true" />
                 360°
+              </span>
+            ) : null}
+            {item.type === "VIDEO" && item.thumbnailKey ? (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <PlayCircle className="h-8 w-8 text-white drop-shadow" aria-hidden="true" />
               </span>
             ) : null}
           </div>

@@ -333,8 +333,13 @@ model Media {
   eventId       String?
   event         Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   type          MediaType
-  storageKey    String // MinIO/S3 object key (display-sized image)
-  thumbnailKey  String? // downscaled at upload time; position 0's thumbnail is used as the listing's/event's list-view thumbnail
+  // MinIO/S3 object key (display-sized image or uploaded video) — except
+  // when isVideoLink is true, in which case this holds the embeddable
+  // player URL (YouTube/Vimeo rewritten to their /embed/ form, any other
+  // provider's URL as-is) instead of a MinIO key; there's no MinIO object
+  // behind that row at all, so it's never passed through /api/media.
+  storageKey    String
+  thumbnailKey  String? // downscaled at upload time (or fetched from the provider's oEmbed for a video link); position 0's thumbnail is used as the listing's/event's list-view thumbnail
   caption       String?
   position      Int       @default(0)
   // True for a dedicated 360°/equirectangular panorama upload (separate
@@ -342,6 +347,13 @@ model Media {
   // upload time) — flags the gallery to show a 360° badge and render it
   // through the interactive panorama viewer instead of a plain <img>.
   isPanorama    Boolean   @default(false)
+  // True for a video added via external link (YouTube/Vimeo/other) rather
+  // than a file upload — type stays VIDEO either way (same gallery
+  // tile/badge treatment), this flag only changes what storageKey means
+  // (see above) and how the lightbox plays it back (<iframe> instead of a
+  // local <video>). deleteListingMedia/deleteEventMedia must not call
+  // deleteObject() on storageKey for these rows, since it isn't a MinIO key.
+  isVideoLink   Boolean   @default(false)
   uploadedById  String
   uploadedBy    User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
   createdAt     DateTime  @default(now())
