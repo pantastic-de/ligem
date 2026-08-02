@@ -144,14 +144,17 @@ export default async function KalenderPage({
   // (impossible, since those are different groups), rather than "at least
   // one matching row for Art" AND "at least one matching row for
   // Zielgruppe" independently. Mirrors /projekte/page.tsx's attributeFilters
-  // pattern.
-  const attributeFilters: Prisma.EventWhereInput[] = [];
-  if (artIds.length > 0) {
-    attributeFilters.push({ attributeOptions: { some: { optionId: { in: artIds } } } });
-  }
-  if (zielgruppeIds.length > 0) {
-    attributeFilters.push({ attributeOptions: { some: { optionId: { in: zielgruppeIds } } } });
-  }
+  // pattern. Kept as named fragments (rather than pushed straight into one
+  // flat array) so the facet-count computation below can rebuild "every
+  // other filter, minus this one group's own" per group — see facetWhere.
+  const artFilter: Prisma.EventWhereInput | null =
+    artIds.length > 0 ? { attributeOptions: { some: { optionId: { in: artIds } } } } : null;
+  const zielgruppeFilter: Prisma.EventWhereInput | null =
+    zielgruppeIds.length > 0 ? { attributeOptions: { some: { optionId: { in: zielgruppeIds } } } } : null;
+
+  const attributeFilters: Prisma.EventWhereInput[] = [artFilter, zielgruppeFilter].filter(
+    (f): f is Prisma.EventWhereInput => f !== null,
+  );
 
   const where: Prisma.EventWhereInput = {
     status: "PUBLISHED",
@@ -166,6 +169,7 @@ export default async function KalenderPage({
   const lng = params.lng ? Number.parseFloat(params.lng) : null;
   const radiusKm = params.radius ? Number.parseFloat(params.radius) : null;
   let radiusSearchActive = false;
+  let nearbyIds: string[] | null = null;
 
   if (lat != null && lng != null && radiusKm != null && !Number.isNaN(lat + lng + radiusKm)) {
     radiusSearchActive = true;
@@ -178,8 +182,71 @@ export default async function KalenderPage({
           ${radiusKm * 1000}
         )
     `;
-    where.id = { in: nearby.map((row) => row.id) };
+    nearbyIds = nearby.map((row) => row.id);
+    where.id = { in: nearbyIds };
   }
+
+  // Facet counts for every checkbox in Veranstaltungsart/Zielgruppe — how
+  // many results selecting *this specific option* would produce combined
+  // with every OTHER currently active filter (the other group, Zeitraum,
+  // radius), not the group's own raw total. Mirrors /projekte/page.tsx's
+  // facetWhere: one query per group (fetching that group's own option
+  // assignments for the candidate set matching every other filter) rather
+  // than one query per option.
+  function facetWhere(excludeGroup: "art" | "zielgruppe"): Prisma.EventWhereInput {
+    const filters = [
+      excludeGroup === "art" ? null : artFilter,
+      excludeGroup === "zielgruppe" ? null : zielgruppeFilter,
+    ].filter((f): f is Prisma.EventWhereInput => f !== null);
+    return {
+      status: "PUBLISHED",
+      startAt: {
+        gte: von && !Number.isNaN(von.getTime()) ? von : new Date(),
+        ...(bis && !Number.isNaN(bis.getTime()) ? { lte: bis } : {}),
+      },
+      ...(nearbyIds ? { id: { in: nearbyIds } } : {}),
+      ...(filters.length > 0 ? { AND: filters } : {}),
+    };
+  }
+
+  function countsFor(
+    candidates: { id: string; attributeOptions: { optionId: string }[] }[],
+    options: { id: string }[],
+    selected: string[],
+  ): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const option of options) {
+      const targetIds = new Set([...selected, option.id]);
+      counts[option.id] = candidates.filter((c) =>
+        c.attributeOptions.some((a) => targetIds.has(a.optionId)),
+      ).length;
+    }
+    return counts;
+  }
+
+  const [artCandidates, zielgruppeCandidates] = await Promise.all([
+    veranstaltungsart
+      ? prisma.event.findMany({
+          where: facetWhere("art"),
+          select: {
+            id: true,
+            attributeOptions: { where: { option: { groupId: veranstaltungsart.id } }, select: { optionId: true } },
+          },
+        })
+      : Promise.resolve([]),
+    zielgruppe
+      ? prisma.event.findMany({
+          where: facetWhere("zielgruppe"),
+          select: {
+            id: true,
+            attributeOptions: { where: { option: { groupId: zielgruppe.id } }, select: { optionId: true } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const artCounts = veranstaltungsart ? countsFor(artCandidates, veranstaltungsart.options, artIds) : {};
+  const zielgruppeCounts = zielgruppe ? countsFor(zielgruppeCandidates, zielgruppe.options, zielgruppeIds) : {};
 
   const events = await prisma.event.findMany({
     where,
@@ -313,6 +380,8 @@ export default async function KalenderPage({
           <TermineSearchForm
             veranstaltungsart={veranstaltungsart}
             zielgruppe={zielgruppe}
+            artCounts={artCounts}
+            zielgruppeCounts={zielgruppeCounts}
             resultItems={eventMapItems}
             eventDayColors={eventDayColors}
             selectedId={selectedId}

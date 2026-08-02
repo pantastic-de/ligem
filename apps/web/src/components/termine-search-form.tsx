@@ -13,6 +13,8 @@ type GroupWithOptions = AttributeGroup & { options: AttributeOption[] };
 export function TermineSearchForm({
   veranstaltungsart,
   zielgruppe,
+  artCounts,
+  zielgruppeCounts,
   defaults,
   resultItems,
   eventDayColors,
@@ -20,6 +22,11 @@ export function TermineSearchForm({
 }: {
   veranstaltungsart: GroupWithOptions | null;
   zielgruppe: GroupWithOptions | null;
+  // Faceted result counts per option id (see /termine/page.tsx's
+  // facetWhere) — how many results selecting that specific option would
+  // produce combined with every other currently active filter.
+  artCounts: Record<string, number>;
+  zielgruppeCounts: Record<string, number>;
   defaults: {
     artIds: string[];
     zielgruppeIds: string[];
@@ -65,6 +72,7 @@ export function TermineSearchForm({
           name="art"
           options={veranstaltungsart.options}
           defaultSelected={defaults.artIds}
+          counts={artCounts}
           onChange={submitNow}
         />
       ) : null}
@@ -75,6 +83,7 @@ export function TermineSearchForm({
           name="zielgruppe"
           options={zielgruppe.options}
           defaultSelected={defaults.zielgruppeIds}
+          counts={zielgruppeCounts}
           onChange={submitNow}
         />
       ) : null}
