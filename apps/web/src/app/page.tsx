@@ -64,18 +64,20 @@ export default function Home() {
           Informieren, Vernetzen und Veranstalten.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-          <Link
-            href="/projekte"
-            className="flex min-h-12 w-full items-center justify-center rounded-full bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover sm:w-auto"
-          >
-            Wohnprojekte entdecken
-          </Link>
-          <Link
-            href="/termine"
-            className="flex min-h-12 w-full items-center justify-center rounded-full bg-secondary px-8 text-base font-semibold text-white transition-colors hover:bg-secondary-hover sm:w-auto"
-          >
-            Veranstaltungen
-          </Link>
+          <div className="flex w-full flex-row gap-3 sm:w-auto">
+            <Link
+              href="/projekte"
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-primary px-5 text-base font-semibold text-white transition-colors hover:bg-primary-hover sm:flex-none sm:px-8"
+            >
+              Wohnprojekte
+            </Link>
+            <Link
+              href="/termine"
+              className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-secondary px-5 text-base font-semibold text-white transition-colors hover:bg-secondary-hover sm:flex-none sm:px-8"
+            >
+              Veranstaltungen
+            </Link>
+          </div>
           <a
             href="#zielgruppen"
             className="flex min-h-12 w-full items-center justify-center rounded-full border border-text/20 px-8 text-base font-semibold transition-colors hover:bg-surface sm:w-auto"
