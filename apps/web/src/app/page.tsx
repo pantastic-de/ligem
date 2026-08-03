@@ -70,6 +70,12 @@ export default function Home() {
           >
             Wohnprojekte entdecken
           </Link>
+          <Link
+            href="/termine"
+            className="flex min-h-12 w-full items-center justify-center rounded-full bg-secondary px-8 text-base font-semibold text-white transition-colors hover:bg-secondary-hover sm:w-auto"
+          >
+            Veranstaltungen
+          </Link>
           <a
             href="#zielgruppen"
             className="flex min-h-12 w-full items-center justify-center rounded-full border border-text/20 px-8 text-base font-semibold transition-colors hover:bg-surface sm:w-auto"
