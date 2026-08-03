@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { PlayCircle, RotateCw } from "lucide-react";
 
 import { PanoramaViewer } from "@/components/panorama-viewer";
+import {
+  getVideoEmbedConsent,
+  setVideoEmbedConsent,
+  subscribeVideoEmbedConsent,
+} from "@/lib/cookie-consent";
 
 type GalleryPhoto = {
   id: string;
@@ -79,6 +84,19 @@ function GalleryTileMedia({ photo }: { photo: GalleryPhoto }) {
  */
 export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  // Consent for embedding external YouTube/Vimeo players (see
+  // cookie-consent.ts) — read after mount only, so server and first client
+  // render agree (no localStorage access during SSR) before this updates to
+  // the real stored value. `sessionAllowedIds` is the "Einmal laden" escape
+  // hatch: loads just the one clicked video without writing to storage, for
+  // a visitor who declined the global banner but still wants to watch this
+  // one video.
+  const globalConsent = useSyncExternalStore(
+    subscribeVideoEmbedConsent,
+    getVideoEmbedConsent,
+    () => null,
+  );
+  const [sessionAllowedIds, setSessionAllowedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (openIndex === null) return;
@@ -199,16 +217,53 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
               className="h-full max-h-[90vh] w-full max-w-5xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <iframe
-                key={photos[openIndex].id}
-                src={photos[openIndex].storageKey}
-                title="Video"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-                sandbox="allow-scripts allow-presentation allow-popups"
-                className="h-full w-full border-0"
-              />
+              {globalConsent === "allowed" || sessionAllowedIds.has(photos[openIndex].id) ? (
+                <iframe
+                  key={photos[openIndex].id}
+                  src={photos[openIndex].storageKey}
+                  title="Video"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-presentation allow-popups"
+                  className="h-full w-full border-0"
+                />
+              ) : (
+                // Click-to-load placeholder — an embedded YouTube/Vimeo
+                // player sets third-party cookies of its own regardless of
+                // this app's own consent state, so it must not load before
+                // the visitor has actually agreed to that (see
+                // cookie-consent.ts / CookieConsentBanner). "Einmal laden"
+                // only affects this one video for the current page view;
+                // "Immer erlauben" persists the same global flag the banner
+                // sets, so future videos (and a future visit) load directly.
+                <div className="flex h-full max-h-[70vh] w-full flex-col items-center justify-center gap-4 rounded-2xl bg-surface p-8 text-center">
+                  <PlayCircle className="h-12 w-12 text-text-muted" aria-hidden="true" />
+                  <p className="max-w-md text-text-muted">
+                    Dieses Video wird von einem externen Anbieter (z. B. YouTube
+                    oder Vimeo) geladen. Dabei werden Daten, unter Umständen
+                    inklusive Cookies, an diesen Anbieter übertragen.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSessionAllowedIds((prev) => new Set(prev).add(photos[openIndex].id))
+                      }
+                      className="min-h-11 rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+                    >
+                      Einmal laden
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoEmbedConsent("allowed")}
+                      className="min-h-11 rounded-full bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+                    >
+                      Immer erlauben
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : photos[openIndex].type === "VIDEO" ? (
             // Interacting with the native <video> controls (play/pause/seek)

@@ -44,6 +44,12 @@ const datenarten = [
     beispiele: "Name, E-Mail, Anzahl Personen, Nachricht",
     zweck: "Damit sich der Veranstalter auf euch einstellen kann",
   },
+  {
+    art: "Externe Dienste",
+    beispiele:
+      "Kartenkacheln (MapTiler/OpenStreetMap), Ortssuche (Nominatim), Spam-Schutz (Cloudflare Turnstile), optionale Google-Anmeldung",
+    zweck: "Für Karte, Ortssuche und Schutz vor Spam — Details in der Datenschutzerklärung",
+  },
 ];
 
 export default function UeberUnsPage() {
@@ -96,7 +102,7 @@ export default function UeberUnsPage() {
           Workshops sind echte, persönliche Gelegenheiten zum Kennenlernen und
           Austausch. Genau das soll im Mittelpunkt stehen, nicht eine
           Plattform, die diesen Kontakt künstlich ersetzt. LiGem ist
-          kostenlos, werbefrei, und ich erhebe keine Daten zu Werbezwecken.
+          werbefrei, und ich erhebe keine Daten zu Werbezwecken.
         </p>
       </section>
 
@@ -138,9 +144,22 @@ export default function UeberUnsPage() {
         <h2 className="text-xl font-bold">Wir sind ein Wohnprojekt</h2>
         <ul className="mt-3 flex flex-col gap-2 text-text-muted">
           <li>
-            Tragt euch kostenlos ein. Pflicht ist eigentlich nur der Name
-            eures Projekts, alles andere (Standort, Werte, Gruppengröße,
-            Kosten, Fotos und so weiter) könnt ihr nach und nach ergänzen.
+            Pflicht ist eigentlich nur der Name eures Projekts, alles andere
+            (Standort, Werte, Gruppengröße, Kosten, Fotos und so weiter) könnt
+            ihr nach und nach ergänzen.
+          </li>
+          <li>
+            <strong>Habt ihr schon eine Projekt-Homepage? Der KI-Import nimmt
+            euch fast die ganze Arbeit ab.</strong> Einfach die Adresse eurer
+            Homepage angeben — LiGem liest die Seite automatisch aus und
+            schlägt euch Motto, Beschreibung, Kontaktdaten, Standort,
+            Gruppengröße, Kosten und passende Kategorien direkt in den
+            jeweiligen Feldern vor, inklusive Fotos. Ihr müsst dann nur noch
+            durchsehen und bei Bedarf anpassen — jeder Vorschlag lässt sich
+            selbstverständlich überschreiben, ergänzen oder verwerfen, nichts
+            wird ungefragt übernommen. Ändert sich später etwas auf eurer
+            Homepage, holt ihr euch die Aktualisierung genauso schnell und
+            unkompliziert wieder per Klick in euren Eintrag.
           </li>
           <li>
             Es gibt kein automatisches Matching. Ihr entscheidet selbst, wer
@@ -220,7 +239,7 @@ export default function UeberUnsPage() {
           <Link href="/impressum" className="text-primary">
             Impressum
           </Link>
-          ). Kostenlos, ohne Werbung und ohne Gewinnabsicht. Ich arbeite in
+          ). Ohne Werbung. Ich arbeite in
           der IT und wollte diese Kenntnisse einmal für etwas einsetzen, das
           mir am Herzen liegt: die Idee des gemeinschaftlichen Wohnens ein
           Stück voranzubringen.
@@ -266,7 +285,21 @@ export default function UeberUnsPage() {
         </div>
 
         <ul className="mt-6 flex flex-col gap-2 text-text-muted">
-          <li>Ich verwende keine Tracking-Cookies und keine Werbenetzwerke und gebe keine Daten zu Werbezwecken weiter.</li>
+          <li>
+            Ich verwende keine Tracking-Cookies zu Werbezwecken, keine
+            Werbenetzwerke und gebe keine Daten zu Werbezwecken weiter. Für
+            einzelne Funktionen (Karte, Ortssuche, Spam-Schutz beim
+            Kontaktformular) werden Anfragen an dafür notwendige externe
+            Dienste geschickt — Details dazu in der{" "}
+            <Link href="/datenschutz#externe-dienste" className="text-primary">
+              Datenschutzerklärung
+            </Link>
+            .
+          </li>
+          <li>
+            Videos von YouTube/Vimeo werden in Galerien erst eingebettet,
+            nachdem du dem zugestimmt hast.
+          </li>
           <li>Fotos, Standort und Kontaktangaben bleiben nur so lange gespeichert, wie euer Eintrag besteht.</li>
           <li>Die Kontaktdaten zu einer Anfrage bei einem Wohnprojekt werden erst sichtbar, wenn das Projekt die Anfrage annimmt.</li>
           <li>Es gibt kein automatisches Matching und keinen Empfehlungsalgorithmus. Suche und Filter sind das einzige Werkzeug, um etwas zu finden.</li>

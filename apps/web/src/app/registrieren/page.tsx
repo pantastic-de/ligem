@@ -4,7 +4,7 @@ import { registerUser } from "./actions";
 
 export const metadata: Metadata = {
   title: "Registrieren",
-  description: "Kostenloses Konto bei LiGem erstellen — als Suchende:r, Anbieter:in oder beides.",
+  description: "Konto bei LiGem erstellen — als Suchende:r, Anbieter:in oder beides.",
   alternates: { canonical: "/registrieren" },
 };
 
@@ -26,7 +26,7 @@ export default async function RegistrierenPage({
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Konto erstellen</h1>
       <p className="mt-2 text-text-muted">
-        Kostenlos registrieren, um Wohnprojekte einzutragen oder zu speichern.
+        Registriere dich, um Wohnprojekte einzutragen oder zu speichern.
       </p>
 
       {errorMessage ? (

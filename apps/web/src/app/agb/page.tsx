@@ -15,22 +15,25 @@ export default function AgbPage() {
       <section className="mt-8">
         <h2 className="text-lg font-semibold">1. Geltungsbereich</h2>
         <p className="mt-2 text-text-muted">
-          Diese Nutzungsbedingungen gelten für die Nutzung der kostenlosen
-          Plattform LiGem – Leben in Gemeinschaft, betrieben von Frank
-          Steiner (siehe Impressum).
+          Diese Nutzungsbedingungen gelten für die Nutzung der Plattform
+          LiGem – Leben in Gemeinschaft, betrieben von Frank Steiner (siehe
+          Impressum).
         </p>
       </section>
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">2. Leistungsbeschreibung</h2>
         <p className="mt-2 text-text-muted">
-          LiGem ist eine kostenlose, gemeinwohlorientierte Plattform, auf der
-          sich Wohngemeinschaften und Wohnprojekte präsentieren, Interessierte
+          LiGem ist eine gemeinwohlorientierte Plattform, auf der sich
+          Wohngemeinschaften und Wohnprojekte präsentieren, Interessierte
           sich informieren und Organisationen Veranstaltungen eintragen
           können. LiGem vermittelt nicht automatisch — Nutzer:innen suchen und
           filtern selbst. Es kommt kein Vertrag über Wohnraum zwischen LiGem
           und den Nutzer:innen zustande; LiGem ist nicht Partei etwaiger
-          Vereinbarungen zwischen Nutzer:innen.
+          Vereinbarungen zwischen Nutzer:innen. Einzelne Funktionen können
+          künftig kostenpflichtigen Zusatzleistungen (Premium-Funktionen)
+          vorbehalten sein; die jeweils geltenden Konditionen werden an der
+          entsprechenden Stelle in der Plattform ausgewiesen.
         </p>
       </section>
 

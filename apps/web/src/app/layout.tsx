@@ -5,6 +5,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { DemoDataRibbon } from "@/components/demo-data-ribbon";
 import { ScrollToTopButton } from "@/components/scroll-to-top-button";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 
@@ -14,7 +15,7 @@ const nunito = Nunito({
 });
 
 const SITE_DESCRIPTION =
-  "LiGem bringt Wohngemeinschaften, WG-Suchende und gemeinwohlorientierte Organisationen zusammen: informieren, vernetzen, Veranstaltungen finden. Kostenlos und ohne automatisiertes Matching.";
+  "LiGem bringt Wohngemeinschaften, WG-Suchende und gemeinwohlorientierte Organisationen zusammen: informieren, vernetzen, Veranstaltungen finden. Ohne automatisiertes Matching.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -70,6 +71,7 @@ export default function RootLayout({
         <JsonLd data={websiteJsonLd} />
         <DemoDataRibbon />
         <ScrollToTopButton />
+        <CookieConsentBanner />
         <SiteHeader />
         <main className="flex flex-1 flex-col">{children}</main>
         <footer className="border-t border-text/10 px-6 py-8 text-center text-sm text-text-muted">

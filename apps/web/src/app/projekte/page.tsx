@@ -45,7 +45,7 @@ export async function generateMetadata({
   return {
     title: "Wohnprojekte finden",
     description:
-      "Durchsuche veröffentlichte Wohngemeinschaften und Wohnprojekte nach Typ, Kategorie, Lage und Zeitraum — kostenlos, ohne Login und ohne automatisiertes Matching.",
+      "Durchsuche veröffentlichte Wohngemeinschaften und Wohnprojekte nach Typ, Kategorie, Lage und Zeitraum — ohne Login und ohne automatisiertes Matching.",
     alternates: { canonical: "/projekte" },
   };
 }

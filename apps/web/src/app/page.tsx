@@ -61,7 +61,7 @@ export default function Home() {
         <p className="mx-auto mt-4 max-w-2xl text-base text-text-muted sm:mt-6 sm:text-lg">
           LiGem bringt Wohngemeinschaften, Menschen auf der Suche nach einem
           Zuhause und gemeinwohlorientierte Organisationen zusammen: zum
-          Informieren, Vernetzen und Veranstalten. Kostenlos und frei.
+          Informieren, Vernetzen und Veranstalten.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
           <Link

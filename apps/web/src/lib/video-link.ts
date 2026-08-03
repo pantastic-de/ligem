@@ -37,7 +37,12 @@ export function normalizeVideoLinkUrl(raw: string | null | undefined): string | 
  */
 export function toEmbeddableUrl(url: string): string {
   const yt = YOUTUBE_ID.exec(url);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  // youtube-nocookie.com is YouTube's own privacy-enhanced embed domain —
+  // defense in depth alongside the click-to-consent gate in
+  // photo-gallery.tsx, it avoids setting YouTube's ad-personalization
+  // cookies for a viewer who did consent, though the video's own page
+  // (once actually played) can still set cookies regardless of domain.
+  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}`;
   const vimeo = VIMEO_ID.exec(url);
   if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
   return url;

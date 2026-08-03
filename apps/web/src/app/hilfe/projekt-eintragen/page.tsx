@@ -32,6 +32,27 @@ export default function HilfeProjektEintragenPage() {
       </section>
 
       <section className="mt-8">
+        <h2 className="text-lg font-semibold">KI-Import: Eintrag automatisch aus eurer Homepage befüllen</h2>
+        <p className="mt-2 text-text-muted">
+          Habt ihr für euer Wohnprojekt bereits eine eigene Homepage, macht
+          euch der &bdquo;KI-Import&ldquo;-Button neben dem Homepage-Feld das
+          Eintragen (und spätere Aktualisieren) enorm leicht: einfach die
+          Adresse eintragen und starten. LiGem liest den Inhalt eurer Seite
+          aus und schlägt euch daraus Motto, Beschreibung (&bdquo;So leben
+          wir&ldquo;), Kontaktdaten, Adresse samt Standort auf der Karte,
+          Gruppengröße, freie Plätze, Kosten sowie passende Kategorien direkt
+          in den jeweiligen Feldern vor — inklusive gefundener Fotos, die
+          gleich mit in eure Galerie übernommen werden. Jeden Vorschlag könnt
+          ihr einzeln übernehmen, anpassen oder verwerfen, per Checkbox neben
+          dem jeweiligen Feld — nichts wird ungefragt eingetragen, und alles,
+          was ihr selbst schon ausgefüllt hattet, bleibt standardmäßig
+          unangetastet. Ändert sich später etwas auf eurer Homepage, holt ihr
+          euch die Aktualisierung genauso schnell wieder per Klick, statt
+          jedes Feld einzeln von Hand nachzupflegen.
+        </p>
+      </section>
+
+      <section className="mt-8">
         <h2 className="text-lg font-semibold">Prüfung vor Veröffentlichung</h2>
         <p className="mt-2 text-text-muted">
           Jeder neue oder geänderte Eintrag bekommt den Status &bdquo;Wird
