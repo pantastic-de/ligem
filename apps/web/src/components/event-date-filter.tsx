@@ -60,13 +60,20 @@ export function EventDateFilter({
   // the input below — and only opens once that input is clicked/focused.
   const [expanded, setExpanded] = useState(false);
 
-  const skipFirstChange = useRef(true);
+  // Stores the last [startDate, endDate] combination `onChange` actually
+  // fired for (see location-radius-picker.tsx's identical pattern for why
+  // this is a value comparison rather than a "have I run once" boolean
+  // ref) — a plain boolean flips true→false on the *first* of React 18
+  // Strict Mode's dev-only double-invoked mount effects, so the second one
+  // incorrectly treats itself as a real change and fires onChange despite
+  // nothing having actually changed yet.
+  const lastChangeKey = useRef(`${startDate}|${endDate}`);
   useEffect(() => {
-    if (skipFirstChange.current) {
-      skipFirstChange.current = false;
-      return;
+    const key = `${startDate}|${endDate}`;
+    if (lastChangeKey.current !== key) {
+      lastChangeKey.current = key;
+      onChange?.();
     }
-    onChange?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 

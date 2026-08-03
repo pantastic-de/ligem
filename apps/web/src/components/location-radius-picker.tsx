@@ -131,7 +131,24 @@ export function LocationRadiusPicker({
   // cleared — see renderSelectedMarker below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const overviewBoundsRef = useRef<any>(null);
-  const skipFirstChange = useRef(true);
+  // Tracks the last [lat, lng, radiusValue] combination `onChange` was
+  // actually fired for, initialized once (during render, not inside an
+  // effect) to the values the component starts with — so the dependent
+  // effect below only calls `onChange` when this combination genuinely
+  // changes, not on mount. A plain "have I run once" boolean ref doesn't
+  // work here: React 18 Strict Mode's dev-only double-invoke of effects
+  // (mount → cleanup → mount again, to help surface impure effects) flips
+  // such a flag from true to false on the *first* of those two synthetic
+  // mounts, so the second one already sees it as false and incorrectly
+  // fires `onChange` — reported directly as clicking a same-origin link
+  // like "Veranstaltet von {Projekt}" landing on `/projekte?projekt=<id>`
+  // and then immediately being rewritten to `/projekte?sortierung=neueste`
+  // (the sidebar form's own default state, with the `projekt` selection
+  // silently dropped since it isn't one of the form's own fields). Storing
+  // the actual value instead of a boolean is immune to this: re-running
+  // the effect with an unchanged value is always a no-op, no matter how
+  // many times (1 or 2) it fires for that same value.
+  const lastChangeKey = useRef(`${lat}|${lng}|${radiusValue}`);
 
   // Bounds that fit every result marker plus the search origin, extended to
   // always also include the full radius circle when one is active. This is
@@ -388,9 +405,9 @@ export function LocationRadiusPicker({
       fitOverviewView(L, map);
     }
 
-    if (skipFirstChange.current) {
-      skipFirstChange.current = false;
-    } else {
+    const key = `${lat}|${lng}|${radiusValue}`;
+    if (lastChangeKey.current !== key) {
+      lastChangeKey.current = key;
       onChange?.();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
