@@ -4,3 +4,12 @@ allowBuilds:
   prisma: true
   sharp: true
   unrs-resolver: true
+
+# Forces patched versions of transitive dependencies Next.js/Prisma bundle
+# internally (not something this project's own package.json controls
+# directly) — see CLAUDE.md's security-audit section for the CVEs this
+# addresses (sharp/libvips memory-safety issues, postcss path-traversal/
+# XSS advisories).
+overrides:
+  sharp: '>=0.35.0'
+  postcss: '>=8.5.18'

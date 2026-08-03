@@ -360,6 +360,14 @@ Every `Listing` has an optional `homepageUrl` column plus a `lastAiImportAt` tim
 - **Text/image extraction** (`src/lib/homepage-scrape.ts`) is deliberately regex/tag-strip based (`extractReadableText`/`extractImageUrls`) rather than pulling in an HTML/DOM parser dependency — good enough for "best effort" extraction feeding an LLM, not a claim of correct HTML parsing. Images are capped at 8 candidates, filtered by filename (`logo`/`icon`/`favicon`/...) to skip obvious non-photo assets.
 - **Env var**: `ANTHROPIC_API_KEY`, added to `docker-compose.yml`'s `web` service `environment:` block (passthrough from the root `.env`, same as `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) — optional at the infra level, but the KI-Import button and its whole pipeline are unreachable without it.
 
+## Security-Audit (`pnpm audit`)
+
+`pnpm audit` (run from `apps/web`) surfaces known CVEs. As of this writing, 4 of the originally-found 7 advisories are pinned via `apps/web/pnpm-workspace.yaml`'s `overrides` block (`sharp: '>=0.35.0'`, `postcss: '>=8.5.18'`) — both were transitively bundled by Next.js's own dependency tree (`next>sharp`, `next>postcss`) at older, vulnerable versions, not something this project's `package.json` could bump directly; `pnpm why <pkg>` confirmed a single, unified patched version resolves everywhere afterward. Note: **pnpm v10+ no longer reads a `pnpm.overrides` key inside `package.json`** (silently ignored with a warning) — overrides belong in `pnpm-workspace.yaml` now.
+
+The remaining 3 advisories (`find-my-way`, `brace-expansion`, `valibot`) are all pulled in exclusively via dev-only tooling (`prisma dev`'s bundled dev server, ESLint's glob matching) — never present in the production `next build`/`next start` runtime, so left unpatched pending upstream fixes from Prisma/ESLint's own dependency trees rather than forcing overrides for paths this app never executes outside local development.
+
+`sharp`'s CVEs (libvips memory-safety issues) are specifically about Next's built-in `/_next/image` optimizer — checked directly: only `/ueber-uns`'s static portrait photo uses `next/image` anywhere in this app, every user-uploaded photo/gallery image deliberately renders via a plain `<img>` instead (see Media/storage sections above), so the real exposure to untrusted image input was low even before pinning the override.
+
 ## Deployment
 
 See `DEPLOYMENT.md` for server installation (Docker Compose in production mode, migrations, reverse proxy/TLS, backups) and `scripts/deploy.sh`/`scripts/github-init.sh` for the corresponding automation — both scripts are written but intentionally never executed by Claude, since they push to a real GitHub remote / deploy to a real server. `prisma/seed.ts` skips creating its fixed-password local dev admin when `NODE_ENV=production`.
