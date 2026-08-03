@@ -151,7 +151,7 @@ export default function UeberUnsPage() {
           </Link>
           <Link
             href="/termine"
-            className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 font-medium transition-colors hover:bg-surface"
+            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
           >
             Termine ansehen
           </Link>
