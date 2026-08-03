@@ -30,18 +30,23 @@
   --color-error: var(--color-error);
   --font-sans: var(--font-nunito);
 
-  /* Global font size, ~20% smaller than Tailwind's defaults (line-height
-     ratios are unitless multipliers, so they stay correct without needing
-     their own overrides). */
-  --text-xs: 0.6rem;
-  --text-sm: 0.7rem;
-  --text-base: 0.8rem;
-  --text-lg: 0.9rem;
-  --text-xl: 1rem;
-  --text-2xl: 1.2rem;
-  --text-3xl: 1.5rem;
-  --text-4xl: 1.8rem;
-  --text-5xl: 2.4rem;
+  /* Restored to Tailwind's stock default scale — the previous ~20%
+     reduction here (and body's font-size below) put headings, form
+     inputs, and labels under the 16px iOS Safari uses as its "don't
+     auto-zoom on focus" threshold, reported directly as the page zooming
+     in on every mobile form field. See the global input/select/textarea/
+     label override further below for the belt-and-suspenders part of
+     this fix (utility classes like text-sm/text-xs, at 14px/12px even in
+     this standard scale, still need forcing up for actual form controls). */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
 
   /* Global spacing scale, ~24% smaller than Tailwind's default 0.25rem base
      (a bit more than the text-size reduction above). Every numeric utility
@@ -58,7 +63,7 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 14.4px; /* was 18px — same ~20% reduction as the Tailwind text-* scale above */
+  font-size: 16px; /* standard baseline — was reduced to 14.4px, see the text-* scale comment above */
 }
 
 *:focus-visible {
@@ -67,27 +72,23 @@ body {
 }
 
 /* iOS Safari auto-zooms the whole page on focus of any text input whose
-   computed font-size is under 16px — this app's globally reduced type
-   scale (see body's font-size above) puts most form fields well under
-   that threshold. Restricted to actual text-entry controls (not
-   checkboxes/radios/range/buttons, which don't trigger the zoom and
-   shouldn't be forced to a larger size than the rest of the UI) and to
-   narrow/touch viewports, so desktop input sizing is unaffected. */
-@media (max-width: 640px) {
-  input[type="text"],
-  input[type="search"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="number"],
-  input[type="password"],
-  input[type="date"],
-  input[type="time"],
-  input[type="datetime-local"],
-  select,
-  textarea {
-    font-size: 16px;
-  }
+   computed font-size is under 16px — reported directly as the page
+   zooming in on mobile form fields. Applied globally (not just under a
+   narrow-viewport media query) per explicit product decision, and with
+   !important since a form control very often also carries a Tailwind
+   text-sm/text-xs utility class directly in its className (e.g.
+   `className="... text-sm"` on an <input>) — a class selector like
+   `.text-sm` and a plain element selector like `input`/`label` have equal
+   CSS specificity, so without !important, source order alone would decide
+   the winner, which is fragile against any future reordering of Tailwind's
+   generated utility CSS. Scoped to text-carrying controls and <label>
+   (not checkboxes/radios/range/buttons, which have no visible font-size-
+   driven text of their own to enlarge). */
+input,
+select,
+textarea,
+label {
+  font-size: 16px !important;
 }
 
 /* Leaflet renders its own DOM outside React's tree, so marker labels on the
