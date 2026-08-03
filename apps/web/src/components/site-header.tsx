@@ -21,7 +21,7 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-text/10">
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-x-4 gap-y-6 px-4 py-2 sm:gap-y-10 sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-x-4 gap-y-6 px-4 py-2 sm:gap-y-10 sm:px-6 sm:py-3 lg:flex-row lg:justify-between lg:gap-y-0 lg:py-4">
         <Link href="/" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- next/image
               refuses SVG sources unless dangerouslyAllowSVG is set (a
