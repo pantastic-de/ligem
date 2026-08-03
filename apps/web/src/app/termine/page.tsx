@@ -464,7 +464,7 @@ export default async function KalenderPage({
                     const thumbnail = event.media[0];
                     const isPast = event.startAt.getTime() < nowMs;
                     return (
-                      <li key={event.id}>
+                      <li key={event.id} id={`termin-${event.id}`} className="scroll-mt-4">
                         <Link
                           href={buildTermineHref(params, { termin: event.id, angemeldet: undefined })}
                           className={`flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg ${isPast ? "opacity-60" : ""}`}

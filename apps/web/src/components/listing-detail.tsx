@@ -11,6 +11,7 @@ import {
   Tag,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 
@@ -445,19 +446,22 @@ export function ListingDetail({
       {upcomingEvents.length > 0 ? (
         <section className="mt-8">
           <h2 className="text-lg font-semibold">Termine</h2>
-          <ul className="mt-2 flex flex-col gap-2">
+          <ul className="mt-2 flex flex-col overflow-hidden rounded-2xl border border-secondary/30 bg-surface shadow-sm divide-y divide-secondary/15">
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <Link
-                  href={`/termine?termin=${event.id}`}
-                  className="block rounded-xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
+                  href={`/termine#termin-${event.id}`}
+                  className="flex items-start gap-3 p-4 transition-colors hover:bg-secondary/5"
                 >
-                  <div className="font-medium">
-                    <HighlightText text={event.title} query={searchTerm} />
-                  </div>
-                  <div className="text-sm text-text-muted">
-                    {eventDateFormat.format(event.startAt)}
-                    {event.addressText ? ` · ${event.addressText}` : ""}
+                  <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-secondary" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <div className="font-medium">
+                      <HighlightText text={event.title} query={searchTerm} />
+                    </div>
+                    <div className="text-sm text-text-muted">
+                      {eventDateFormat.format(event.startAt)}
+                      {event.addressText ? ` · ${event.addressText}` : ""}
+                    </div>
                   </div>
                 </Link>
               </li>
