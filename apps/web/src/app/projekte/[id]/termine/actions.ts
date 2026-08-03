@@ -2,11 +2,28 @@
 
 import { notFound, redirect } from "next/navigation";
 
+import { randomUUID } from "node:crypto";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent, canManageListing } from "@/lib/authz";
 import { setEventLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { generateRecurrenceOccurrences, type RecurrenceFrequency } from "@/lib/recurrence";
+
+function parseRecurrenceFrequency(value: FormDataEntryValue | null): RecurrenceFrequency | null {
+  const str = value?.toString();
+  if (
+    str === "taeglich" ||
+    str === "woechentlich" ||
+    str === "14-taegig" ||
+    str === "monatlich" ||
+    str === "monatlich-wochentag"
+  ) {
+    return str;
+  }
+  return null;
+}
 
 async function requireListingOwner(listingId: string) {
   const session = await auth();
@@ -90,35 +107,79 @@ export async function createEvent(formData: FormData): Promise<void> {
   const latitude = parseOptionalFloat(formData.get("latitude"));
   const longitude = parseOptionalFloat(formData.get("longitude"));
 
-  const event = await prisma.event.create({
-    data: {
-      listingId,
-      createdById: userId,
-      title,
-      startAt,
-      endAt,
-      description: sanitizeRichText(formData.get("description")?.toString()),
-      addressText: formData.get("addressText")?.toString().trim() || null,
-      country: formData.get("country")?.toString().trim() || null,
-      state: formData.get("state")?.toString().trim() || null,
-      postalCode: formData.get("postalCode")?.toString().trim() || null,
-      city: formData.get("city")?.toString().trim() || null,
-      street: formData.get("street")?.toString().trim() || null,
-      houseNumber: formData.get("houseNumber")?.toString().trim() || null,
-      latitude,
-      longitude,
-      websiteUrl: formData.get("websiteUrl")?.toString().trim() || null,
-      cost: parseOptionalInt(formData.get("cost")),
-      maxParticipants: parseOptionalInt(formData.get("maxParticipants")),
-      registrationRequired: formData.get("registrationRequired") === "on",
-      status: "PUBLISHED",
-      attributeOptions: {
-        create: attributeOptionIds.map((optionId) => ({ optionId })),
-      },
-    },
-  });
+  // Recurrence is opt-in and create-only (see EventFormFields' showRecurrence
+  // prop) — an empty "recurrence" select value means "Keine Wiederholung",
+  // the ordinary single-event path below.
+  const frequency = parseRecurrenceFrequency(formData.get("recurrence"));
+  let occurrences: { startAt: Date; endAt: Date | null }[] = [{ startAt, endAt }];
+  let recurrenceGroupId: string | null = null;
+  if (frequency) {
+    // Parsed as end-of-day (not requiredDate's plain midnight) so an
+    // occurrence later on the chosen "until" date itself — which every
+    // recurring Termin's own time-of-day almost certainly is — still
+    // counts as within bounds, matching how the Suchzeitraum `bis` filter
+    // already treats its own end date on /projekte and /termine.
+    const recurrenceUntilRaw = formData.get("recurrenceUntil")?.toString();
+    const recurrenceUntil = recurrenceUntilRaw ? requiredDate(`${recurrenceUntilRaw}T23:59:59`) : null;
+    if (!recurrenceUntil || recurrenceUntil <= startAt) {
+      redirect(`/projekte/${listingId}/termine/neu?error=wiederholung`);
+    }
+    occurrences = generateRecurrenceOccurrences(startAt, endAt, frequency, recurrenceUntil);
+    // A single-occurrence "series" (e.g. `until` landed before the second
+    // date would even happen) isn't meaningfully a series — only tag it
+    // with a shared id once there's actually more than one Event to group.
+    if (occurrences.length > 1) recurrenceGroupId = randomUUID();
+  }
 
-  await setEventLocation(event.id, latitude, longitude);
+  const sharedData = {
+    listingId,
+    createdById: userId,
+    title,
+    description: sanitizeRichText(formData.get("description")?.toString()),
+    addressText: formData.get("addressText")?.toString().trim() || null,
+    country: formData.get("country")?.toString().trim() || null,
+    state: formData.get("state")?.toString().trim() || null,
+    postalCode: formData.get("postalCode")?.toString().trim() || null,
+    city: formData.get("city")?.toString().trim() || null,
+    street: formData.get("street")?.toString().trim() || null,
+    houseNumber: formData.get("houseNumber")?.toString().trim() || null,
+    latitude,
+    longitude,
+    websiteUrl: formData.get("websiteUrl")?.toString().trim() || null,
+    cost: parseOptionalInt(formData.get("cost")),
+    maxParticipants: parseOptionalInt(formData.get("maxParticipants")),
+    registrationRequired: formData.get("registrationRequired") === "on",
+    status: "PUBLISHED" as const,
+    recurrenceGroupId,
+  };
+
+  // One create() per occurrence rather than a single createMany() — every
+  // occurrence also needs its own nested attributeOptions rows, which
+  // createMany doesn't support, and the realistic occurrence counts here
+  // (capped at MAX_OCCURRENCES in generateRecurrenceOccurrences) are small
+  // enough that this is simple and fast enough without a bulk-insert path.
+  const createdEvents = await prisma.$transaction(
+    occurrences.map((occurrence) =>
+      prisma.event.create({
+        data: {
+          ...sharedData,
+          startAt: occurrence.startAt,
+          endAt: occurrence.endAt,
+          attributeOptions: {
+            create: attributeOptionIds.map((optionId) => ({ optionId })),
+          },
+        },
+      }),
+    ),
+  );
+
+  // location is identical for every occurrence (an address doesn't change
+  // across a recurring series) — still one call per row, since each is a
+  // cheap single-row UPDATE and setEventLocation only accepts one event id
+  // at a time.
+  await Promise.all(
+    createdEvents.map((event) => setEventLocation(event.id, latitude, longitude)),
+  );
 
   redirect(`/projekte/${listingId}/termine`);
 }

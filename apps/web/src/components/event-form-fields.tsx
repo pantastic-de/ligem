@@ -3,6 +3,7 @@ import { AddressFields } from "@/components/address-fields";
 import { EventDateRangeField } from "@/components/event-date-range-field";
 import { RichTextField } from "@/components/rich-text-field";
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
+import { RECURRENCE_LABELS } from "@/lib/recurrence";
 
 const inputClass =
   "min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text";
@@ -33,9 +34,16 @@ type AttributeGroupWithOptions = AttributeGroup & { options: AttributeOption[] }
 export function EventFormFields({
   attributeGroups,
   defaults = {},
+  showRecurrence = false,
 }: {
   attributeGroups: AttributeGroupWithOptions[];
   defaults?: EventFormDefaults;
+  // Only offered when creating a brand-new event, never on the edit form —
+  // a recurring series is just a batch-creation convenience (see
+  // src/lib/recurrence.ts): every generated occurrence is immediately its
+  // own independent Event afterward, so "editing the recurrence" isn't a
+  // concept that exists once occurrences already exist.
+  showRecurrence?: boolean;
 }) {
   const groupBySlug = (slug: string) =>
     attributeGroups.find((group) => group.slug === slug);
@@ -76,6 +84,50 @@ export function EventFormFields({
         defaultStartAt={defaults.startAt}
         defaultEndAt={defaults.endAt}
       />
+
+      {showRecurrence ? (
+        <fieldset className="flex flex-col gap-2 rounded-xl border border-text/20 p-4">
+          <legend className="px-1 font-medium">Wiederholung (optional)</legend>
+          <p className="text-sm text-text-muted">
+            Legt bei der Auswahl direkt mehrere unabhängige Termine an
+            (Beginn/Ende-Uhrzeit und alle anderen Angaben oben werden für
+            jeden Termin übernommen). Jeder einzelne Termin lässt sich danach
+            wie gewohnt einzeln bearbeiten oder löschen, unabhängig von den
+            anderen.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="recurrence" className="font-medium">
+                Wiederholt sich
+              </label>
+              <select
+                id="recurrence"
+                name="recurrence"
+                defaultValue=""
+                className={inputClass}
+              >
+                <option value="">Keine Wiederholung</option>
+                {Object.entries(RECURRENCE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="recurrenceUntil" className="font-medium">
+                Wiederholen bis
+              </label>
+              <input
+                id="recurrenceUntil"
+                name="recurrenceUntil"
+                type="date"
+                className={inputClass}
+              />
+            </div>
+          </div>
+        </fieldset>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="addressText" className="font-medium">

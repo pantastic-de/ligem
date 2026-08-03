@@ -46,6 +46,17 @@ export default async function TerminePage({
     include: { _count: { select: { registrations: true } } },
   });
 
+  // How many events (of this listing's own) share each recurrenceGroupId —
+  // shown as a small "Teil einer Serie" hint so an owner can tell these
+  // apart from one-off Termine, even though each one is edited/deleted
+  // fully independently of the others (see schema.prisma's comment on
+  // Event.recurrenceGroupId).
+  const seriesSizes = new Map<string, number>();
+  for (const event of events) {
+    if (!event.recurrenceGroupId) continue;
+    seriesSizes.set(event.recurrenceGroupId, (seriesSizes.get(event.recurrenceGroupId) ?? 0) + 1);
+  }
+
   // View-count summary (see /projekte/[id]/termine/[eventId]/statistik for
   // the full breakdown) — one grouped query across every event shown here
   // rather than one query per row, mirrors /meine-projekte's listing
@@ -96,10 +107,15 @@ export default async function TerminePage({
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
               >
                 <div>
-                  <h2 className="font-semibold">
+                  <h2 className="flex flex-wrap items-center gap-2 font-semibold">
                     <Link href={`/termine/${event.id}`} className="hover:underline">
                       {event.title}
                     </Link>
+                    {event.recurrenceGroupId && (seriesSizes.get(event.recurrenceGroupId) ?? 0) > 1 ? (
+                      <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-medium text-secondary">
+                        Serie ({seriesSizes.get(event.recurrenceGroupId)} Termine)
+                      </span>
+                    ) : null}
                   </h2>
                   <p className="text-sm text-text-muted">
                     {dateTimeFormat.format(event.startAt)}

@@ -596,6 +596,15 @@ model Event {
   createdById String
   createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
 
+  // Set only for events created as part of a recurring series (see
+  // src/lib/recurrence.ts + createEvent) — the same random id across every
+  // occurrence generated from one "Wiederholung" selection, purely for
+  // display purposes (e.g. "Teil einer Serie" / count of siblings). Each
+  // occurrence is otherwise a fully independent Event row from the moment
+  // it's created: editing or deleting one never touches the others, per
+  // explicit product decision. Null for a one-off event.
+  recurrenceGroupId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -607,6 +616,7 @@ model Event {
 
   @@index([startAt])
   @@index([status])
+  @@index([recurrenceGroupId])
 }
 
 // A message to the organizer, or a headcount signup ("X Teilnehmer

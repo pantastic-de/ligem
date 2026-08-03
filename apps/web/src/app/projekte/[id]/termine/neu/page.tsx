@@ -58,10 +58,16 @@ export default async function NeuerTerminPage({
           Das Enddatum muss nach dem Beginn liegen.
         </p>
       ) : null}
+      {error === "wiederholung" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Bitte bei einer Wiederholung ein gültiges &bdquo;Wiederholen
+          bis&ldquo;-Datum nach dem Beginn-Datum angeben.
+        </p>
+      ) : null}
 
       <form action={createEvent} className="mt-8 flex flex-col gap-5">
         <input type="hidden" name="listingId" value={listingId} />
-        <EventFormFields attributeGroups={attributeGroups} />
+        <EventFormFields attributeGroups={attributeGroups} showRecurrence />
 
         <button
           type="submit"
