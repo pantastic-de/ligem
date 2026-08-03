@@ -115,10 +115,16 @@ export default function UeberUnsPage() {
             className="h-48 w-48 rounded-full object-cover sm:h-56 sm:w-56"
           />
           <p className="font-semibold">Frank Steiner</p>
+          <p className="max-w-md text-text-muted">
+            Kein Algorithmus kann die persönliche Begegnung ersetzen:
+            aufeinander zugehen, sich kennenlernen, sich vernetzen, mit der
+            Vielfalt der Menschen leben und voneinander lernen — genau dafür
+            wurde LiGem erfunden.
+          </p>
           <blockquote className="max-w-md text-text-muted">
-            <p className="italic">„Nobody wins unless everybody wins.“</p>
+            <p className="italic">„Denn nur zusammen ist man nicht allein.“</p>
             <footer className="mt-2 text-sm not-italic text-text-muted/80">
-              Niemand gewinnt, wenn nicht alle gewinnen. — Bruce Springsteen
+              Die Fantastischen Vier feat. Clueso, „Zusammen“
             </footer>
           </blockquote>
         </div>
