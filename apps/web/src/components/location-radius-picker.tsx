@@ -457,6 +457,12 @@ export function LocationRadiusPicker({
       const data = await res.json();
       if (data?.[0]) {
         moveTo(Number(data[0].lat), Number(data[0].lon));
+        // The "Suchen" button's only real job is entering a place — once it
+        // found one, jump straight to the results/detail pane (same anchor
+        // the Weiter/Zurück-Blättern links and ScrollToTopButton already
+        // use, see CLAUDE.md), so the visitor doesn't have to manually
+        // scroll past the still-visible filter sidebar to see what changed.
+        document.getElementById("ergebnisse")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         setMessage("Ort nicht gefunden.");
       }
