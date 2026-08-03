@@ -25,8 +25,9 @@ export default function DatenschutzPage() {
         <ul className="mt-2 flex list-disc flex-col gap-2 pl-5 text-text-muted">
           <li>
             <strong>Registrierung/Login:</strong> Name (optional), E-Mail-Adresse,
-            Passwort (nur als Hash gespeichert); bei Login über Google: Name,
-            E-Mail-Adresse und Profilbild laut deinem Google-Konto.
+            Passwort (nur als Hash gespeichert); bei Login über Google, Apple
+            oder Microsoft: Name und E-Mail-Adresse laut deinem dortigen Konto,
+            bei Google/Microsoft zusätzlich ein Profilbild.
           </li>
           <li>
             <strong>E-Mail-Bestätigung:</strong> ein einmaliger Bestätigungslink,
@@ -181,13 +182,14 @@ export default function DatenschutzPage() {
           Art. 6 Abs. 1 lit. b/f DSGVO.
         </p>
 
-        <h3 className="mt-5 font-semibold">Google-Anmeldung (optional)</h3>
+        <h3 className="mt-5 font-semibold">Anmeldung über Google, Apple oder Microsoft (optional)</h3>
         <p className="mt-2 text-text-muted">
-          Nutzt du „Mit Google anmelden&ldquo;, übermittelt Google Name, E-Mail-
-          Adresse und Profilbild deines Google-Kontos an LiGem. Dies passiert
-          nur, wenn du diese Option aktiv auswählst. Die normale Anmeldung
-          per E-Mail/Passwort funktioniert unabhängig davon. Rechtsgrundlage:
-          Art. 6 Abs. 1 lit. b DSGVO.
+          Nutzt du „Mit Google/Apple/Microsoft anmelden&ldquo;, übermittelt der
+          jeweilige Anbieter Name, E-Mail-Adresse und (außer bei Apple) ein
+          Profilbild deines dortigen Kontos an LiGem. Dies passiert nur, wenn
+          du diese Option aktiv auswählst und nur für den Anbieter, den du
+          dabei wählst. Die normale Anmeldung per E-Mail/Passwort funktioniert
+          unabhängig davon. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
         </p>
 
         <h3 className="mt-5 font-semibold">Spam-Schutz beim Kontaktformular (Cloudflare Turnstile)</h3>

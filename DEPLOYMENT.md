@@ -75,6 +75,10 @@ MINIO_ROOT_PASSWORD=<generate a strong password>
 AUTH_SECRET=<generate with: openssl rand -base64 32>
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+APPLE_CLIENT_ID=
+APPLE_CLIENT_SECRET=
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
 ```
 
 `DATABASE_URL` must use the user/database/password from step 2, and the host
@@ -86,8 +90,14 @@ production never starts (see step 4) — it's still referenced by the shared
 base `docker-compose.yml`, so Compose needs *some* value present to not warn
 about a missing variable, but its actual value doesn't matter in production.
 
-`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` can stay empty — Google login is
-simply not offered until both are set (see `src/lib/auth.ts`).
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `APPLE_CLIENT_ID`/`APPLE_CLIENT_SECRET`,
+and `MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET` can each stay empty
+independently — that provider's login button simply isn't offered until both
+of its own two vars are set (see `src/lib/auth.ts`). Apple's "client secret"
+is not a plain string but a JWT you generate yourself (Team ID/Key ID/`.p8`
+private key from the Apple Developer portal), and expires after at most 6
+months — whatever ends up in `APPLE_CLIENT_SECRET` needs to be regenerated
+and rotated before then.
 
 **Never reuse the values from local development.** Generate fresh secrets for
 the server.

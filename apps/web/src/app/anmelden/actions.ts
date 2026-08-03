@@ -23,3 +23,11 @@ export async function authenticate(formData: FormData): Promise<void> {
 export async function signInWithGoogle(): Promise<void> {
   await signIn("google", { redirectTo: "/" });
 }
+
+export async function signInWithApple(): Promise<void> {
+  await signIn("apple", { redirectTo: "/" });
+}
+
+export async function signInWithMicrosoft(): Promise<void> {
+  await signIn("microsoft-entra-id", { redirectTo: "/" });
+}

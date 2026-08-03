@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { authenticate, signInWithGoogle } from "./actions";
+import { authenticate, signInWithApple, signInWithGoogle, signInWithMicrosoft } from "./actions";
 import { PasswordField } from "@/components/password-field";
 
 export const metadata: Metadata = {
@@ -10,6 +10,12 @@ export const metadata: Metadata = {
 
 const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+const appleEnabled = Boolean(
+  process.env.APPLE_CLIENT_ID && process.env.APPLE_CLIENT_SECRET,
+);
+const microsoftEnabled = Boolean(
+  process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET,
 );
 
 export default async function AnmeldenPage({
@@ -67,15 +73,39 @@ export default async function AnmeldenPage({
         </button>
       </form>
 
-      {googleEnabled ? (
-        <form action={signInWithGoogle} className="mt-4">
-          <button
-            type="submit"
-            className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
-          >
-            Mit Google anmelden
-          </button>
-        </form>
+      {googleEnabled || appleEnabled || microsoftEnabled ? (
+        <div className="mt-4 flex flex-col gap-3">
+          {googleEnabled ? (
+            <form action={signInWithGoogle}>
+              <button
+                type="submit"
+                className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
+              >
+                Mit Google anmelden
+              </button>
+            </form>
+          ) : null}
+          {appleEnabled ? (
+            <form action={signInWithApple}>
+              <button
+                type="submit"
+                className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
+              >
+                Mit Apple anmelden
+              </button>
+            </form>
+          ) : null}
+          {microsoftEnabled ? (
+            <form action={signInWithMicrosoft}>
+              <button
+                type="submit"
+                className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
+              >
+                Mit Microsoft anmelden
+              </button>
+            </form>
+          ) : null}
+        </div>
       ) : null}
 
       <p className="mt-6 text-text-muted">
