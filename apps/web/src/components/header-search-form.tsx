@@ -19,7 +19,7 @@ export function HeaderSearchForm() {
   const currentSearch = searchParams.get("suche") ?? "";
 
   return (
-    <form action="/projekte" method="GET" className="relative w-44 sm:w-56">
+    <form action="/projekte" method="GET" className="relative w-28 sm:w-36">
       {/*
         An actual <button type="submit"> here, not just a decorative icon —
         relying solely on the browser's implicit "Enter submits the lone
@@ -38,9 +38,9 @@ export function HeaderSearchForm() {
         type="search"
         name="suche"
         defaultValue={currentSearch}
-        placeholder="Projekte & Termine durchsuchen…"
+        placeholder="Suche"
         aria-label="Projekte & Termine durchsuchen"
-        className="min-h-11 w-full rounded-full border border-text/20 bg-bg py-2 pl-9 pr-3 text-sm"
+        className="min-h-11 w-full rounded-full border border-text/20 bg-accent py-2 pl-9 pr-3 text-sm"
       />
     </form>
   );
