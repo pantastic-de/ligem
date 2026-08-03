@@ -141,9 +141,11 @@ export function EventDetail({
             <Link
               href={prevItem.href}
               aria-label={`Vorheriger Termin: ${prevItem.label}`}
-              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full px-2 font-medium text-secondary transition-colors hover:text-secondary-hover"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
-              <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-secondary">
+                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              </span>
               <span className="truncate">{prevItem.label}</span>
             </Link>
           ) : (
@@ -153,10 +155,12 @@ export function EventDetail({
             <Link
               href={nextItem.href}
               aria-label={`Nächster Termin: ${nextItem.label}`}
-              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full px-2 text-right font-medium text-secondary transition-colors hover:text-secondary-hover"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-secondary">
+                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              </span>
             </Link>
           ) : (
             <span />
