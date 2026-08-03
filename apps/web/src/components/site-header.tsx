@@ -36,7 +36,7 @@ export async function SiteHeader() {
             alt="LiGem - Leben in Gemeinschaft"
             width={1520}
             height={390}
-            className="h-14 w-auto sm:h-30 md:h-36"
+            className="h-10 w-auto sm:h-12 md:h-14"
           />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">
@@ -90,7 +90,7 @@ export async function SiteHeader() {
             // below the login form, so the nav only needs one entry point.
             <Link
               href="/anmelden"
-              className="inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-white transition-colors hover:bg-primary-hover"
+              className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-white transition-colors hover:bg-accent/90"
             >
               Anmelden
             </Link>

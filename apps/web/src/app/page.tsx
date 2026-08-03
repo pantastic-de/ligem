@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Home as HomeIcon, CalendarDays } from "lucide-react";
 
 const zielgruppen = [
   {
@@ -64,18 +65,20 @@ export default function Home() {
           Informieren, Vernetzen und Veranstalten.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-          <div className="flex w-full flex-row gap-3 sm:w-auto">
+          <div className="flex w-full flex-row justify-center gap-10 sm:w-auto">
             <Link
               href="/projekte"
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-primary px-5 text-base font-semibold text-white transition-colors hover:bg-primary-hover sm:flex-none sm:px-8"
+              className="flex flex-col items-center gap-1 text-primary transition-colors hover:text-primary-hover"
             >
-              Wohnprojekte
+              <HomeIcon className="h-9 w-9" aria-hidden="true" />
+              <span className="text-sm font-medium">Wohnprojekte</span>
             </Link>
             <Link
               href="/termine"
-              className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-secondary px-5 text-base font-semibold text-white transition-colors hover:bg-secondary-hover sm:flex-none sm:px-8"
+              className="flex flex-col items-center gap-1 text-secondary transition-colors hover:text-secondary-hover"
             >
-              Veranstaltungen
+              <CalendarDays className="h-9 w-9" aria-hidden="true" />
+              <span className="text-sm font-medium">Veranstaltungen</span>
             </Link>
           </div>
           <a

@@ -40,7 +40,7 @@ export function HeaderSearchForm() {
         defaultValue={currentSearch}
         placeholder="Suche"
         aria-label="Projekte & Termine durchsuchen"
-        className="min-h-11 w-full rounded-full border border-text/20 bg-accent py-2 pl-9 pr-3 text-sm"
+        className="min-h-11 w-full rounded-full border border-text/20 bg-transparent py-2 pl-9 pr-3 text-sm"
       />
     </form>
   );
