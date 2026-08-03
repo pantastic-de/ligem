@@ -14,14 +14,35 @@ const CHANGE_EVENT = "ligem-video-embed-consent-change";
 
 export type VideoEmbedConsent = "allowed" | "declined" | null;
 
+// Safari private browsing, a "block all cookies/site data" setting, or a
+// privacy extension can make localStorage.getItem/setItem throw (a
+// SecurityError, not just return null) instead of simply being unavailable.
+// Without a fallback, a click on the banner's buttons would silently do
+// nothing in that case — the write throws, so the change event never
+// fires and the banner never disappears (reported directly: "lässt sich
+// nicht wegklicken"). This in-memory fallback keeps the banner dismissible
+// for the current page load even when persistent storage is blocked; it
+// just won't survive a reload, which is the best that's possible without
+// storage access at all.
+let memoryFallback: VideoEmbedConsent = null;
+
 export function getVideoEmbedConsent(): VideoEmbedConsent {
   if (typeof window === "undefined") return null;
-  const value = window.localStorage.getItem(STORAGE_KEY);
-  return value === "allowed" || value === "declined" ? value : null;
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEY);
+    return value === "allowed" || value === "declined" ? value : null;
+  } catch {
+    return memoryFallback;
+  }
 }
 
 export function setVideoEmbedConsent(consent: "allowed" | "declined"): void {
-  window.localStorage.setItem(STORAGE_KEY, consent);
+  memoryFallback = consent;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, consent);
+  } catch {
+    // Fall through to the in-memory value set above.
+  }
   // Same-tab storage events don't fire on the tab that wrote them, so an
   // already-mounted banner/gallery on this page needs an explicit nudge to
   // notice the decision without a reload — subscribeVideoEmbedConsent below
