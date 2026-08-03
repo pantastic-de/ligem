@@ -36,7 +36,7 @@ export async function SiteHeader() {
             alt="LiGem - Leben in Gemeinschaft"
             width={1520}
             height={390}
-            className="h-18 w-auto sm:h-40 md:h-48"
+            className="h-14 w-auto sm:h-30 md:h-36"
           />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">
