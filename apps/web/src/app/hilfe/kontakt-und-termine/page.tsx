@@ -38,6 +38,15 @@ export default function HilfeKontaktUndTerminePage() {
           löschen, zum Beispiel Infotage oder Besuchstage. Anstehende Termine werden
           direkt auf der öffentlichen Projektseite angezeigt.
         </p>
+        <p className="mt-2 text-text-muted">
+          Beim Filtern nach Umkreis im{" "}
+          <Link href="/termine" className="text-primary">Kalender</Link>{" "}
+          werden Termine mit der Veranstaltungsart &bdquo;Online-Veranstaltung&ldquo;
+          immer angezeigt, unabhängig von der Entfernung zum gesuchten Ort —
+          sie sind ja überregional und ohne festen Veranstaltungsort. Du
+          erkennst sie am kleinen &bdquo;Online, überregional&ldquo;-Symbol
+          neben dem Titel.
+        </p>
       </section>
     </div>
   );

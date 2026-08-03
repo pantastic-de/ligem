@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
@@ -179,7 +179,15 @@ export function EventDetail({
         </p>
       ) : null}
 
-      <h1 className="text-3xl font-bold">{event.title}</h1>
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-3xl font-bold">{event.title}</h1>
+        {event.attributeOptions.some(({ option }) => option.name === "Online-Veranstaltung") ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-sm font-semibold text-secondary">
+            <Globe className="h-4 w-4" aria-hidden="true" />
+            Online, überregional
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-text-muted">{dateTimeFormat.format(event.startAt)}</p>
       {event.addressText || distanceKm != null ? (
         <p className="mt-1 text-text-muted">

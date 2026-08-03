@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Globe } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
@@ -157,6 +158,16 @@ export default async function KalenderPage({
     (f): f is Prisma.EventWhereInput => f !== null,
   );
 
+  // "Online-Veranstaltung" events aren't tied to a physical place, so a
+  // radius search shouldn't hide them just because they (usually) have no
+  // location set at all — they're relevant regardless of where the visitor
+  // is searching from. Looked up by name within the Veranstaltungsart group
+  // (already fetched above) rather than a hardcoded id, since seeded ids
+  // aren't guaranteed stable across environments.
+  const onlineOptionId = veranstaltungsart?.options.find(
+    (o) => o.name === "Online-Veranstaltung",
+  )?.id;
+
   const where: Prisma.EventWhereInput = {
     status: "PUBLISHED",
     startAt: {
@@ -171,6 +182,12 @@ export default async function KalenderPage({
   const radiusKm = params.radius ? Number.parseFloat(params.radius) : null;
   let radiusSearchActive = false;
   let nearbyIds: string[] | null = null;
+  // Shared by both the main `where` below and facetWhere further down, so
+  // the "Meistgesuchte"/facet counts also reflect that online events always
+  // pass the location filter — otherwise their counts would understate how
+  // many results a facet actually produces once online events are added
+  // back in.
+  let geoOrOnlineFilter: Prisma.EventWhereInput | null = null;
 
   if (lat != null && lng != null && radiusKm != null && !Number.isNaN(lat + lng + radiusKm)) {
     radiusSearchActive = true;
@@ -184,7 +201,13 @@ export default async function KalenderPage({
         )
     `;
     nearbyIds = nearby.map((row) => row.id);
-    where.id = { in: nearbyIds };
+    geoOrOnlineFilter = {
+      OR: [
+        { id: { in: nearbyIds } },
+        ...(onlineOptionId ? [{ attributeOptions: { some: { optionId: onlineOptionId } } }] : []),
+      ],
+    };
+    where.OR = geoOrOnlineFilter.OR;
   }
 
   // Facet counts for every checkbox in Veranstaltungsart/Zielgruppe — how
@@ -205,7 +228,7 @@ export default async function KalenderPage({
         gte: von && !Number.isNaN(von.getTime()) ? von : new Date(),
         ...(bis && !Number.isNaN(bis.getTime()) ? { lte: bis } : {}),
       },
-      ...(nearbyIds ? { id: { in: nearbyIds } } : {}),
+      ...(geoOrOnlineFilter ? { OR: geoOrOnlineFilter.OR } : {}),
       ...(filters.length > 0 ? { AND: filters } : {}),
     };
   }
@@ -463,6 +486,9 @@ export default async function KalenderPage({
                   {events.map((event) => {
                     const thumbnail = event.media[0];
                     const isPast = event.startAt.getTime() < nowMs;
+                    const isOnline =
+                      onlineOptionId != null &&
+                      event.attributeOptions.some(({ option }) => option.id === onlineOptionId);
                     return (
                       <li key={event.id} id={`termin-${event.id}`} className="scroll-mt-4">
                         <Link
@@ -478,7 +504,15 @@ export default async function KalenderPage({
                             />
                           ) : null}
                           <div className="min-w-0 flex-1 p-4 sm:p-6">
-                            <h2 className="text-lg font-semibold">{event.title}</h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-lg font-semibold">{event.title}</h2>
+                              {isOnline ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-semibold text-secondary">
+                                  <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+                                  Online, überregional
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="mt-1 text-text-muted">
                               {dateTimeFormat.format(event.startAt)}
                               {event.addressText ? ` · ${event.addressText}` : ""}
