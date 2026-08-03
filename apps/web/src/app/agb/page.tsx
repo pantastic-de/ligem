@@ -27,7 +27,7 @@ export default function AgbPage() {
           LiGem ist eine gemeinwohlorientierte Plattform, auf der sich
           Wohngemeinschaften und Wohnprojekte präsentieren, Interessierte
           sich informieren und Organisationen Veranstaltungen eintragen
-          können. LiGem vermittelt nicht automatisch — Nutzer:innen suchen und
+          können. LiGem vermittelt nicht automatisch, Nutzer:innen suchen und
           filtern selbst. Es kommt kein Vertrag über Wohnraum zwischen LiGem
           und den Nutzer:innen zustande; LiGem ist nicht Partei etwaiger
           Vereinbarungen zwischen Nutzer:innen. Einzelne Funktionen können

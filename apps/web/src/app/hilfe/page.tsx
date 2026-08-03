@@ -12,7 +12,7 @@ const themen = [
   {
     href: "/hilfe/registrierung-anmeldung",
     title: "Registrierung & Anmeldung",
-    text: "Konto erstellen, einloggen, Passwort — mit E-Mail oder Google.",
+    text: "Konto erstellen, einloggen, Passwort, mit E-Mail oder Google.",
   },
   {
     href: "/hilfe/rollen",

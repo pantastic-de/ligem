@@ -44,7 +44,7 @@ export default async function TerminEintragenEinstiegPage() {
         <h1 className="text-3xl font-bold">Termin eintragen</h1>
         <p className="mt-4 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Termine gehören immer zu einem Projekt. Du hast noch kein eigenes
-          Projekt —{" "}
+          Projekt, also{" "}
           <Link href="/projekte/neu" className="text-primary">
             trag zuerst eines ein
           </Link>

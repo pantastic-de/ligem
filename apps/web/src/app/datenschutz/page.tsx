@@ -64,7 +64,7 @@ export default function DatenschutzPage() {
             oder Terminseite sowie site-weit für alle anderen Seiten werden
             Zeitpunkt, aufgerufene Seite, ob es sich vermutlich um einen Bot
             handelt, die Referrer-Domain sowie ein aus deiner IP-Adresse
-            abgeleiteter Hostname und ein Land erfasst — <strong>die
+            abgeleiteter Hostname und ein Land erfasst. <strong>Die
             IP-Adresse selbst wird dabei nicht gespeichert</strong>, nur diese
             beiden abgeleiteten, weniger aussagekräftigen Werte. Eingeloggte
             Nutzer:innen werden ihrem Konto zugeordnet, damit Projekt-/
@@ -140,13 +140,13 @@ export default function DatenschutzPage() {
           <li>
             ein technisch notwendiges <strong>Session-Cookie</strong>, damit du
             nach der Anmeldung eingeloggt bleibst (kein Opt-out möglich, da für
-            die Anmeldefunktion selbst erforderlich — Art. 6 Abs. 1 lit. b
+            die Anmeldefunktion selbst erforderlich, Art. 6 Abs. 1 lit. b
             DSGVO),
           </li>
           <li>
             eine im Browser gespeicherte, technisch einem Cookie
             vergleichbare <strong>Einstellung</strong>, ob du eingebettete
-            YouTube-/Vimeo-Videos erlaubt hast (siehe Abschnitt 8) — du kannst
+            YouTube-/Vimeo-Videos erlaubt hast (siehe Abschnitt 8). Du kannst
             diese Auswahl jederzeit durch Löschen deiner Browserdaten
             zurücksetzen, danach erscheint der Hinweis erneut.
           </li>
@@ -166,7 +166,7 @@ export default function DatenschutzPage() {
           Die Karte in der Umkreissuche und auf Projekt-/Terminseiten lädt
           Kartenkacheln von MapTiler (bzw. direkt von OpenStreetMap, falls
           kein MapTiler eingerichtet ist). Dabei wird deine IP-Adresse an den
-          jeweiligen Anbieter übertragen — technisch unvermeidbar, da
+          jeweiligen Anbieter übertragen. Das ist technisch unvermeidbar, da
           Kartenkacheln nicht sinnvoll selbst gehostet werden können.
           Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse
           an der Kernfunktion einer ortsbezogenen Plattform).
@@ -185,7 +185,7 @@ export default function DatenschutzPage() {
         <p className="mt-2 text-text-muted">
           Nutzt du „Mit Google anmelden&ldquo;, übermittelt Google Name, E-Mail-
           Adresse und Profilbild deines Google-Kontos an LiGem. Dies passiert
-          nur, wenn du diese Option aktiv auswählst — die normale Anmeldung
+          nur, wenn du diese Option aktiv auswählst. Die normale Anmeldung
           per E-Mail/Passwort funktioniert unabhängig davon. Rechtsgrundlage:
           Art. 6 Abs. 1 lit. b DSGVO.
         </p>
@@ -219,12 +219,12 @@ export default function DatenschutzPage() {
           Manche Projekte/Termine verlinken statt eines hochgeladenen Videos
           ein Video auf YouTube, Vimeo oder einer anderen Plattform. Ein
           solches Video wird <strong>erst eingebettet, nachdem du dem
-          zugestimmt hast</strong> — entweder über den Hinweis-Banner am
+          zugestimmt hast</strong>, entweder über den Hinweis-Banner am
           unteren Bildschirmrand beim ersten Besuch, oder direkt an dem
           jeweiligen Video über „Einmal laden&ldquo;/„Immer erlauben&ldquo;. Erst danach
           werden Daten (ggf. inklusive Cookies) an den jeweiligen Anbieter
           übertragen. Ohne diese Zustimmung bleibt an der Stelle nur ein
-          Hinweistext mit einem Link zum Anbieter zu sehen — kein automatisch
+          Hinweistext mit einem Link zum Anbieter zu sehen, kein automatisch
           ladender Player. Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO
           (Einwilligung). Du kannst deine Zustimmung jederzeit widerrufen,
           indem du die entsprechenden Browserdaten (localStorage) für diese
@@ -246,7 +246,7 @@ export default function DatenschutzPage() {
           Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung
           der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21
           DSGVO), das Recht, eine erteilte Einwilligung jederzeit mit Wirkung
-          für die Zukunft zu widerrufen (Art. 7 Abs. 3 DSGVO — z. B. für
+          für die Zukunft zu widerrufen (Art. 7 Abs. 3 DSGVO, zum Beispiel für
           eingebettete Videos, siehe Abschnitt 8), sowie das Recht, dich bei
           einer Datenschutz-Aufsichtsbehörde zu beschweren. Wende dich dazu an
           info@ligem.de.

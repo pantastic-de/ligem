@@ -156,7 +156,7 @@ export function ListingFormFields({
           <legend className="text-lg font-semibold">Standort</legend>
           <p className="mt-1 text-sm text-text-muted">
             Genaue Adresse oder eine unspezifische Angabe wie &bdquo;Großraum
-            Allgäu&ldquo; — beides ist möglich.
+            Allgäu&ldquo;, beides ist möglich.
           </p>
         </div>
         <AddressFields

@@ -250,7 +250,7 @@ export function EventDetail({
         <p className="mt-1 text-text-muted">
           {event.registrationRequired
             ? "Für diese Veranstaltung ist eine Voranmeldung notwendig."
-            : "Keine Voranmeldung nötig — du kannst trotzdem eine Nachricht schicken."}
+            : "Keine Voranmeldung nötig, du kannst trotzdem eine Nachricht schicken."}
         </p>
         <form action={submitEventRegistration} className="mt-4 flex flex-col gap-4">
           <input type="hidden" name="eventId" value={event.id} />

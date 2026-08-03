@@ -65,7 +65,7 @@ export default async function TerminStatistikPage({
       <h1 className="mt-2 text-3xl font-bold">Statistik: {event.title}</h1>
       <p className="mt-2 text-text-muted">
         Wie oft dieser Termin im Kalender aufgetaucht ist und wie oft die
-        Detailansicht geöffnet wurde — inklusive einer Auswertung, woher die
+        Detailansicht geöffnet wurde, inklusive einer Auswertung, woher die
         Zugriffe kamen.
       </p>
 

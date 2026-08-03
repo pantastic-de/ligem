@@ -30,7 +30,7 @@ export default function HilfeAdminPage() {
           &bdquo;Archiviert&ldquo;) mit Beschreibung, Ansprechperson-Angaben
           und Kategorien. Buttons &bdquo;Freigeben&ldquo;, &bdquo;Ablehnen&ldquo;
           (mit optionalem Grund) und &bdquo;Archivieren&ldquo; ändern den Status
-          sofort — die Startseite unter <Link href="/admin" className="text-primary">/admin</Link>{" "}
+          sofort. Die Startseite unter <Link href="/admin" className="text-primary">/admin</Link>{" "}
           zeigt, wie viele Projekte gerade auf Prüfung warten.
         </p>
       </section>
@@ -65,7 +65,7 @@ export default function HilfeAdminPage() {
           verwaltest du alle Filtergruppen (Projekt Typ, Projekt Status,
           Geschlechterverteilung, Organisationsform, Grundwerte, Wohnlage,
           Zielgruppe u. a.) und ihre Werte. Neue Werte oder ganz neue Gruppen
-          lassen sich ohne Code-Änderung ergänzen — direkt auf der Seite.
+          lassen sich ohne Code-Änderung ergänzen, direkt auf der Seite.
         </p>
       </section>
 

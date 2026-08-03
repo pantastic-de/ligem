@@ -173,7 +173,7 @@ export function AddressFields({
         result = await geocode({ q: fallbackQuery });
         if (result) {
           setStatusMessage(
-            "Straße nicht gefunden — Standort wurde anhand des Ortes gesetzt.",
+            "Straße nicht gefunden. Standort wurde anhand des Ortes gesetzt.",
           );
         }
       }
@@ -266,7 +266,7 @@ export function AddressFields({
         </div>
       </div>
       <p className="-mt-2 text-sm text-text-muted">
-        Land und Bundesland werden anhand der Postleitzahl vorgeschlagen — bei
+        Land und Bundesland werden anhand der Postleitzahl vorgeschlagen, bei
         Bedarf einfach überschreiben.
       </p>
 

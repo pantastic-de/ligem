@@ -21,7 +21,7 @@ export default function HilfeRegistrierungPage() {
           Unter <Link href="/registrieren" className="text-primary">Registrieren</Link>{" "}
           brauchst du nur Name (optional), E-Mail-Adresse und ein Passwort mit
           mindestens 8 Zeichen. Du kannst dabei schon ankreuzen, ob du eine
-          Wohngemeinschaft suchst, ein Projekt präsentieren willst — oder
+          Wohngemeinschaft suchst, ein Projekt präsentieren willst, oder
           beides.
         </p>
       </section>

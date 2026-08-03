@@ -46,7 +46,7 @@ function buildRows(result: HomepageImportResult): ReviewRow[] {
   const rows: ReviewRow[] = [];
   function push(key: string, label: string, current: string, proposed: string | null, hasCurrent: boolean) {
     if (!proposed) return;
-    rows.push({ key, label, current: current || "—", proposed, hasCurrent });
+    rows.push({ key, label, current: current || "(leer)", proposed, hasCurrent });
   }
 
   push("motto", "Motto", result.motto.current ?? "", result.motto.proposed, Boolean(result.motto.current));
@@ -328,7 +328,7 @@ export function HomepageImportField({
       {aiImportEnabled && phase === "idle" ? (
         <p className="text-sm text-text-muted">
           Trage die Homepage direkt nach dem Projektnamen ein und nutze den
-          KI-Import, bevor du weitere Felder ausfüllst — die KI durchsucht die
+          KI-Import, bevor du weitere Felder ausfüllst. Die KI durchsucht die
           Seite und schlägt Werte für viele Felder vor (u. a. &bdquo;So leben
           wir&ldquo;, Kontaktdaten, Adresse, Gruppengröße, Kosten, Fotos), die
           du danach einzeln bestätigen kannst.

@@ -107,8 +107,8 @@ export function DemoDataGenerateForm({
             {progress.error
               ? `Fehler: ${progress.error}`
               : progress.done
-                ? `Fertig — ${progress.total} erstellt.`
-                : `${progress.completed} / ${progress.total}${progress.label ? ` — ${progress.label}` : ""}`}
+                ? `Fertig: ${progress.total} erstellt.`
+                : `${progress.completed} / ${progress.total}${progress.label ? ` (${progress.label})` : ""}`}
           </p>
         </div>
       ) : null}

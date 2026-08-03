@@ -170,7 +170,7 @@ export function EventDateRangeField({
           {startDate
             ? endDate
               ? `Vom ${dateLabelFormat.format(new Date(startDate))} bis ${dateLabelFormat.format(new Date(endDate))}`
-              : "Beginn gewählt — jetzt das Ende anklicken (für einen eintägigen Termin denselben Tag nochmal anklicken)."
+              : "Beginn gewählt, jetzt das Ende anklicken (für einen eintägigen Termin denselben Tag nochmal anklicken)."
             : "Bitte zuerst den Beginn-Tag anklicken."}
         </p>
       </div>

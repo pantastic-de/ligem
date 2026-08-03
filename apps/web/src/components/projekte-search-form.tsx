@@ -118,7 +118,7 @@ export function ProjekteSearchForm({
               defaultBis={defaults.bis}
               onChange={submitNow}
               placeholder="Suchzeitraum wählen"
-              emptyHint="Kein bestimmter Suchzeitraum — zum Eingrenzen einen Beginn-Tag anklicken."
+              emptyHint="Kein bestimmter Suchzeitraum, zum Eingrenzen einen Beginn-Tag anklicken."
             />
           </fieldset>
 

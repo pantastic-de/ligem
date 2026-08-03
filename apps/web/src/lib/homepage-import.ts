@@ -172,7 +172,9 @@ async function extractListingInfo(
       "Informationen daraus, um ein Profil auf einer Plattform für gemeinschaftliches Wohnen automatisch vorauszufüllen. " +
       "Erfinde keine Informationen - wenn ein Text-Feld auf der Seite nicht klar erkennbar ist, gib einen leeren String zurück; " +
       "bei einem Zahlen-Feld gib -1 zurück; bei einer Liste ein leeres Array. " +
-      "Bei Feldern mit vorgegebenen Werten (Enum) darfst du NUR einen der vorgegebenen Werte oder null zurückgeben, nie einen eigenen Text.",
+      "Bei Feldern mit vorgegebenen Werten (Enum) darfst du NUR einen der vorgegebenen Werte oder null zurückgeben, nie einen eigenen Text. " +
+      "Formuliere motto und howWeLive in natürlicher, persönlicher und wertschätzender Sprache, so wie die Bewohner:innen selbst " +
+      "schreiben würden. Verwende dabei keine Gedankenstriche (—) und keine typischen KI-Formulierungen.",
     messages: [
       { role: "user", content: `Website-Inhalt (Text extrahiert aus HTML):\n\n${pageText}` },
     ],

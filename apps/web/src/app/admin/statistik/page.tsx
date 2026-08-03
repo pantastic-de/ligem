@@ -322,8 +322,8 @@ export default async function AdminStatistikPage() {
       {/* ------------------------------------------------------------ */}
       <h2 className="mt-12 text-2xl font-bold">Sonstige Seiten</h2>
       <p className="mt-1 text-text-muted">
-        Alle anderen Seiten der Website (Startseite, Hilfe, Konto, Admin, ...)
-        — weniger detailliert als Projekte/Termine, ohne Zeitverlauf oder
+        Alle anderen Seiten der Website (Startseite, Hilfe, Konto, Admin, ...),
+        weniger detailliert als Projekte/Termine, ohne Zeitverlauf oder
         Detailseite je Unterseite.
       </p>
       <div className="mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">

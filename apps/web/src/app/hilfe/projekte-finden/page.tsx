@@ -23,7 +23,7 @@ export default function HilfeProjekteFindenPage() {
           Detailseite mit allen Angaben zum Projekt.
         </p>
         <p className="mt-4 text-text-muted">
-          LiGem matcht nicht automatisch — du suchst und entscheidest selbst.
+          LiGem matcht nicht automatisch, du suchst und entscheidest selbst.
           Eine Filter- und Kartenansicht (z. B. nach Ort, Grundwerten,
           Wohnlage oder Zielgruppe) ist als nächster Ausbauschritt geplant;
           aktuell zeigt die Liste alle veröffentlichten Projekte.

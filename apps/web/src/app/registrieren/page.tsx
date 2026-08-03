@@ -4,7 +4,7 @@ import { registerUser } from "./actions";
 
 export const metadata: Metadata = {
   title: "Registrieren",
-  description: "Konto bei LiGem erstellen — als Suchende:r, Anbieter:in oder beides.",
+  description: "Konto bei LiGem erstellen, als Suchende:r, Anbieter:in oder beides.",
   alternates: { canonical: "/registrieren" },
 };
 

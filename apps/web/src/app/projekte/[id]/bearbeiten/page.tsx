@@ -119,7 +119,7 @@ export default async function ProjektBearbeitenPage({
           KI-Import abgeschlossen. Bitte prüfe die übernommenen Felder und
           Fotos unten.
           {termine
-            ? ` Mögliche Termine auf der Homepage gefunden: ${termine} — bitte bei Bedarf manuell unter „Termine verwalten“ eintragen.`
+            ? ` Mögliche Termine auf der Homepage gefunden: ${termine}. Bitte bei Bedarf manuell unter „Termine verwalten“ eintragen.`
             : ""}
         </p>
       ) : null}
@@ -166,7 +166,7 @@ export default async function ProjektBearbeitenPage({
       <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">360°-Bild</h2>
         <p className="mt-1 text-sm text-text-muted">
-          Ein einzelnes equirektangulares Panoramabild im Format ca. 2:1 —
+          Ein einzelnes equirektangulares Panoramabild im Format ca. 2:1,
           wird in der Galerie mit einem 360°-Symbol hervorgehoben und in der
           Projektansicht als Ausschnitt mit leichter automatischer Drehung
           angezeigt. Maximal 12 MB.

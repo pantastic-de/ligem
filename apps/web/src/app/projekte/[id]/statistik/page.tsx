@@ -62,7 +62,7 @@ export default async function ProjektStatistikPage({
       <h1 className="mt-2 text-3xl font-bold">Statistik: {listing.projectName}</h1>
       <p className="mt-2 text-text-muted">
         Wie oft dieses Projekt in der Übersicht aufgetaucht ist und wie oft die
-        Detailansicht geöffnet wurde — inklusive einer Auswertung, woher die
+        Detailansicht geöffnet wurde, inklusive einer Auswertung, woher die
         Zugriffe kamen.
       </p>
 

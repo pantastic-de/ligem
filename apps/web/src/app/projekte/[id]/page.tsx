@@ -120,7 +120,7 @@ export default async function ProjektDetailPage({
       ) : null}
       {aktualisiert ? (
         <p className="mb-6 rounded-xl bg-success/10 px-4 py-3 text-success">
-          Änderungen gespeichert — euer Projekt wird erneut geprüft.
+          Änderungen gespeichert. Euer Projekt wird erneut geprüft.
         </p>
       ) : null}
 

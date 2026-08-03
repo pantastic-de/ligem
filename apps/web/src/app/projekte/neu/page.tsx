@@ -31,7 +31,7 @@ export default async function NeuesProjektPage() {
       <h1 className="text-3xl font-bold">Projekt eintragen</h1>
       <p className="mt-2 text-text-muted">
         Dein Eintrag wird vor der Veröffentlichung geprüft. Nur der
-        Projektname ist Pflicht — alles andere kannst du später ergänzen.
+        Projektname ist Pflicht, alles andere kannst du später ergänzen.
       </p>
 
       <form action={createListing} className="mt-8 flex flex-col gap-10">

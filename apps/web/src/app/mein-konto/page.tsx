@@ -37,7 +37,7 @@ const errorMessages: Record<string, string> = {
 
 const okMessages: Record<string, string> = {
   profil: "Persönliche Daten gespeichert.",
-  "profil-email-bestaetigen": "Persönliche Daten gespeichert. Bitte bestätige deine neue E-Mail-Adresse — wir haben dir einen Link geschickt.",
+  "profil-email-bestaetigen": "Persönliche Daten gespeichert. Bitte bestätige deine neue E-Mail-Adresse, wir haben dir einen Link geschickt.",
   passwort: "Passwort geändert.",
   avatar: "Profilbild aktualisiert.",
   "mitverwalter-hinzugefuegt": "Mitverwalter:in hinzugefügt.",
@@ -163,7 +163,7 @@ export default async function MeinKontoPage({
               <span className="text-sm text-success">✓ Bestätigt</span>
             ) : (
               <span className="text-sm text-warning">
-                Nicht bestätigt — solange nicht bestätigt, brauchst du beim
+                Nicht bestätigt. Solange das so ist, brauchst du beim
                 Absenden von Kontaktanfragen ein CAPTCHA.
               </span>
             )}

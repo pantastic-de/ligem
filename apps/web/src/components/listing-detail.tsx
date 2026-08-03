@@ -84,7 +84,7 @@ function formatLocation(listing: {
   if (parts.length === 0) {
     return listing.regionDescription;
   }
-  return [parts.join(" · "), listing.regionDescription].filter(Boolean).join(" — ");
+  return [parts.join(" · "), listing.regionDescription].filter(Boolean).join(" · ");
 }
 
 /**
@@ -260,7 +260,7 @@ export function ListingDetail({
 
       {listing.status !== "PUBLISHED" ? (
         <p className="mb-6 rounded-xl bg-warning/10 px-4 py-3 text-warning">
-          Status: {statusLabels[listing.status] ?? listing.status} — nur für
+          Status: {statusLabels[listing.status] ?? listing.status}, nur für
           {isOwner ? " dich als Ersteller:in" : viewerIsAdmin ? " Admins" : " Mitverwalter:innen"} sichtbar.
           {viewerIsAdmin ? (
             <>
@@ -528,7 +528,7 @@ export function ListingDetail({
                 <div className="cf-turnstile" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
                 <p className="text-sm text-text-muted">
                   Registrierte und bestätigte Nutzer:innen können Nachrichten ohne
-                  CAPTCHA senden —{" "}
+                  CAPTCHA senden,{" "}
                   <Link href="/registrieren" className="text-primary hover:underline">
                     jetzt registrieren
                   </Link>

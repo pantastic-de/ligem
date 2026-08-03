@@ -49,7 +49,7 @@ const datenarten = [
     art: "Externe Dienste",
     beispiele:
       "Kartenkacheln (MapTiler/OpenStreetMap), Ortssuche (Nominatim), Spam-Schutz (Cloudflare Turnstile), optionale Google-Anmeldung",
-    zweck: "Für Karte, Ortssuche und Schutz vor Spam — Details in der Datenschutzerklärung",
+    zweck: "Für Karte, Ortssuche und Schutz vor Spam, Details in der Datenschutzerklärung",
   },
 ];
 
@@ -118,7 +118,7 @@ export default function UeberUnsPage() {
           <p className="max-w-md text-text-muted">
             Kein Algorithmus kann die persönliche Begegnung ersetzen:
             aufeinander zugehen, sich kennenlernen, sich vernetzen, mit der
-            Vielfalt der Menschen leben und voneinander lernen — genau dafür
+            Vielfalt der Menschen leben und voneinander lernen. Genau dafür
             wurde LiGem erfunden.
           </p>
           <blockquote className="max-w-md text-text-muted">
@@ -175,11 +175,11 @@ export default function UeberUnsPage() {
           <li>
             <strong>Habt ihr schon eine Projekt-Homepage? Der KI-Import nimmt
             euch fast die ganze Arbeit ab.</strong> Einfach die Adresse eurer
-            Homepage angeben — LiGem liest die Seite automatisch aus und
+            Homepage angeben, dann liest LiGem die Seite automatisch aus und
             schlägt euch Motto, Beschreibung, Kontaktdaten, Standort,
             Gruppengröße, Kosten und passende Kategorien direkt in den
             jeweiligen Feldern vor, inklusive Fotos. Ihr müsst dann nur noch
-            durchsehen und bei Bedarf anpassen — jeder Vorschlag lässt sich
+            durchsehen und bei Bedarf anpassen. Jeder Vorschlag lässt sich
             selbstverständlich überschreiben, ergänzen oder verwerfen, nichts
             wird ungefragt übernommen. Ändert sich später etwas auf eurer
             Homepage, holt ihr euch die Aktualisierung genauso schnell und
@@ -313,7 +313,7 @@ export default function UeberUnsPage() {
             weitergegeben. Für
             einzelne Funktionen (Karte, Ortssuche, Spam-Schutz beim
             Kontaktformular) werden Anfragen an dafür notwendige externe
-            Dienste geschickt — Details dazu in der{" "}
+            Dienste geschickt. Details dazu stehen in der{" "}
             <Link href="/datenschutz#externe-dienste" className="text-primary">
               Datenschutzerklärung
             </Link>

@@ -20,7 +20,7 @@ export default function HilfeKontaktUndTerminePage() {
         <h2 className="text-lg font-semibold">Kontakt aufnehmen</h2>
         <p className="mt-2 text-text-muted">
           Auf jeder veröffentlichten Projektseite gibt es ein Kontaktformular
-          (Name, E-Mail-Adresse, Nachricht) — auch ohne eigenes Konto nutzbar.
+          (Name, E-Mail-Adresse, Nachricht), auch ohne eigenes Konto nutzbar.
           Es gibt keinen Chat, nur diese eine Nachricht pro Anfrage.
         </p>
         <p className="mt-2 text-text-muted">
@@ -35,7 +35,7 @@ export default function HilfeKontaktUndTerminePage() {
         <p className="mt-2 text-text-muted">
           Als Ersteller:in eines Projekts kannst du auf der Projektseite über
           &bdquo;Termine verwalten&ldquo; Termine eintragen, bearbeiten und
-          löschen — z. B. Infotage oder Besuchstage. Anstehende Termine werden
+          löschen, zum Beispiel Infotage oder Besuchstage. Anstehende Termine werden
           direkt auf der öffentlichen Projektseite angezeigt.
         </p>
       </section>

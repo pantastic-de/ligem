@@ -21,7 +21,7 @@ export default async function AdminKategorienPage() {
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Kategorien</h1>
       <p className="mt-2 text-text-muted">
-        &bdquo;Art des Projektinserates&ldquo; — die Taxonomie, der ein
+        &bdquo;Art des Projektinserates&ldquo; ist die Taxonomie, der ein
         Projekt-Eintrag zugeordnet werden kann (mehrfach möglich).
       </p>
 

@@ -15,7 +15,7 @@ export default function HilfeRollenPage() {
       </Link>
       <h1 className="mt-4 text-3xl font-bold">Rollen</h1>
       <p className="mt-2 text-text-muted">
-        Ein Konto kann mehrere Rollen gleichzeitig haben — sie schließen sich
+        Ein Konto kann mehrere Rollen gleichzeitig haben, sie schließen sich
         nicht gegenseitig aus.
       </p>
 

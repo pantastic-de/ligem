@@ -34,7 +34,7 @@ export function EventDateFilter({
   eventDayColors,
   legend,
   placeholder = "Zeitraum wählen (alle anstehenden Termine)",
-  emptyHint = "Alle anstehenden Termine — zum Eingrenzen einen Beginn-Tag anklicken.",
+  emptyHint = "Alle anstehenden Termine, zum Eingrenzen einen Beginn-Tag anklicken.",
 }: {
   defaultVon?: string;
   defaultBis?: string;
@@ -211,7 +211,7 @@ export function EventDateFilter({
                 aria-pressed={selected}
                 aria-label={
                   dayColors.length > 0
-                    ? `${dateLabelFormat.format(day)} — ${dayColors.length} Termin${dayColors.length > 1 ? "e" : ""}`
+                    ? `${dateLabelFormat.format(day)}, ${dayColors.length} Termin${dayColors.length > 1 ? "e" : ""}`
                     : dateLabelFormat.format(day)
                 }
                 className={[
@@ -258,7 +258,7 @@ export function EventDateFilter({
           {startDate
             ? endDate
               ? `Vom ${dateLabelFormat.format(new Date(startDate))} bis ${dateLabelFormat.format(new Date(endDate))}`
-              : "Beginn gewählt — jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
+              : "Beginn gewählt, jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
             : emptyHint}
         </p>
       </div>

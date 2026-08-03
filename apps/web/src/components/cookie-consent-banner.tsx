@@ -37,7 +37,7 @@ export function CookieConsentBanner() {
       <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-text-muted">
           Wir binden Video-Links (z. B. YouTube/Vimeo) in Projekt- und
-          Termin-Galerien erst nach deiner Zustimmung ein — dabei werden
+          Termin-Galerien erst nach deiner Zustimmung ein. Dabei werden
           Daten an den jeweiligen Anbieter übertragen. Alle anderen Funktionen
           (Karte, Anmeldung, Kontaktformular) laufen unabhängig davon.{" "}
           <Link href="/datenschutz#externe-dienste" className="text-primary hover:underline">

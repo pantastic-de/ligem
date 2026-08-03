@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Hilfe: Projekt eintragen & bearbeiten",
   description:
-    "So trägst du dein Wohnprojekt bei LiGem ein und bearbeitest es später — inklusive Moderation und Fotos.",
+    "So trägst du dein Wohnprojekt bei LiGem ein und bearbeitest es später, inklusive Moderation und Fotos.",
   alternates: { canonical: "/hilfe/projekt-eintragen" },
 };
 
@@ -41,10 +41,10 @@ export default function HilfeProjektEintragenPage() {
           aus und schlägt euch daraus Motto, Beschreibung (&bdquo;So leben
           wir&ldquo;), Kontaktdaten, Adresse samt Standort auf der Karte,
           Gruppengröße, freie Plätze, Kosten sowie passende Kategorien direkt
-          in den jeweiligen Feldern vor — inklusive gefundener Fotos, die
+          in den jeweiligen Feldern vor, inklusive gefundener Fotos, die
           gleich mit in eure Galerie übernommen werden. Jeden Vorschlag könnt
           ihr einzeln übernehmen, anpassen oder verwerfen, per Checkbox neben
-          dem jeweiligen Feld — nichts wird ungefragt eingetragen, und alles,
+          dem jeweiligen Feld. Nichts wird ungefragt eingetragen, und alles,
           was ihr selbst schon ausgefüllt hattet, bleibt standardmäßig
           unangetastet. Ändert sich später etwas auf eurer Homepage, holt ihr
           euch die Aktualisierung genauso schnell wieder per Klick, statt

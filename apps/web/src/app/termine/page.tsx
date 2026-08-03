@@ -63,7 +63,7 @@ export async function generateMetadata({
   return {
     title: "Veranstaltungskalender",
     description:
-      "Infotage, Besuchstage und andere Veranstaltungen aller Wohnprojekte — filterbar nach Art, Zielgruppe, Zeitraum und Lage.",
+      "Infotage, Besuchstage und andere Veranstaltungen aller Wohnprojekte, filterbar nach Art, Zielgruppe, Zeitraum und Lage.",
     alternates: { canonical: "/termine" },
   };
 }
