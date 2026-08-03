@@ -75,23 +75,14 @@ export default function UeberUnsPage() {
 
       <section id="idee" className="mt-10 scroll-mt-6">
         <h2 className="text-xl font-bold">Die Idee dahinter</h2>
-        <div className="mt-4 flex flex-col-reverse items-start gap-5 sm:flex-row sm:items-center">
-          <p className="text-text-muted">
-            LiGem steht für „Leben in Gemeinschaft“ und ist entstanden, weil
-            Menschen, die in Gemeinschaft leben oder das gerne würden, einen
-            Ort brauchen, an dem sie sich einfach finden und austauschen
-            können. Ganz gleich, ob das eine klassische WG ist, ein Ökodorf,
-            ein Co-Housing-Projekt oder ein Mehrgenerationenhaus: Alle Formen
-            des gemeinschaftlichen Wohnens sind hier willkommen.
-          </p>
-          <Image
-            src="/ueber-uns/portrait.jpg"
-            alt="Porträt einer Person aus dem LiGem-Team"
-            width={640}
-            height={640}
-            className="h-24 w-24 shrink-0 rounded-full object-cover sm:h-28 sm:w-28"
-          />
-        </div>
+        <p className="mt-3 text-text-muted">
+          LiGem steht für „Leben in Gemeinschaft“ und ist entstanden, weil
+          Menschen, die in Gemeinschaft leben oder das gerne würden, einen
+          Ort brauchen, an dem sie sich einfach finden und austauschen
+          können. Ganz gleich, ob das eine klassische WG ist, ein Ökodorf,
+          ein Co-Housing-Projekt oder ein Mehrgenerationenhaus: Alle Formen
+          des gemeinschaftlichen Wohnens sind hier willkommen.
+        </p>
 
         <div className="mt-6 rounded-2xl bg-surface p-4 shadow-sm sm:p-6">
           <h3 className="font-semibold">Was LiGem nicht ist</h3>
@@ -114,6 +105,22 @@ export default function UeberUnsPage() {
           Plattform, die diesen Kontakt künstlich ersetzt. LiGem ist
           werbefrei, es werden keine Daten zu Werbezwecken erhoben.
         </p>
+
+        <div className="mt-10 flex flex-col items-center gap-4 text-center">
+          <Image
+            src="/ueber-uns/portrait.jpg"
+            alt="Porträt von Frank Steiner"
+            width={640}
+            height={640}
+            className="h-48 w-48 rounded-full object-cover sm:h-56 sm:w-56"
+          />
+          <blockquote className="max-w-md text-text-muted italic">
+            „Gemeinschaftliches Wohnen lebt von echter Begegnung, nicht von
+            Algorithmen. Genau dafür soll LiGem ein Beitrag zum Gemeinwohl
+            sein.“
+          </blockquote>
+          <p className="font-semibold">Frank Steiner</p>
+        </div>
       </section>
 
       <section id="suchende" className="mt-10 scroll-mt-6">
