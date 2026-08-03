@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type MouseEvent } from "react";
+import { ChevronRight } from "lucide-react";
 
 type Option = { id: string; name: string };
 
@@ -94,9 +95,15 @@ export function MultiSelectDropdown({
     : (options.find((o) => selected.has(o.id))?.name ?? null);
 
   return (
-    <details className="rounded-xl border border-text/20">
-      <summary className="flex min-h-11 cursor-pointer select-none items-center justify-between gap-2 px-4 py-2 font-medium">
-        <span>{label}</span>
+    <details className="group rounded-xl border border-text/20">
+      <summary className="flex min-h-11 list-none cursor-pointer select-none items-center justify-between gap-2 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-1.5">
+          <ChevronRight
+            className="h-4 w-4 shrink-0 text-text-muted transition-transform group-open:rotate-90"
+            aria-hidden="true"
+          />
+          {label}
+        </span>
         {summaryText ? (
           <span className="relative mr-2 inline-flex max-w-[65%] items-center rounded-full bg-bg px-2 py-0.5 text-sm font-normal text-text-muted">
             <span className="mr-[5px] truncate">{summaryText}</span>

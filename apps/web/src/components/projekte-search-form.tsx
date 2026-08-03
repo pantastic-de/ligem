@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
+
 import type {
   AttributeGroup,
   AttributeOption,
@@ -111,16 +113,24 @@ export function ProjekteSearchForm({
           Erweiterte Suche
         </summary>
         <div className="flex flex-col gap-6 border-t border-text/10 p-4">
-          <fieldset className="flex flex-col gap-2">
-            <legend className="font-medium">Suchzeitraum</legend>
-            <EventDateFilter
-              defaultVon={defaults.von}
-              defaultBis={defaults.bis}
-              onChange={submitNow}
-              placeholder="Suchzeitraum wählen"
-              emptyHint="Kein bestimmter Suchzeitraum, zum Eingrenzen einen Beginn-Tag anklicken."
-            />
-          </fieldset>
+          <details className="group rounded-xl border border-text/20" open={Boolean(defaults.von || defaults.bis)}>
+            <summary className="flex min-h-11 list-none cursor-pointer select-none items-center gap-1.5 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                className="h-4 w-4 shrink-0 text-text-muted transition-transform group-open:rotate-90"
+                aria-hidden="true"
+              />
+              Suchzeitraum
+            </summary>
+            <div className="border-t border-text/10 p-3">
+              <EventDateFilter
+                defaultVon={defaults.von}
+                defaultBis={defaults.bis}
+                onChange={submitNow}
+                placeholder="Suchzeitraum wählen"
+                emptyHint="Kein bestimmter Suchzeitraum, zum Eingrenzen einen Beginn-Tag anklicken."
+              />
+            </div>
+          </details>
 
           {categories.length > 0 ? (
             <MultiSelectDropdown

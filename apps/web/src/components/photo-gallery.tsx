@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from "react";
 import { PlayCircle, RotateCw } from "lucide-react";
 
 import { PanoramaViewer } from "@/components/panorama-viewer";
@@ -98,6 +98,32 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
   );
   const [sessionAllowedIds, setSessionAllowedIds] = useState<Set<string>>(new Set());
 
+  // Swipe-to-navigate in the lightbox (touch and mouse-drag alike, since
+  // Pointer Events unify both) — a plain distance-threshold check on
+  // pointerdown/pointerup, no live drag-following animation. Attached to the
+  // backdrop div, which every branch below (photo/video/video-link) sits
+  // inside, so one pair of handlers covers all of them via bubbling. Skipped
+  // entirely for a panorama: dragging there means "look around" via
+  // PanoramaViewer's own pointer handling, not "go to the next photo".
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE_THRESHOLD_PX = 50;
+
+  function handleLightboxPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    swipeStartRef.current = { x: e.clientX, y: e.clientY };
+  }
+
+  function handleLightboxPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || openIndex === null || photos.length <= 1 || photos[openIndex].isPanorama) return;
+    const deltaX = e.clientX - start.x;
+    const deltaY = e.clientY - start.y;
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    setOpenIndex((i) =>
+      i === null ? i : deltaX < 0 ? (i + 1) % photos.length : (i - 1 + photos.length) % photos.length,
+    );
+  }
+
   useEffect(() => {
     if (openIndex === null) return;
     function handleKeyDown(e: KeyboardEvent) {
@@ -172,8 +198,10 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
 
       {openIndex !== null ? (
         <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[2000] flex touch-pan-y items-center justify-center bg-black/90 p-4"
           onClick={() => setOpenIndex(null)}
+          onPointerDown={handleLightboxPointerDown}
+          onPointerUp={handleLightboxPointerUp}
         >
           <button
             type="button"

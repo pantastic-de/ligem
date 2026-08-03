@@ -412,7 +412,7 @@ export default async function KalenderPage({
       <div className="text-center">
         <h1 className="text-3xl font-bold leading-tight sm:text-5xl">Kalender</h1>
         <p className="mt-3 text-text-muted sm:text-lg">
-          Anstehende Infotage, Besuchstage und Veranstaltungen aller Projekte.
+          Aktuelle Veranstaltungen auf LiGem.
         </p>
       </div>
 
