@@ -106,6 +106,9 @@ export function ListingDetail({
   returnTo,
   backHref,
   kontaktSuccess,
+  contactFormError,
+  viewerContact,
+  requireCaptcha,
   searchTerm,
   distanceKm,
   prevItem,
@@ -119,6 +122,23 @@ export function ListingDetail({
   returnTo: string;
   backHref?: string;
   kontaktSuccess?: boolean;
+  // See CLAUDE.md's "Kontaktanfragen" — a distinct error from the generic
+  // ?error=1 ("bitte alle Felder ausfüllen") specifically for a missing/
+  // failed CAPTCHA check.
+  contactFormError?: "captcha";
+  // Pre-fills the contact form's Name/E-Mail fields for a logged-in
+  // viewer — reduces friction for exactly the audience this form's CAPTCHA
+  // skip already trusts more (see requireCaptcha below), and there's no
+  // reason to make them re-type what their account already has on file.
+  viewerContact?: { name: string | null; email: string } | null;
+  // Whether this viewer needs to pass Cloudflare Turnstile to submit the
+  // contact form — true for anyone not logged in, or logged in but not yet
+  // email-verified (src/lib/verification-token.ts); false for a verified
+  // account, which is the actual trust signal this whole feature hinges on.
+  // Always false when Turnstile itself isn't configured (src/lib/
+  // turnstile.ts's turnstileEnabled) — no widget to show if there's nothing
+  // to verify it against.
+  requireCaptcha?: boolean;
   // The active /projekte keyword search term (see that page's `suche`
   // param), if any — highlighted wherever it appears below so a match is
   // still visible once a viewer opens a result's detail pane, including
@@ -210,7 +230,7 @@ export function ListingDetail({
           {prevItem ? (
             <Link
               href={prevItem.href}
-              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full border border-text/20 px-4 font-medium transition-colors hover:bg-bg"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full bg-primary px-4 font-medium text-white transition-colors hover:bg-primary-hover"
             >
               <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{prevItem.label}</span>
@@ -221,7 +241,7 @@ export function ListingDetail({
           {nextItem ? (
             <Link
               href={nextItem.href}
-              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full border border-text/20 px-4 text-right font-medium transition-colors hover:bg-bg"
+              className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-1 rounded-full bg-primary px-4 text-right font-medium text-white transition-colors hover:bg-primary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
               <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -456,6 +476,11 @@ export function ListingDetail({
             Deine Kontaktdaten werden erst geteilt, wenn {listing.createdBy?.name ?? "das Projekt"} deine
             Anfrage annimmt.
           </p>
+          {contactFormError === "captcha" ? (
+            <p className="mt-3 rounded-xl bg-error/10 px-4 py-3 text-error">
+              Bitte bestätige das CAPTCHA, bevor du die Nachricht sendest.
+            </p>
+          ) : null}
           <form action={submitContactRequest} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="listingId" value={listing.id} />
             <input type="hidden" name="returnTo" value={returnTo} />
@@ -468,6 +493,7 @@ export function ListingDetail({
                 name="senderName"
                 type="text"
                 required
+                defaultValue={viewerContact?.name ?? undefined}
                 className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
               />
             </div>
@@ -480,6 +506,7 @@ export function ListingDetail({
                 name="senderEmail"
                 type="email"
                 required
+                defaultValue={viewerContact?.email ?? undefined}
                 className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
               />
             </div>
@@ -495,6 +522,20 @@ export function ListingDetail({
                 className="rounded-xl border border-text/20 bg-bg px-4 py-3 text-text"
               />
             </div>
+            {requireCaptcha ? (
+              <div className="flex flex-col gap-1.5">
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+                <div className="cf-turnstile" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+                <p className="text-sm text-text-muted">
+                  Registrierte und bestätigte Nutzer:innen können Nachrichten ohne
+                  CAPTCHA senden —{" "}
+                  <Link href="/registrieren" className="text-primary hover:underline">
+                    jetzt registrieren
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : null}
             <button
               type="submit"
               className="min-h-12 rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
