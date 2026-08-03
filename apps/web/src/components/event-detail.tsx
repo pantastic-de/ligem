@@ -191,7 +191,7 @@ export function EventDetail({
       {event.listing ? (
         <p className="mt-1 text-sm text-text-muted">
           Veranstaltet von{" "}
-          <Link href={`/projekte/${event.listing.id}`} className="text-primary">
+          <Link href={`/projekte?projekt=${event.listing.id}`} className="text-primary">
             {event.listing.projectName}
           </Link>
         </p>
