@@ -28,7 +28,19 @@ export default async function NeuerTerminPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { createdById: true, projectName: true },
+    select: {
+      createdById: true,
+      projectName: true,
+      homepageUrl: true,
+      country: true,
+      state: true,
+      postalCode: true,
+      city: true,
+      street: true,
+      houseNumber: true,
+      latitude: true,
+      longitude: true,
+    },
   });
   if (!listing) {
     notFound();
@@ -67,7 +79,30 @@ export default async function NeuerTerminPage({
 
       <form action={createEvent} className="mt-8 flex flex-col gap-5">
         <input type="hidden" name="listingId" value={listingId} />
-        <EventFormFields attributeGroups={attributeGroups} showRecurrence />
+        <EventFormFields
+          attributeGroups={attributeGroups}
+          showRecurrence
+          aiImportEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
+          defaults={{
+            // Pre-filled from the project's own address/homepage — a
+            // Termin very often happens at/around the same place as the
+            // project it belongs to, so this saves re-typing it for the
+            // common case; every field stays a normal, freely editable
+            // input, so overriding any of them (e.g. a Termin at a
+            // different venue, or with its own separate homepage — see
+            // "Homepage der Veranstaltung" below) works exactly like
+            // leaving them blank would.
+            websiteUrl: listing.homepageUrl ?? undefined,
+            country: listing.country ?? undefined,
+            state: listing.state ?? undefined,
+            postalCode: listing.postalCode ?? undefined,
+            city: listing.city ?? undefined,
+            street: listing.street ?? undefined,
+            houseNumber: listing.houseNumber ?? undefined,
+            latitude: listing.latitude,
+            longitude: listing.longitude,
+          }}
+        />
 
         <button
           type="submit"

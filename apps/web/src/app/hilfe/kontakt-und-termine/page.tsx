@@ -47,6 +47,25 @@ export default function HilfeKontaktUndTerminePage() {
           erkennst sie am kleinen &bdquo;Online, überregional&ldquo;-Symbol
           neben dem Titel.
         </p>
+        <p className="mt-2 text-text-muted">
+          Beim Neuanlegen eines Termins kannst du eine Wiederholung
+          einstellen: täglich, wöchentlich, alle 14 Tage, monatlich (gleiches
+          Datum) oder monatlich (gleicher Wochentag), jeweils befristet bis zu
+          einem von dir gewählten Enddatum. Dabei werden sofort alle
+          einzelnen Termine der Serie angelegt — jeder davon lässt sich
+          danach unabhängig von den anderen bearbeiten oder löschen, eine
+          Wiederholung lässt sich also nicht nachträglich für eine ganze
+          Serie auf einmal ändern.
+        </p>
+        <p className="mt-2 text-text-muted">
+          Adresse und Homepage eines neuen Termins werden zunächst vom
+          Projekt übernommen, lassen sich aber jederzeit überschreiben — zum
+          Beispiel, wenn eine Veranstaltung an einem anderen Ort stattfindet
+          oder eine eigene Homepage hat. Über den Button
+          &bdquo;KI-Import in Beschreibung&ldquo; neben dem Homepage-Feld kann
+          aus dieser Homepage automatisch ein Beschreibungstext für den
+          Termin übernommen werden.
+        </p>
       </section>
     </div>
   );

@@ -240,6 +240,7 @@ export default async function TerminBearbeitenPage({
         <input type="hidden" name="eventId" value={event.id} />
         <EventFormFields
           attributeGroups={attributeGroups}
+          aiImportEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
           defaults={{
             title: event.title,
             description: event.description ?? undefined,

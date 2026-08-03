@@ -1,7 +1,7 @@
 import type { AttributeGroup, AttributeOption } from "@/generated/prisma/client";
 import { AddressFields } from "@/components/address-fields";
 import { EventDateRangeField } from "@/components/event-date-range-field";
-import { RichTextField } from "@/components/rich-text-field";
+import { EventDescriptionImportField } from "@/components/event-description-import-field";
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 import { RECURRENCE_LABELS } from "@/lib/recurrence";
 
@@ -35,6 +35,7 @@ export function EventFormFields({
   attributeGroups,
   defaults = {},
   showRecurrence = false,
+  aiImportEnabled = false,
 }: {
   attributeGroups: AttributeGroupWithOptions[];
   defaults?: EventFormDefaults;
@@ -44,6 +45,10 @@ export function EventFormFields({
   // own independent Event afterward, so "editing the recurrence" isn't a
   // concept that exists once occurrences already exist.
   showRecurrence?: boolean;
+  // Gates the "KI-Import in Beschreibung" button next to the Homepage field
+  // (see EventDescriptionImportField) — same env-var-driven pattern as the
+  // Listing KI-Import (Boolean(process.env.ANTHROPIC_API_KEY)).
+  aiImportEnabled?: boolean;
 }) {
   const groupBySlug = (slug: string) =>
     attributeGroups.find((group) => group.slug === slug);
@@ -156,20 +161,6 @@ export function EventFormFields({
         }}
       />
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="websiteUrl" className="font-medium">
-          Homepage
-        </label>
-        <input
-          id="websiteUrl"
-          name="websiteUrl"
-          type="url"
-          placeholder="https://..."
-          defaultValue={defaults.websiteUrl}
-          className={inputClass}
-        />
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="cost" className="font-medium">
@@ -211,11 +202,10 @@ export function EventFormFields({
         Voranmeldung notwendig
       </label>
 
-      <RichTextField
-        id="description"
-        name="description"
-        label="Beschreibung"
-        defaultValue={defaults.description}
+      <EventDescriptionImportField
+        defaultWebsiteUrl={defaults.websiteUrl}
+        defaultDescription={defaults.description}
+        aiImportEnabled={aiImportEnabled}
       />
 
       {multiSelectGroups.map((group) => (

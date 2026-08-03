@@ -2,7 +2,7 @@
 
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import {
   Bold,
   Heading2,
@@ -126,17 +126,19 @@ function Toolbar({ editor }: { editor: Editor | null }) {
  * `src/lib/sanitize-html.ts`, whose allowlist must stay in sync with
  * whatever tags this toolbar can produce).
  */
-export function RichTextField({
-  id,
-  name,
-  label,
-  defaultValue,
-}: {
+export type RichTextFieldHandle = {
+  /** Replaces the editor's whole content — used by EventDescriptionImportField
+   * to push in a KI-Import result after the fact, since Tiptap otherwise only
+   * ever reads `defaultValue` once at mount. */
+  setContent: (html: string) => void;
+};
+
+export const RichTextField = forwardRef<RichTextFieldHandle, {
   id: string;
   name: string;
   label: string;
   defaultValue?: string;
-}) {
+}>(function RichTextField({ id, name, label, defaultValue }, ref) {
   const [html, setHtml] = useState(defaultValue ?? "");
 
   const editor = useEditor({
@@ -169,6 +171,13 @@ export function RichTextField({
     },
   });
 
+  useImperativeHandle(ref, () => ({
+    setContent: (newHtml: string) => {
+      editor?.commands.setContent(newHtml);
+      setHtml(newHtml);
+    },
+  }), [editor]);
+
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className="font-medium">
@@ -181,4 +190,4 @@ export function RichTextField({
       <input type="hidden" name={name} value={html} />
     </div>
   );
-}
+});
