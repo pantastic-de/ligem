@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home as HomeIcon, CalendarDays } from "lucide-react";
+import { Home as HomeIcon, CalendarDays, Info } from "lucide-react";
 
 const zielgruppen = [
   {
@@ -64,28 +64,27 @@ export default function Home() {
           Zuhause und gemeinwohlorientierte Organisationen zusammen: zum
           Informieren, Vernetzen und Veranstalten.
         </p>
-        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
-          <div className="flex w-full flex-row justify-center gap-10 sm:w-auto">
-            <Link
-              href="/projekte"
-              className="flex flex-col items-center gap-1 text-primary transition-colors hover:text-primary-hover"
-            >
-              <HomeIcon className="h-9 w-9" aria-hidden="true" />
-              <span className="text-sm font-medium">Wohnprojekte</span>
-            </Link>
-            <Link
-              href="/termine"
-              className="flex flex-col items-center gap-1 text-secondary transition-colors hover:text-secondary-hover"
-            >
-              <CalendarDays className="h-9 w-9" aria-hidden="true" />
-              <span className="text-sm font-medium">Veranstaltungen</span>
-            </Link>
-          </div>
+        <div className="mt-6 flex flex-row flex-wrap items-start justify-center gap-8 sm:mt-10 sm:gap-10">
+          <Link
+            href="/projekte"
+            className="flex flex-col items-center gap-1 text-primary transition-colors hover:text-primary-hover"
+          >
+            <HomeIcon className="h-9 w-9" aria-hidden="true" />
+            <span className="text-sm font-medium">Wohnprojekte</span>
+          </Link>
+          <Link
+            href="/termine"
+            className="flex flex-col items-center gap-1 text-secondary transition-colors hover:text-secondary-hover"
+          >
+            <CalendarDays className="h-9 w-9" aria-hidden="true" />
+            <span className="text-sm font-medium">Veranstaltungen</span>
+          </Link>
           <a
             href="#zielgruppen"
-            className="flex min-h-12 w-full items-center justify-center rounded-full border border-text/20 px-8 text-base font-semibold transition-colors hover:bg-surface sm:w-auto"
+            className="flex flex-col items-center gap-1 text-text-muted transition-colors hover:text-text"
           >
-            Mehr erfahren
+            <Info className="h-9 w-9" aria-hidden="true" />
+            <span className="text-sm font-medium">Mehr erfahren</span>
           </a>
         </div>
       </section>
