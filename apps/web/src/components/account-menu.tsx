@@ -20,16 +20,22 @@ export function AccountMenu({
   displayName,
   admin,
   openRequestsCount,
+  openRequestsHref,
   signOutAction,
 }: {
   displayName: string;
   admin: boolean;
   // Combined count of pending ContactRequests + not-yet-viewed
   // EventRegistrations across every listing/event this user owns/co-
-  // manages (see src/lib/open-requests.ts) — shown as a small red badge on
-  // the menu trigger itself so it's visible without opening the dropdown,
+  // manages (see src/lib/open-requests.ts) — shown as a small red badge
+  // next to the menu trigger so it's visible without opening the dropdown,
   // mirroring a typical notification-bell pattern.
   openRequestsCount: number;
+  // Where the badge itself links to: the single most recent open item,
+  // with a #-anchor so that page can scroll straight to it (see
+  // getLatestOpenRequestHref). Null when there's nothing open, or when the
+  // one open item has no linkable page (an org-only event with no listing).
+  openRequestsHref: string | null;
   signOutAction: () => Promise<void>;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -39,43 +45,53 @@ export function AccountMenu({
   }
 
   return (
-    <details ref={detailsRef} className="relative">
-      <summary className="relative inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
-        {displayName}
-        <ChevronDown className="h-4 w-4" aria-hidden="true" />
-        {openRequestsCount > 0 ? (
-          <span
-            className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white"
-            aria-label={`${openRequestsCount} offene Anfragen`}
-          >
-            {openRequestsCount}
-          </span>
-        ) : null}
-      </summary>
-      <div
-        onClick={close}
-        className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg"
-      >
-        <Link href="/mein-konto" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
-          Mein Konto
-        </Link>
-        <Link href="/meine-projekte" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
-          Meine Projekte
-        </Link>
-        {admin ? (
-          <Link href="/admin" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
-            Admin
+    <div className="relative">
+      <details ref={detailsRef}>
+        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
+          {displayName}
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+        </summary>
+        <div
+          onClick={close}
+          className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg"
+        >
+          <Link href="/mein-konto" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+            Mein Konto
           </Link>
-        ) : null}
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg"
-          >
-            Abmelden
-          </button>
-        </form>
-      </div>
-    </details>
+          <Link href="/meine-projekte" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+            Meine Projekte
+          </Link>
+          {admin ? (
+            <Link href="/admin" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+              Admin
+            </Link>
+          ) : null}
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg"
+            >
+              Abmelden
+            </button>
+          </form>
+        </div>
+      </details>
+      {/* A real, independent Link rather than nested inside <summary> — an
+          interactive element inside another interactive element (the
+          summary's own click-to-toggle) would make its own click behavior
+          unreliable. Positioned to look like a badge on the trigger, but
+          functions as its own navigation target straight to the most
+          recent open request/registration. */}
+      {openRequestsCount > 0 && openRequestsHref ? (
+        <Link
+          href={openRequestsHref}
+          aria-label={`${openRequestsCount} offene Anfragen ansehen`}
+          title="Offene Anfragen ansehen"
+          className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white transition-transform hover:scale-110"
+        >
+          {openRequestsCount}
+        </Link>
+      ) : null}
+    </div>
   );
 }

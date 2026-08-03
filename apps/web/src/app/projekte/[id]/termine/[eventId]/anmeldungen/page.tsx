@@ -76,7 +76,11 @@ export default async function AnmeldungenPage({
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
           {event.registrations.map((registration) => (
-            <li key={registration.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+            <li
+              key={registration.id}
+              id={`anmeldung-${registration.id}`}
+              className="scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold">{registration.name}</span>
                 <span className="text-sm text-text-muted">

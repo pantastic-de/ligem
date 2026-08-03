@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
-import { getOpenRequestsCount } from "@/lib/open-requests";
+import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
 
@@ -11,6 +11,8 @@ export async function SiteHeader() {
   const session = await auth();
   const admin = session?.user?.id ? await isAdmin(session.user.id) : false;
   const openRequestsCount = session?.user?.id ? await getOpenRequestsCount(session.user.id) : 0;
+  const openRequestsHref =
+    session?.user?.id && openRequestsCount > 0 ? await getLatestOpenRequestHref(session.user.id) : null;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
 
   async function handleSignOut() {
@@ -67,6 +69,7 @@ export async function SiteHeader() {
               displayName={displayName}
               admin={admin}
               openRequestsCount={openRequestsCount}
+              openRequestsHref={openRequestsHref}
               signOutAction={handleSignOut}
             />
           ) : (

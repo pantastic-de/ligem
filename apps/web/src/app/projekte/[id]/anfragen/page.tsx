@@ -62,7 +62,11 @@ export default async function AnfragenPage({
       ) : (
         <ul className="mt-8 flex flex-col gap-4">
           {requests.map((request) => (
-            <li key={request.id} className="rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+            <li
+              key={request.id}
+              id={`anfrage-${request.id}`}
+              className="scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold">{request.senderName}</span>
                 <span
