@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CircleUserRound } from "lucide-react";
 
 /**
  * The header's account-menu disclosure — split out of SiteHeader (a Server
@@ -47,9 +47,12 @@ export function AccountMenu({
   return (
     <div className="relative">
       <details ref={detailsRef}>
-        <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
-          {displayName}
-          <ChevronDown className="h-4 w-4" aria-hidden="true" />
+        <summary className="flex cursor-pointer list-none flex-col items-center gap-0.5 select-none [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-0.5">
+            <CircleUserRound className="h-6 w-6" aria-hidden="true" />
+            <ChevronDown className="h-3 w-3" aria-hidden="true" />
+          </span>
+          <span className="max-w-24 truncate text-xs font-medium">{displayName}</span>
         </summary>
         <div
           onClick={close}

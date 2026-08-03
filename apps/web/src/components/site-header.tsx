@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Home as HomeIcon, CalendarDays, LogIn } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
@@ -58,15 +59,17 @@ export async function SiteHeader() {
 
           <Link
             href="/projekte"
-            className="inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-white transition-colors hover:bg-primary-hover"
+            className="flex flex-col items-center gap-0.5 text-primary transition-colors hover:text-primary-hover"
           >
-            Projekte
+            <HomeIcon className="h-6 w-6" aria-hidden="true" />
+            <span className="text-xs font-medium">Projekte</span>
           </Link>
           <Link
             href="/termine"
-            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-4 text-white transition-colors hover:bg-secondary-hover"
+            className="flex flex-col items-center gap-0.5 text-secondary transition-colors hover:text-secondary-hover"
           >
-            Kalender
+            <CalendarDays className="h-6 w-6" aria-hidden="true" />
+            <span className="text-xs font-medium">Termine</span>
           </Link>
 
           {session?.user ? (
@@ -90,9 +93,10 @@ export async function SiteHeader() {
             // below the login form, so the nav only needs one entry point.
             <Link
               href="/anmelden"
-              className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-white transition-colors hover:bg-accent/90"
+              className="flex flex-col items-center gap-0.5 text-accent transition-colors hover:text-accent/80"
             >
-              Anmelden
+              <LogIn className="h-6 w-6" aria-hidden="true" />
+              <span className="text-xs font-medium">Anmelden</span>
             </Link>
           )}
         </nav>
