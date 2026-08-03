@@ -50,10 +50,16 @@ export async function SiteHeader() {
             <HeaderSearchForm />
           </Suspense>
 
-          <Link href="/projekte" className="inline-flex min-h-11 items-center">
+          <Link
+            href="/projekte"
+            className="inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-white transition-colors hover:bg-primary-hover"
+          >
             Projekte
           </Link>
-          <Link href="/termine" className="inline-flex min-h-11 items-center">
+          <Link
+            href="/termine"
+            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-4 text-white transition-colors hover:bg-secondary-hover"
+          >
             Kalender
           </Link>
 
