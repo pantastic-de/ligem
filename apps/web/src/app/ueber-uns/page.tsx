@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -74,19 +75,28 @@ export default function UeberUnsPage() {
 
       <section id="idee" className="mt-10 scroll-mt-6">
         <h2 className="text-xl font-bold">Die Idee dahinter</h2>
-        <p className="mt-3 text-text-muted">
-          LiGem steht für „Leben in Gemeinschaft“. Ich habe diese Seite gebaut,
-          weil ich finde, dass Menschen, die in Gemeinschaft leben oder das
-          gerne würden, einen Ort brauchen, an dem sie sich einfach finden und
-          austauschen können. Ganz gleich, ob das eine klassische WG ist, ein
-          Ökodorf, ein Co-Housing-Projekt oder ein Mehrgenerationenhaus: Alle
-          Formen des gemeinschaftlichen Wohnens sind hier willkommen.
-        </p>
+        <div className="mt-4 flex flex-col-reverse items-start gap-5 sm:flex-row sm:items-center">
+          <p className="text-text-muted">
+            LiGem steht für „Leben in Gemeinschaft“ und ist entstanden, weil
+            Menschen, die in Gemeinschaft leben oder das gerne würden, einen
+            Ort brauchen, an dem sie sich einfach finden und austauschen
+            können. Ganz gleich, ob das eine klassische WG ist, ein Ökodorf,
+            ein Co-Housing-Projekt oder ein Mehrgenerationenhaus: Alle Formen
+            des gemeinschaftlichen Wohnens sind hier willkommen.
+          </p>
+          <Image
+            src="/ueber-uns/portrait.jpg"
+            alt="Porträt einer Person aus dem LiGem-Team"
+            width={640}
+            height={640}
+            className="h-24 w-24 shrink-0 rounded-full object-cover sm:h-28 sm:w-28"
+          />
+        </div>
 
         <div className="mt-6 rounded-2xl bg-surface p-4 shadow-sm sm:p-6">
           <h3 className="font-semibold">Was LiGem nicht ist</h3>
           <p className="mt-2 text-text-muted">
-            Eine Sache ist mir wichtig: LiGem vermittelt keine Wohnprojekte und
+            Eine Sache ist wichtig: LiGem vermittelt keine Wohnprojekte und
             sucht auch niemanden für euch aus. Dafür gibt es bereits andere,
             gute Plattformen. Wer hier sucht oder ein Projekt einträgt,
             entscheidet immer selbst, mit wem er oder sie in Kontakt tritt. Es
@@ -95,14 +105,14 @@ export default function UeberUnsPage() {
         </div>
 
         <p className="mt-6 text-text-muted">
-          Mir geht es um etwas anderes: einen Ort zu schaffen, an dem sich die
+          Im Mittelpunkt steht etwas anderes: ein Ort, an dem sich die
           Community des gemeinschaftlichen Wohnens direkt untereinander
-          vernetzen kann. Der gemeinsame Terminkalender ist dafür mein
-          liebstes Werkzeug auf dieser Seite. Besuchstage, Infotage, Feste und
+          vernetzen kann. Der gemeinsame Terminkalender ist dafür das
+          liebste Werkzeug auf dieser Seite. Besuchstage, Infotage, Feste und
           Workshops sind echte, persönliche Gelegenheiten zum Kennenlernen und
           Austausch. Genau das soll im Mittelpunkt stehen, nicht eine
           Plattform, die diesen Kontakt künstlich ersetzt. LiGem ist
-          werbefrei, und ich erhebe keine Daten zu Werbezwecken.
+          werbefrei, es werden keine Daten zu Werbezwecken erhoben.
         </p>
       </section>
 
@@ -172,8 +182,8 @@ export default function UeberUnsPage() {
             kennenzulernen.
           </li>
           <li>
-            Damit sich alle auf LiGem aufeinander verlassen können, schaue ich
-            mir neue Einträge kurz an, bevor sie veröffentlicht werden.
+            Damit sich alle auf LiGem aufeinander verlassen können, wird jeder
+            neue Eintrag kurz angeschaut, bevor er veröffentlicht wird.
           </li>
         </ul>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -199,7 +209,7 @@ export default function UeberUnsPage() {
           <li>Tragt Vorträge, Workshops und Infoveranstaltungen in den gemeinsamen Kalender ein.</li>
           <li>
             Findet Kontakt zu Menschen, die sich für dasselbe Thema
-            interessieren wie ihr. Auch hier geht es mir um echte Vernetzung,
+            interessieren wie ihr. Auch hier geht es um echte Vernetzung,
             nicht um Werbung oder Vermittlung.
           </li>
         </ul>
@@ -235,25 +245,23 @@ export default function UeberUnsPage() {
       <section id="technik" className="mt-10 scroll-mt-6">
         <h2 className="text-xl font-bold">Technischer Hintergrund und eure Daten</h2>
         <p className="mt-3 text-text-muted">
-          LiGem betreibe ich, Frank Steiner, in meiner Freizeit (siehe{" "}
+          LiGem wird von Frank Steiner betrieben (siehe{" "}
           <Link href="/impressum" className="text-primary">
             Impressum
           </Link>
-          ). Ohne Werbung. Ich arbeite in
-          der IT und wollte diese Kenntnisse einmal für etwas einsetzen, das
-          mir am Herzen liegt: die Idee des gemeinschaftlichen Wohnens ein
-          Stück voranzubringen.
+          ), ohne Werbung. Der Hintergrund liegt in der IT-Branche, verbunden
+          mit dem Anliegen, die Idee des gemeinschaftlichen Wohnens ein Stück
+          voranzubringen.
         </p>
         <p className="mt-3 text-text-muted">
           Technisch läuft die Seite auf einem modernen Web-Stack
           (Next.js, React, TypeScript, PostgreSQL mit PostGIS für die
-          Umkreissuche). Ich betreibe den Server selbst und entwickle LiGem
-          laufend weiter, meistens abends und am Wochenende.
+          Umkreissuche). Server und Weiterentwicklung liegen in Eigenregie.
         </p>
 
-        <h3 className="mt-6 font-semibold">Welche Daten ich speichere und wofür</h3>
+        <h3 className="mt-6 font-semibold">Welche Daten gespeichert werden und wofür</h3>
         <p className="mt-2 text-text-muted">
-          Datensparsamkeit ist mir wichtig. Pflichtfelder gibt es kaum, fast
+          Datensparsamkeit ist wichtig. Pflichtfelder gibt es kaum, fast
           alles ist freiwillig. Diese Tabelle zeigt dir die wichtigsten
           Datenarten im Überblick. Die vollständige, rechtlich verbindliche
           Erklärung steht in der{" "}
@@ -286,8 +294,9 @@ export default function UeberUnsPage() {
 
         <ul className="mt-6 flex flex-col gap-2 text-text-muted">
           <li>
-            Ich verwende keine Tracking-Cookies zu Werbezwecken, keine
-            Werbenetzwerke und gebe keine Daten zu Werbezwecken weiter. Für
+            Es gibt keine Tracking-Cookies zu Werbezwecken, keine
+            Werbenetzwerke, und es werden keine Daten zu Werbezwecken
+            weitergegeben. Für
             einzelne Funktionen (Karte, Ortssuche, Spam-Schutz beim
             Kontaktformular) werden Anfragen an dafür notwendige externe
             Dienste geschickt — Details dazu in der{" "}
