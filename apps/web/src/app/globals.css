@@ -66,6 +66,30 @@ body {
   outline-offset: 2px;
 }
 
+/* iOS Safari auto-zooms the whole page on focus of any text input whose
+   computed font-size is under 16px — this app's globally reduced type
+   scale (see body's font-size above) puts most form fields well under
+   that threshold. Restricted to actual text-entry controls (not
+   checkboxes/radios/range/buttons, which don't trigger the zoom and
+   shouldn't be forced to a larger size than the rest of the UI) and to
+   narrow/touch viewports, so desktop input sizing is unaffected. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  input[type="password"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Leaflet renders its own DOM outside React's tree, so marker labels on the
    search maps (src/components/location-radius-picker.tsx) are styled globally. */
 .ligem-event-label {

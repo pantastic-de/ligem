@@ -4,13 +4,21 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { LocateFixed } from "lucide-react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
 import { TILE_URL, TILE_ATTRIBUTION } from "@/lib/map-tiles";
 
 const RADIUS_STEPS: (number | null)[] = [1, 5, 10, 20, 50, 75, 100, 150, 200, 300, null];
+
+// Shape returned by /api/geocode (see that route) — used for both the
+// place-name autocomplete dropdown and the plain "Suchen" fallback below.
+type GeocodeSuggestion = {
+  lat: string;
+  lon: string;
+  displayName: string;
+};
 
 function pinSvg(fill: string, stroke: string): string {
   return `<svg width="30" height="42" viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg">
@@ -82,6 +90,14 @@ export function LocationRadiusPicker({
   const [placeQuery, setPlaceQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set right before setPlaceQuery(suggestion.displayName) so the debounced
+  // suggestions effect below (keyed on placeQuery) doesn't immediately
+  // re-fetch and re-open the dropdown for the value we just picked.
+  const suppressNextSuggestionFetch = useRef(false);
 
   const initialRadiusIndex = (() => {
     if (!defaultRadius) return RADIUS_STEPS.length - 1;
@@ -448,21 +464,120 @@ export function LocationRadiusPicker({
     );
   }
 
+  // Debounced as-you-type autocomplete: fetches suggestions from the same
+  // /api/geocode proxy the "Suchen" fallback below already uses. Skipped
+  // for very short queries (noisy/meaningless this early) and right after
+  // picking a suggestion (suppressNextSuggestionFetch), since setting
+  // placeQuery to the chosen displayName would otherwise immediately
+  // re-trigger a fetch and re-open the dropdown for the value just picked.
+  useEffect(() => {
+    if (suppressNextSuggestionFetch.current) {
+      suppressNextSuggestionFetch.current = false;
+      return;
+    }
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    const query = placeQuery.trim();
+    // A too-short query isn't actively cleared here — the dropdown's own
+    // render condition below already hides it whenever the current query
+    // is under this length, so there's no separate state to reset.
+    if (query.length < 3) return;
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+        const data = (await res.json()) as GeocodeSuggestion[];
+        setSuggestions(data);
+        setSuggestionsOpen(data.length > 0);
+        setActiveSuggestionIndex(-1);
+      } catch {
+        // Best-effort — the plain "Suchen" button below still works even
+        // if live suggestions fail to load.
+      }
+    }, 350);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [placeQuery]);
+
+  // Shared by both the "Suchen" fallback and picking an autocomplete
+  // suggestion: once a place is actually found, get out of the way of the
+  // results — collapse the enlarged map back down, close "Erweiterte
+  // Suche" (both would otherwise still cover most of the screen on a
+  // phone), and jump straight to the results/detail pane (same anchor the
+  // Weiter/Zurück-Blättern links and ScrollToTopButton already use, see
+  // CLAUDE.md). `delayed` waits longer before scrolling — used when a
+  // radius was just defaulted (see applyPlaceResult below), since that
+  // also re-triggers the debounced auto-submit/navigation that refetches
+  // a now-filtered result set; scrolling immediately would land on the
+  // still-unfiltered list a moment before it changes underneath the
+  // viewport, which reads as a jump/flicker rather than a smooth landing.
+  function closeUiAndScrollToResults(delayed = false) {
+    setExpanded(false);
+    const advanced = document.getElementById("erweiterte-suche");
+    if (advanced instanceof HTMLDetailsElement) advanced.open = false;
+    const scrollToResults = () =>
+      document.getElementById("ergebnisse")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (delayed) {
+      setTimeout(scrollToResults, 700);
+    } else {
+      scrollToResults();
+    }
+  }
+
+  // Shared by both the "Suchen" fallback and picking an autocomplete
+  // suggestion once a place is actually found. A freshly entered place with
+  // no radius set yet ("Alle") would otherwise still show every result
+  // countrywide right next to a brand-new search origin, which doesn't
+  // read as a meaningful "search around this place" — defaulting to 50km
+  // gives a sensible bounded result set without requiring an extra manual
+  // step.
+  function applyPlaceResult(placeLat: number, placeLng: number) {
+    moveTo(placeLat, placeLng);
+    let radiusJustDefaulted = false;
+    if (radiusValue == null) {
+      const fiftyKmIndex = RADIUS_STEPS.indexOf(50);
+      if (fiftyKmIndex !== -1) {
+        setRadiusIndex(fiftyKmIndex);
+        radiusJustDefaulted = true;
+      }
+    }
+    closeUiAndScrollToResults(radiusJustDefaulted);
+  }
+
+  function selectSuggestion(suggestion: GeocodeSuggestion) {
+    suppressNextSuggestionFetch.current = true;
+    setPlaceQuery(suggestion.displayName);
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+    setActiveSuggestionIndex(-1);
+    applyPlaceResult(Number(suggestion.lat), Number(suggestion.lon));
+  }
+
+  function handlePlaceInputKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
+    if (!suggestionsOpen || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex((i) => (i + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      selectSuggestion(suggestions[activeSuggestionIndex >= 0 ? activeSuggestionIndex : 0]);
+    } else if (e.key === "Escape") {
+      setSuggestionsOpen(false);
+    }
+  }
+
   async function searchPlace() {
     if (!placeQuery.trim()) return;
     setBusy(true);
     setMessage(null);
+    setSuggestionsOpen(false);
     try {
       const res = await fetch(`/api/geocode?q=${encodeURIComponent(placeQuery)}`);
       const data = await res.json();
       if (data?.[0]) {
-        moveTo(Number(data[0].lat), Number(data[0].lon));
-        // The "Suchen" button's only real job is entering a place — once it
-        // found one, jump straight to the results/detail pane (same anchor
-        // the Weiter/Zurück-Blättern links and ScrollToTopButton already
-        // use, see CLAUDE.md), so the visitor doesn't have to manually
-        // scroll past the still-visible filter sidebar to see what changed.
-        document.getElementById("ergebnisse")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        applyPlaceResult(Number(data[0].lat), Number(data[0].lon));
       } else {
         setMessage("Ort nicht gefunden.");
       }
@@ -485,7 +600,17 @@ export function LocationRadiusPicker({
             type="text"
             value={placeQuery}
             onChange={(e) => setPlaceQuery(e.target.value)}
+            onKeyDown={handlePlaceInputKeyDown}
+            onFocus={() => {
+              if (suggestions.length > 0) setSuggestionsOpen(true);
+            }}
+            onBlur={() => setSuggestionsOpen(false)}
             placeholder="Ort oder Region eingeben"
+            role="combobox"
+            aria-expanded={suggestionsOpen}
+            aria-controls="ort-vorschlaege"
+            aria-autocomplete="list"
+            autoComplete="off"
             className="min-h-11 w-full rounded-xl border border-text/20 bg-bg py-2 pl-3 pr-11 text-sm"
           />
           <button
@@ -498,6 +623,32 @@ export function LocationRadiusPicker({
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
           </button>
+          {suggestionsOpen && suggestions.length > 0 && placeQuery.trim().length >= 3 ? (
+            <ul
+              id="ort-vorschlaege"
+              role="listbox"
+              className="absolute inset-x-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-xl border border-text/20 bg-surface py-1 shadow-lg"
+            >
+              {suggestions.map((suggestion, i) => (
+                <li key={`${suggestion.lat}-${suggestion.lon}`} role="option" aria-selected={i === activeSuggestionIndex}>
+                  <button
+                    type="button"
+                    // preventDefault on mousedown keeps the input focused (no
+                    // blur), so onClick still fires normally afterward instead
+                    // of the dropdown having already closed itself via onBlur
+                    // by the time the click would land.
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(suggestion)}
+                    className={`block w-full truncate px-3 py-2 text-left text-sm ${
+                      i === activeSuggestionIndex ? "bg-bg" : "hover:bg-bg"
+                    }`}
+                  >
+                    {suggestion.displayName}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
         <button
           type="button"

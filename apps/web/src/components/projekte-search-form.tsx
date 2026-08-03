@@ -106,7 +106,7 @@ export function ProjekteSearchForm({
       */}
       <input type="hidden" name="suche" value={defaults.suche ?? ""} />
 
-      <details className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
+      <details id="erweiterte-suche" className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
         <summary className="cursor-pointer select-none px-4 py-3 font-medium">
           Erweiterte Suche
         </summary>
