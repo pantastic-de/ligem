@@ -114,12 +114,13 @@ export default function UeberUnsPage() {
             height={640}
             className="h-48 w-48 rounded-full object-cover sm:h-56 sm:w-56"
           />
-          <blockquote className="max-w-md text-text-muted italic">
-            „Gemeinschaftliches Wohnen lebt von echter Begegnung, nicht von
-            Algorithmen. Genau dafür soll LiGem ein Beitrag zum Gemeinwohl
-            sein.“
-          </blockquote>
           <p className="font-semibold">Frank Steiner</p>
+          <blockquote className="max-w-md text-text-muted">
+            <p className="italic">„Nobody wins unless everybody wins.“</p>
+            <footer className="mt-2 text-sm not-italic text-text-muted/80">
+              Niemand gewinnt, wenn nicht alle gewinnen. — Bruce Springsteen
+            </footer>
+          </blockquote>
         </div>
       </section>
 
