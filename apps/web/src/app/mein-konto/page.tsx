@@ -8,6 +8,7 @@ import { PasswordField } from "@/components/password-field";
 import {
   addListingManager,
   removeListingManager,
+  resendVerificationEmail,
   updatePassword,
   updateProfile,
   uploadAvatar,
@@ -36,10 +37,13 @@ const errorMessages: Record<string, string> = {
 
 const okMessages: Record<string, string> = {
   profil: "Persönliche Daten gespeichert.",
+  "profil-email-bestaetigen": "Persönliche Daten gespeichert. Bitte bestätige deine neue E-Mail-Adresse — wir haben dir einen Link geschickt.",
   passwort: "Passwort geändert.",
   avatar: "Profilbild aktualisiert.",
   "mitverwalter-hinzugefuegt": "Mitverwalter:in hinzugefügt.",
   "mitverwalter-entfernt": "Mitverwalter:in entfernt.",
+  "bestaetigung-gesendet": "Bestätigungs-E-Mail wurde erneut gesendet.",
+  "bereits-bestaetigt": "Deine E-Mail-Adresse ist bereits bestätigt.",
 };
 
 export default async function MeinKontoPage({
@@ -155,7 +159,25 @@ export default async function MeinKontoPage({
               defaultValue={user.email}
               className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
             />
+            {user.emailVerified ? (
+              <span className="text-sm text-success">✓ Bestätigt</span>
+            ) : (
+              <span className="text-sm text-warning">
+                Nicht bestätigt — solange nicht bestätigt, brauchst du beim
+                Absenden von Kontaktanfragen ein CAPTCHA.
+              </span>
+            )}
           </div>
+          {!user.emailVerified ? (
+            <form action={resendVerificationEmail}>
+              <button
+                type="submit"
+                className="inline-flex min-h-9 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+              >
+                Bestätigungs-E-Mail erneut senden
+              </button>
+            </form>
+          ) : null}
           <p className="text-sm text-text-muted">
             Mitglied seit {dateFormat.format(user.createdAt)}.
             {user.lastLoginAt

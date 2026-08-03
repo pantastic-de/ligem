@@ -12,6 +12,7 @@ import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
 import { escapeHtml } from "@/lib/map-result-item";
 import { HighlightText } from "@/components/highlight-text";
 import { recordListingViews } from "@/lib/listing-views";
+import { turnstileEnabled } from "@/lib/turnstile";
 
 // Bare list page (any filters, no ?projekt= selection) stays indexable with
 // a self-canonical stripped of query params entirely — indexing every
@@ -494,6 +495,8 @@ export default async function ProjektePage({
   let selectedCanManage = false;
   let selectedIsOwner = false;
   let selectedViewerIsAdmin = false;
+  let selectedViewerContact: { name: string | null; email: string } | null = null;
+  let selectedRequireCaptcha = false;
 
   if (selectedId) {
     const listing = await prisma.listing.findUnique({
@@ -513,6 +516,16 @@ export default async function ProjektePage({
       const canManage = session?.user?.id
         ? await canManageListing(session.user.id, listing.id, listing.createdById)
         : false;
+      // Contact form pre-fill + CAPTCHA gating (see CLAUDE.md's
+      // "Kontaktanfragen" — a verified account skips CAPTCHA).
+      const viewer = session?.user?.id
+        ? await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { name: true, email: true, emailVerified: true },
+          })
+        : null;
+      selectedViewerContact = viewer ? { name: viewer.name, email: viewer.email } : null;
+      selectedRequireCaptcha = turnstileEnabled && !viewer?.emailVerified;
 
       if (listing.status === "PUBLISHED" || canManage) {
         selectedListing = listing;
@@ -660,6 +673,9 @@ export default async function ProjektePage({
                 returnTo={buildProjekteHref(params, {})}
                 backHref={buildProjekteHref(params, { projekt: undefined, kontakt: undefined })}
                 kontaktSuccess={Boolean(params.kontakt)}
+                contactFormError={params.error === "captcha" ? "captcha" : undefined}
+                viewerContact={selectedViewerContact}
+                requireCaptcha={selectedRequireCaptcha}
                 searchTerm={suche || undefined}
                 distanceKm={
                   lat != null && lng != null && selectedListing.latitude != null && selectedListing.longitude != null

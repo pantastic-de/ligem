@@ -8,6 +8,7 @@ import { canManageListing, isAdmin } from "@/lib/authz";
 import { ListingDetail } from "@/components/listing-detail";
 import { stripHtml } from "@/lib/sanitize-html";
 import { recordListingViews } from "@/lib/listing-views";
+import { turnstileEnabled } from "@/lib/turnstile";
 
 // Shared between generateMetadata and the page body via React's cache() so
 // the identical query only hits the database once per request instead of
@@ -61,10 +62,11 @@ export default async function ProjektDetailPage({
     eingereicht?: string;
     kontakt?: string;
     aktualisiert?: string;
+    error?: string;
   }>;
 }) {
   const { id } = await params;
-  const { eingereicht, kontakt, aktualisiert } = await searchParams;
+  const { eingereicht, kontakt, aktualisiert, error } = await searchParams;
 
   const listing = await getListing(id);
 
@@ -78,6 +80,16 @@ export default async function ProjektDetailPage({
   const canManage = session?.user?.id
     ? await canManageListing(session.user.id, listing.id, listing.createdById)
     : false;
+
+  // Contact form pre-fill + CAPTCHA gating (see CLAUDE.md's "Kontaktanfragen"
+  // — a verified account skips CAPTCHA, everyone else needs it).
+  const viewer = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, email: true, emailVerified: true },
+      })
+    : null;
+  const requireCaptcha = turnstileEnabled && !viewer?.emailVerified;
 
   if (listing.status !== "PUBLISHED" && !canManage) {
     notFound();
@@ -120,6 +132,9 @@ export default async function ProjektDetailPage({
         viewerIsAdmin={viewerIsAdmin}
         returnTo={`/projekte/${listing.id}`}
         kontaktSuccess={Boolean(kontakt)}
+        contactFormError={error === "captcha" ? "captcha" : undefined}
+        viewerContact={viewer ? { name: viewer.name, email: viewer.email } : null}
+        requireCaptcha={requireCaptcha}
       />
     </div>
   );

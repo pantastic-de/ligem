@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteObject } from "@/lib/storage";
 import { MAX_IMAGE_SIZE, storeAvatar } from "@/lib/media";
+import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 
 export async function updateProfile(formData: FormData): Promise<void> {
   const session = await auth();
@@ -21,19 +22,60 @@ export async function updateProfile(formData: FormData): Promise<void> {
     redirect("/mein-konto?error=email-fehlt");
   }
 
+  const current = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { email: true },
+  });
+  const emailChanged = email !== current.email;
+
   try {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { name: name || null, email, notifyContactRequestsByEmail },
+      data: {
+        name: name || null,
+        email,
+        notifyContactRequestsByEmail,
+        // A changed address hasn't been confirmed as belonging to this
+        // person yet — keeping the old `emailVerified` around would let
+        // anyone claim an arbitrary address as "verified" just by typing it
+        // in here, which is exactly the trust signal the contact form's
+        // CAPTCHA skip (see submitContactRequest) relies on.
+        ...(emailChanged ? { emailVerified: null } : {}),
+      },
     });
   } catch {
     // Almost certainly the unique-email constraint (another account already
-    // uses this address) — no email-verification system exists in this app
-    // yet, so this is the only real validation needed here.
+    // uses this address).
     redirect("/mein-konto?error=email-vergeben");
   }
 
+  if (emailChanged) {
+    const token = await createVerificationToken(email);
+    await sendVerificationEmail(email, token);
+    redirect("/mein-konto?ok=profil-email-bestaetigen");
+  }
+
   redirect("/mein-konto?ok=profil");
+}
+
+/** "Bestätigungs-E-Mail erneut senden" on /mein-konto — for a not-yet-
+ * verified address, whether from original registration or a later email
+ * change (see updateProfile above). */
+export async function resendVerificationEmail(): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden");
+  }
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { email: true, emailVerified: true },
+  });
+  if (user.emailVerified) {
+    redirect("/mein-konto?ok=bereits-bestaetigt");
+  }
+  const token = await createVerificationToken(user.email);
+  await sendVerificationEmail(user.email, token);
+  redirect("/mein-konto?ok=bestaetigung-gesendet");
 }
 
 export async function updatePassword(formData: FormData): Promise<void> {

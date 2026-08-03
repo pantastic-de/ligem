@@ -48,6 +48,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         data: { lastLoginAt: new Date() },
       });
     },
+    // Fires only once, when the PrismaAdapter itself creates a brand-new
+    // User row — which only ever happens for an OAuth (Google) first sign-
+    // in; a Credentials registration creates its User row directly in
+    // registerUser (src/app/registrieren/actions.ts), bypassing the adapter
+    // entirely, so this never double-fires for that path. Google already
+    // verified this address itself before ever handing it to us, so there's
+    // no separate confirmation link needed here the way a fresh Credentials
+    // account needs one (see src/lib/verification-token.ts) — this is what
+    // lets a Google sign-in skip the contact form's CAPTCHA immediately.
+    async createUser({ user }) {
+      if (!user.id) return;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: new Date() },
+      });
+    },
   },
   providers: [
     Credentials({

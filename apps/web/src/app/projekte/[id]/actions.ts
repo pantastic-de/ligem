@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site";
+import { getClientIp } from "@/lib/ip-lookup";
+import { turnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
 
 // The contact form is rendered both on the standalone /projekte/[id] page
 // and inline in /projekte's results column (see listing-detail.tsx /
@@ -82,6 +85,25 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
   }
 
   const session = await auth();
+
+  // Registered *and email-verified* senders skip CAPTCHA entirely (see
+  // CLAUDE.md's "Kontaktanfragen" section for the full rationale) — anyone
+  // else needs to pass Cloudflare Turnstile, checked here server-side
+  // regardless of what the form's own client-side widget did or didn't
+  // show, since that's the only check that actually matters.
+  const isVerifiedSender = Boolean(
+    session?.user?.id &&
+      (await prisma.user.findUnique({ where: { id: session.user.id }, select: { emailVerified: true } }))
+        ?.emailVerified,
+  );
+  if (turnstileEnabled && !isVerifiedSender) {
+    const hdrs = await headers();
+    const token = formData.get("cf-turnstile-response")?.toString() ?? null;
+    const ok = await verifyTurnstileToken(token, getClientIp(hdrs));
+    if (!ok) {
+      redirect(`${returnTo}${separator}error=captcha`);
+    }
+  }
 
   await prisma.contactRequest.create({
     data: {

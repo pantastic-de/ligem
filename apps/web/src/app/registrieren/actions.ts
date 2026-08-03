@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import type { UserRole } from "@/generated/prisma/client";
+import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 
 export async function registerUser(formData: FormData): Promise<void> {
   const name = formData.get("name")?.toString().trim();
@@ -36,6 +37,13 @@ export async function registerUser(formData: FormData): Promise<void> {
       roles: { create: roles.map((role) => ({ role })) },
     },
   });
+
+  // Registered users only get to skip the contact form's CAPTCHA (see
+  // submitContactRequest) once they've actually confirmed owning this email
+  // address — otherwise "registered" would be a trust signal anyone could
+  // fake with a throwaway/unowned address.
+  const token = await createVerificationToken(email);
+  await sendVerificationEmail(email, token);
 
   redirect("/anmelden?registriert=1");
 }

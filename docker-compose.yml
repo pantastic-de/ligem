@@ -65,6 +65,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
     volumes:
       - .:/workspace
     ports:
