@@ -181,6 +181,11 @@ model ListingCategoryAssignment {
   category   ListingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([listingId, categoryId])
+  // listingId alone is already covered by the composite PK above (leftmost
+  // column), but a lookup by categoryId alone (e.g. "every listing tagged
+  // with this category") can't use that index efficiently — needed for the
+  // /projekte "Art des Projektinserates" filter's some: { categoryId: ... }.
+  @@index([categoryId])
 }
 
 enum ListingStatus {
@@ -487,6 +492,10 @@ model ListingAttributeOption {
   option    AttributeOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@id([listingId, optionId])
+  // Every /projekte attribute-group filter ("some: { optionId: { in: [...] }
+  // }") looks this table up by optionId alone — the composite PK above only
+  // helps a lookup that leads with listingId, not optionId.
+  @@index([optionId])
 }
 
 model EventAttributeOption {
@@ -496,6 +505,9 @@ model EventAttributeOption {
   option   AttributeOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@id([eventId, optionId])
+  // Same reasoning as ListingAttributeOption.optionId above, for /termine's
+  // Art/Zielgruppe filters.
+  @@index([optionId])
 }
 
 enum MediaType {
@@ -539,6 +551,12 @@ model Media {
   uploadedById  String
   uploadedBy    User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])
   createdAt     DateTime  @default(now())
+
+  // Every gallery fetch (listing/event detail pages, map popup "business
+  // cards") looks Media up by listingId or eventId — neither had an index
+  // beyond the primary key before this.
+  @@index([listingId])
+  @@index([eventId])
 }
 
 // --- Calendar: events, info sessions, Besuchstage --------------------------
@@ -612,6 +630,10 @@ model EventRegistration {
   // badge (see AccountMenu) needs *some* notion of "still open" to count,
   // mirroring ContactRequest.status === PENDING for that same badge.
   viewedAt         DateTime?
+
+  // /projekte/[id]/termine/[eventId]/anmeldungen and the open-requests
+  // badge (getOpenRequestsCount) both look this table up by eventId.
+  @@index([eventId])
 }
 
 // --- Saved searches ---------------------------------------------------------
@@ -646,6 +668,11 @@ model ContactRequest {
   message     String
   status      ContactRequestStatus  @default(PENDING)
   createdAt   DateTime              @default(now())
+
+  // /projekte/[id]/anfragen, the /meine-projekte pending-count badge
+  // (contactRequest.groupBy(["listingId"])), and the open-requests badge
+  // all look this table up by listingId.
+  @@index([listingId])
 }
 
 enum AppointmentStatus {

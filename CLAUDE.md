@@ -360,6 +360,18 @@ Every `Listing` has an optional `homepageUrl` column plus a `lastAiImportAt` tim
 - **Text/image extraction** (`src/lib/homepage-scrape.ts`) is deliberately regex/tag-strip based (`extractReadableText`/`extractImageUrls`) rather than pulling in an HTML/DOM parser dependency — good enough for "best effort" extraction feeding an LLM, not a claim of correct HTML parsing. Images are capped at 8 candidates, filtered by filename (`logo`/`icon`/`favicon`/...) to skip obvious non-photo assets.
 - **Env var**: `ANTHROPIC_API_KEY`, added to `docker-compose.yml`'s `web` service `environment:` block (passthrough from the root `.env`, same as `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) — optional at the infra level, but the KI-Import button and its whole pipeline are unreachable without it.
 
+## Performance: fehlende Indizes nachgetragen
+
+A direct audit against the running database (`pg_indexes`) found several tables with no index beyond their primary key, despite being looked up by a non-PK column on essentially every `/projekte`/`/termine` page load:
+
+- `ListingAttributeOption`/`EventAttributeOption` (`@@index([optionId])`) — every attribute-group filter (`some: { optionId: { in: [...] } }`) looked these up by `optionId`, but the existing composite PK (`[listingId, optionId]`/`[eventId, optionId]`) only helps a lookup leading with `listingId`/`eventId`, not `optionId` alone.
+- `ListingCategoryAssignment` (`@@index([categoryId])`) — same reasoning, for the "Art des Projektinserates" category filter.
+- `Media` (`@@index([listingId])`, `@@index([eventId])`) — every gallery fetch and map popup "business card".
+- `ContactRequest` (`@@index([listingId])`) — `/projekte/[id]/anfragen`, the `/meine-projekte` pending-count badge, and the open-requests header badge.
+- `EventRegistration` (`@@index([eventId])`) — `/anmeldungen` and the open-requests badge.
+
+Separately, neither `Listing.location` nor `Event.location` (the PostGIS points used for Umkreissuche's `ST_DWithin` radius search) had a spatial index at all, despite `src/lib/geo.ts`'s own comment claiming one existed — every radius search was doing a sequential scan computing `ST_DWithin` per row rather than pruning candidates via an index first. Since `location` is `Unsupported("geometry(Point, 4326)")` in Prisma's type system, this couldn't be expressed as a schema.prisma `@@index` and instead lives in its own hand-written migration (`prisma/migrations/20260803130500_add_location_gist_indexes/migration.sql`, `CREATE INDEX ... USING GIST ("location")` on both tables) — the other seven indexes above came from a normal `@@index` in `schema.prisma` plus `pnpm db:migrate`.
+
 ## Security-Audit (`pnpm audit`)
 
 `pnpm audit` (run from `apps/web`) surfaces known CVEs. As of this writing, 4 of the originally-found 7 advisories are pinned via `apps/web/pnpm-workspace.yaml`'s `overrides` block (`sharp: '>=0.35.0'`, `postcss: '>=8.5.18'`) — both were transitively bundled by Next.js's own dependency tree (`next>sharp`, `next>postcss`) at older, vulnerable versions, not something this project's `package.json` could bump directly; `pnpm why <pkg>` confirmed a single, unified patched version resolves everywhere afterward. Note: **pnpm v10+ no longer reads a `pnpm.overrides` key inside `package.json`** (silently ignored with a warning) — overrides belong in `pnpm-workspace.yaml` now.
