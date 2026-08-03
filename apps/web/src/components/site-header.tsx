@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
@@ -22,15 +21,22 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-text/10">
-      <div className="mx-auto flex max-w-4xl flex-col items-center gap-x-4 gap-y-1 px-4 py-2 sm:gap-y-3 sm:px-6 sm:py-3">
+      <div className="mx-auto flex max-w-4xl flex-col items-center gap-x-4 gap-y-6 px-4 py-2 sm:gap-y-10 sm:px-6 sm:py-3">
         <Link href="/" className="shrink-0">
-          <Image
-            src="/logo.png"
+          {/* eslint-disable-next-line @next/next/no-img-element -- next/image
+              refuses SVG sources unless dangerouslyAllowSVG is set (a
+              site-wide setting with real security implications for any
+              future dynamic image source); this is our own trusted static
+              vector logo, so a plain <img> is simpler and avoids that
+              tradeoff entirely. The SVG already has a transparent
+              background, so no mix-blend-mode trick is needed here (unlike
+              the old PNG export). */}
+          <img
+            src="/logo.svg"
             alt="LiGem - Leben in Gemeinschaft"
-            width={1280}
-            height={460}
-            priority
-            className="h-18 w-auto mix-blend-multiply sm:h-40 md:h-48"
+            width={1520}
+            height={390}
+            className="h-18 w-auto sm:h-40 md:h-48"
           />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">

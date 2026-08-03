@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="390" viewBox="70 50 1520 390" role="img" aria-labelledby="title desc">
+  <title id="title">LiGem – Leben in Gemeinschaft</title>
+  <desc id="desc">Reduzierte horizontale Wort-Bild-Marke in Terrakotta und Olivgrün auf transparentem Hintergrund.</desc>
+
+  <!-- Abstraktes Zeichen: drei eigenständige Formen bilden Gemeinschaft und einen offenen Lebensraum. -->
+  <g transform="translate(72 54)">
+    <path fill="#B14F24" d="M196 12c-62 0-116 33-146 82l68 39c16-26 45-43 78-43 32 0 61 17 77 43l68-39C311 45 257 12 196 12Z"/>
+    <path fill="#61703F" d="M36 119C7 169 5 232 34 283c30 53 84 84 140 87v-78c-30-3-58-20-74-48-16-29-15-62 0-89l-64-36Z"/>
+    <path fill="#61703F" d="M356 119c29 50 31 113 2 164-30 53-84 84-140 87v-78c30-3 58-20 74-48 16-29 15-62 0-89l64-36Z"/>
+    <path fill="#B14F24" d="M196 145c-31 0-56 25-56 56 0 43 56 93 56 93s56-50 56-93c0-31-25-56-56-56Z"/>
+  </g>
+
+  <g font-family="Avenir Next, Avenir, Montserrat, Helvetica Neue, Arial, sans-serif">
+    <text x="555" y="290" fill="#B14F24" font-size="252" font-weight="700" letter-spacing="-8">Li</text>
+    <text x="755" y="290" fill="#61703F" font-size="252" font-weight="700" letter-spacing="-9">Gem</text>
+    <path fill="#B14F24" d="M558 342h974v12H558z"/>
+    <text x="558" y="416" fill="#61703F" font-size="62" font-weight="500" letter-spacing="11">LEBEN IN GEMEINSCHAFT</text>
+  </g>
+</svg>
