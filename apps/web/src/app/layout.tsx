@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
@@ -16,6 +16,15 @@ const nunito = Nunito({
 
 const SITE_DESCRIPTION =
   "LiGem bringt Wohngemeinschaften, WG-Suchende und gemeinwohlorientierte Organisationen zusammen: informieren, vernetzen, Veranstaltungen finden. Ohne automatisiertes Matching.";
+
+// `viewportFit: "cover"` (adds `viewport-fit=cover` to the generated meta
+// tag) is what makes `env(safe-area-inset-*)` resolve to real values at all
+// — without it every safe-area-inset is always 0, silently no-op-ing the
+// bottom padding on fixed-position, screen-edge UI like
+// CookieConsentBanner (see there) regardless of how it's styled.
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

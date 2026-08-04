@@ -28,17 +28,11 @@ services:
     # this used to be a manual, easy-to-forget step (see DEPLOYMENT.md's
     # history) and production ran for a while with an empty ListingCategory/
     # AttributeGroup table because of that. seed.ts is entirely `upsert`-
-    # based (categories, attribute groups/options, the dev admin), so
-    # re-running it on every start is a harmless no-op once the data already
-    # matches. `NODE_ENV=production` is prefixed onto *just* this one command
-    # (not set as a container-wide environment variable below) deliberately:
-    # pnpm's own install step skips devDependencies when NODE_ENV=production
-    # is set process-wide, which would remove `typescript`/`prisma`/`tsx` —
-    # all devDependencies — and break the `pnpm install`/`next build` steps
-    # earlier in this same chain. Scoped to one command, it only makes
-    # seed.ts skip creating the fixed-password dev admin account, which is
-    # all it's actually needed for.
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm build && pnpm exec prisma migrate deploy && NODE_ENV=production pnpm exec prisma db seed && pnpm start"
+    # based (categories, attribute groups/options, the installation admin —
+    # see prisma/seed.ts's own comment on why that account is seeded in
+    # production too, not just dev), so re-running it on every start is a
+    # harmless no-op once the data already matches.
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec prisma generate && pnpm build && pnpm exec prisma migrate deploy && pnpm exec prisma db seed && pnpm start"
     restart: unless-stopped
     # Production uses the server's native PostgreSQL/PostGIS install instead
     # of the Dockerized `postgres` service (that one is dev-only). DATABASE_URL

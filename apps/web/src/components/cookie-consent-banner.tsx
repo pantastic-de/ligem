@@ -33,7 +33,19 @@ export function CookieConsentBanner() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-text/10 bg-surface px-4 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:px-6">
+    // `pb-[max(1rem,env(safe-area-inset-bottom))]` (not plain `py-4`/`pb-4`)
+    // keeps the buttons clear of a phone's own bottom gesture/home-indicator
+    // area — a fixed, screen-edge-flush element there can otherwise be
+    // visible but not reliably tappable, since a tap that close to the
+    // physical bottom edge can get claimed by the OS's own edge-swipe
+    // gesture before it ever reaches the page (reported directly: buttons
+    // visible but unclickable on a real phone). Needs `viewport-fit=cover`
+    // on the viewport meta tag (see layout.tsx's `viewport` export) or
+    // `env(safe-area-inset-bottom)` always resolves to 0 and this is a
+    // no-op; `max(1rem, …)` keeps the original 1rem breathing room on
+    // devices/browsers that report 0 (i.e. everything without a reserved
+    // gesture area).
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-text/10 bg-surface px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_12px_rgba(0,0,0,0.08)] sm:px-6">
       <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-text-muted">
           Wir binden Video-Links (z. B. YouTube/Vimeo) in Projekt- und

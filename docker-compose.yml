@@ -46,7 +46,13 @@ services:
   web:
     image: node:22-bookworm
     working_dir: /workspace/apps/web
-    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    # `prisma migrate deploy` (applies whatever's pending, no-ops otherwise)
+    # and `prisma db seed` (upsert-based — categories/attribute
+    # groups/installation admin, see prisma/seed.ts) run on every container
+    # start, mirroring docker-compose.prod.yml's own chain, so a fresh
+    # `docker compose up` sets up the database automatically instead of
+    # requiring a separate manual `pnpm db:migrate` step.
+    command: sh -c "corepack enable && pnpm install && pnpm exec prisma migrate deploy && pnpm exec prisma db seed && pnpm dev"
     environment:
       DATABASE_URL: postgresql://c1u3:${POSTGRES_PASSWORD}@postgres:5432/c1db3
       REDIS_URL: redis://valkey:6379

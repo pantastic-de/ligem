@@ -8,7 +8,7 @@ import { signIn } from "@/lib/auth";
 export async function authenticate(formData: FormData): Promise<void> {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
+      identifier: formData.get("identifier"),
       password: formData.get("password"),
       redirectTo: "/",
     });

@@ -5,11 +5,21 @@ import bcrypt from "bcryptjs";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-// Local-dev-only admin account so the admin area is reachable without a
-// separate promotion step. Never rely on this fixed password outside local
-// development.
-const DEV_ADMIN_EMAIL = "admin@ligem.local";
-const DEV_ADMIN_PASSWORD = "admin12345";
+// Installation admin account, seeded on every install (dev and production
+// alike — see docker-compose.prod.yml's seed step, which runs this on every
+// container start) so the admin area is reachable immediately without a
+// separate promotion step. Deliberately a well-known, guessable credential
+// (username "admin", password "admin") per explicit product decision —
+// mitigated by `mustChangePassword: true` below, which proxy.ts enforces by
+// redirecting every request straight to /mein-konto's password form until
+// it's actually changed; updatePassword clears the flag and forces a fresh
+// login once that happens. The `update: {}` in the upsert below leaves an
+// already-existing row (i.e. every seed run after the first) completely
+// untouched, so a real admin's own chosen password is never reset back to
+// this default by a later restart/redeploy.
+const INSTALL_ADMIN_EMAIL = "admin@ligem.local";
+const INSTALL_ADMIN_USERNAME = "admin";
+const INSTALL_ADMIN_PASSWORD = "admin";
 
 // Initial listing taxonomy. This table is meant to stay freely extensible
 // from the admin backend later — this seed only covers the categories named
@@ -206,32 +216,26 @@ async function main() {
     `Seeded ${attributeGroups.length} attribute groups with ${attributeGroups.reduce((sum, g) => sum + g.options.length, 0)} options.`,
   );
 
-  if (process.env.NODE_ENV === "production") {
-    console.log(
-      "NODE_ENV=production: skipping the fixed-password dev admin seed. " +
-        "Promote an existing account to ADMIN instead, e.g. via `pnpm db:studio` " +
-        "or the admin Nutzerverwaltung once at least one admin exists.",
-    );
-  } else {
-    const adminPasswordHash = await bcrypt.hash(DEV_ADMIN_PASSWORD, 12);
-    const adminUser = await prisma.user.upsert({
-      where: { email: DEV_ADMIN_EMAIL },
-      update: {},
-      create: {
-        email: DEV_ADMIN_EMAIL,
-        name: "Ligem Admin",
-        passwordHash: adminPasswordHash,
-      },
-    });
-    await prisma.userRoleAssignment.upsert({
-      where: { userId_role: { userId: adminUser.id, role: "ADMIN" } },
-      update: {},
-      create: { userId: adminUser.id, role: "ADMIN" },
-    });
-    console.log(
-      `Seeded local dev admin: ${DEV_ADMIN_EMAIL} / ${DEV_ADMIN_PASSWORD} (change or remove for anything beyond local dev).`,
-    );
-  }
+  const adminPasswordHash = await bcrypt.hash(INSTALL_ADMIN_PASSWORD, 12);
+  const adminUser = await prisma.user.upsert({
+    where: { email: INSTALL_ADMIN_EMAIL },
+    update: {},
+    create: {
+      email: INSTALL_ADMIN_EMAIL,
+      username: INSTALL_ADMIN_USERNAME,
+      name: "Ligem Admin",
+      passwordHash: adminPasswordHash,
+      mustChangePassword: true,
+    },
+  });
+  await prisma.userRoleAssignment.upsert({
+    where: { userId_role: { userId: adminUser.id, role: "ADMIN" } },
+    update: {},
+    create: { userId: adminUser.id, role: "ADMIN" },
+  });
+  console.log(
+    `Seeded installation admin: username "${INSTALL_ADMIN_USERNAME}" / password "${INSTALL_ADMIN_PASSWORD}" (must be changed on first login).`,
+  );
 }
 
 main()

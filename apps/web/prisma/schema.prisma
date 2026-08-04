@@ -19,9 +19,21 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
+  // Optional alternative login identifier alongside email (see the
+  // Credentials provider's `authorize` in auth.ts, which looks a submitted
+  // identifier up against both columns) — nullable since normal
+  // registration is still email-only; currently only ever set for the
+  // seeded installation admin account (see prisma/seed.ts).
+  username      String?   @unique
   emailVerified DateTime?
   passwordHash  String?
   name          String?
+  // Forces a redirect straight to /mein-konto's password form on every
+  // request (see proxy.ts) until changed — set true only for the seeded
+  // installation admin (fixed, guessable "admin"/"admin" credentials by
+  // explicit product decision) and cleared by updatePassword once that
+  // account's owner sets their own password.
+  mustChangePassword Boolean @default(false)
   // Profile picture — reused as-is from the Auth.js/PrismaAdapter default
   // shape (auto-populated from the provider's profile for Google sign-in).
   // For local uploads (see /mein-konto), this holds an `/api/media/<key>`

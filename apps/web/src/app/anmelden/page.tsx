@@ -21,9 +21,9 @@ const microsoftEnabled = Boolean(
 export default async function AnmeldenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; registriert?: string }>;
+  searchParams: Promise<{ error?: string; registriert?: string; ok?: string }>;
 }) {
-  const { error, registriert } = await searchParams;
+  const { error, registriert, ok } = await searchParams;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-8 sm:px-6 sm:py-16">
@@ -36,26 +36,32 @@ export default async function AnmeldenPage({
         </p>
       ) : null}
 
+      {ok === "passwort-geaendert" ? (
+        <p role="status" className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          Passwort geändert. Bitte melde dich mit deinem neuen Passwort erneut an.
+        </p>
+      ) : null}
+
       {error ? (
         <p
           role="alert"
           className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error"
         >
-          E-Mail-Adresse oder Passwort ist falsch.
+          E-Mail-Adresse/Benutzername oder Passwort ist falsch.
         </p>
       ) : null}
 
       <form action={authenticate} className="mt-8 flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="font-medium">
-            E-Mail-Adresse
+          <label htmlFor="identifier" className="font-medium">
+            E-Mail-Adresse oder Benutzername
           </label>
           <input
-            id="email"
-            name="email"
-            type="email"
+            id="identifier"
+            name="identifier"
+            type="text"
             required
-            autoComplete="email"
+            autoComplete="username"
             className="min-h-12 rounded-xl border border-text/20 bg-surface px-4 text-text"
           />
         </div>

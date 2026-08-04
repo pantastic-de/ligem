@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type PointerEvent as ReactPointerEvent,
+  type TransitionEvent as ReactTransitionEvent,
+} from "react";
 import { PlayCircle, RotateCw } from "lucide-react";
 
 import { PanoramaViewer } from "@/components/panorama-viewer";
@@ -76,6 +84,46 @@ function GalleryTileMedia({ photo }: { photo: GalleryPhoto }) {
   );
 }
 
+// Lightweight, non-interactive preview used for the neighboring (not
+// currently open) slide in the lightbox's swipe track — a plain poster
+// image/thumbnail regardless of the photo's real type (video, video-link,
+// panorama), so dragging into it never has to load a real <video>/iframe/
+// PanoramaViewer just to be glimpsed mid-swipe. It's swapped for the real
+// interactive content the moment it becomes the active slide.
+function LightboxSlidePreview({ photo }: { photo: GalleryPhoto }) {
+  if (photo.type === "VIDEO") {
+    if (!photo.thumbnailKey) {
+      return (
+        <div className="flex h-full w-full items-center justify-center text-white/50">
+          <PlayCircle className="h-16 w-16" aria-hidden="true" />
+        </div>
+      );
+    }
+    return (
+      <div className="relative flex h-full w-full items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+        <img
+          src={`/api/media/${photo.thumbnailKey}`}
+          alt=""
+          className="max-h-full max-w-full object-contain"
+        />
+        <VideoPlayBadge />
+      </div>
+    );
+  }
+  return (
+    <div className="relative flex h-full w-full items-center justify-center">
+      {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+      <img
+        src={`/api/media/${photo.storageKey}`}
+        alt=""
+        className="max-h-full max-w-full object-contain"
+      />
+      {photo.isPanorama ? <PanoramaBadge /> : null}
+    </div>
+  );
+}
+
 /**
  * Booking.com-style photo grid (one large hero, up to two stacked beside it,
  * a thumbnail row below with a "+N Fotos" overlay on the last one if there
@@ -99,30 +147,112 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
   const [sessionAllowedIds, setSessionAllowedIds] = useState<Set<string>>(new Set());
 
   // Swipe-to-navigate in the lightbox (touch and mouse-drag alike, since
-  // Pointer Events unify both) — a plain distance-threshold check on
-  // pointerdown/pointerup, no live drag-following animation. Attached to the
-  // backdrop div, which every branch below (photo/video/video-link) sits
-  // inside, so one pair of handlers covers all of them via bubbling. Skipped
+  // Pointer Events unify both), built to feel like a native phone photo
+  // viewer: the current slide visibly follows the finger while dragging
+  // (live translateX, no threshold gate), then on release either flies the
+  // rest of the way to the neighboring slide (past the distance threshold,
+  // or a fast-enough flick under it) or springs back to center — never an
+  // instant, unanimated jump. Implemented as a 3-slide track (prev/current/
+  // next, each exactly one lightbox-width wide) translated by
+  // -containerWidth to show the middle one; dragging adds a live px offset,
+  // "committing" a swipe animates one further containerWidth in that
+  // direction before the index actually changes underneath (imperceptibly,
+  // since the transition is disabled for that one reset frame). Skipped
   // entirely for a panorama: dragging there means "look around" via
   // PanoramaViewer's own pointer handling, not "go to the next photo".
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [settleDirection, setSettleDirection] = useState<"next" | "prev" | null>(null);
+  const dragStateRef = useRef<{
+    startX: number;
+    startY: number;
+    startTime: number;
+    horizontal: boolean | null;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+  const [suppressTransition, setSuppressTransition] = useState(false);
   const SWIPE_THRESHOLD_PX = 50;
+  const SWIPE_VELOCITY_THRESHOLD = 0.5; // px/ms — a fast short flick also commits
 
-  function handleLightboxPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    swipeStartRef.current = { x: e.clientX, y: e.clientY };
-  }
+  useLayoutEffect(() => {
+    if (openIndex === null) return;
+    function measure() {
+      if (trackRef.current) setContainerWidth(trackRef.current.offsetWidth);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [openIndex]);
 
-  function handleLightboxPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
-    const start = swipeStartRef.current;
-    swipeStartRef.current = null;
-    if (!start || openIndex === null || photos.length <= 1 || photos[openIndex].isPanorama) return;
-    const deltaX = e.clientX - start.x;
-    const deltaY = e.clientY - start.y;
-    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX || Math.abs(deltaX) < Math.abs(deltaY)) return;
-    setOpenIndex((i) =>
-      i === null ? i : deltaX < 0 ? (i + 1) % photos.length : (i - 1 + photos.length) % photos.length,
+  function canSwipe() {
+    return (
+      openIndex !== null && photos.length > 1 && !photos[openIndex].isPanorama && settleDirection === null
     );
   }
+
+  function handleLightboxPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    suppressClickRef.current = false;
+    if (!canSwipe()) return;
+    dragStateRef.current = { startX: e.clientX, startY: e.clientY, startTime: performance.now(), horizontal: null };
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }
+
+  function handleLightboxPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    const state = dragStateRef.current;
+    if (!state) return;
+    const deltaX = e.clientX - state.startX;
+    const deltaY = e.clientY - state.startY;
+    if (state.horizontal === null) {
+      if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5) return;
+      state.horizontal = Math.abs(deltaX) > Math.abs(deltaY);
+      if (!state.horizontal) {
+        dragStateRef.current = null;
+        setIsDragging(false);
+        return;
+      }
+    }
+    setDragX(deltaX);
+  }
+
+  function finishLightboxDrag(e: ReactPointerEvent<HTMLDivElement>) {
+    const state = dragStateRef.current;
+    dragStateRef.current = null;
+    setIsDragging(false);
+    if (!state || !state.horizontal) {
+      setDragX(0);
+      return;
+    }
+    const deltaX = e.clientX - state.startX;
+    const elapsed = performance.now() - state.startTime;
+    const velocity = elapsed > 0 ? deltaX / elapsed : 0;
+    const committed = Math.abs(deltaX) > SWIPE_THRESHOLD_PX || Math.abs(velocity) > SWIPE_VELOCITY_THRESHOLD;
+    if (committed) {
+      suppressClickRef.current = true;
+      setSettleDirection(deltaX < 0 ? "next" : "prev");
+    } else {
+      setDragX(0);
+    }
+  }
+
+  function handleLightboxTrackTransitionEnd(e: ReactTransitionEvent<HTMLDivElement>) {
+    if (e.propertyName !== "transform" || settleDirection === null) return;
+    const direction = settleDirection;
+    setSuppressTransition(true);
+    setSettleDirection(null);
+    setDragX(0);
+    setOpenIndex((i) =>
+      i === null ? i : direction === "next" ? (i + 1) % photos.length : (i - 1 + photos.length) % photos.length,
+    );
+    requestAnimationFrame(() => requestAnimationFrame(() => setSuppressTransition(false)));
+  }
+
+  let trackOffsetPx = -containerWidth;
+  if (isDragging) trackOffsetPx = -containerWidth + dragX;
+  else if (settleDirection === "next") trackOffsetPx = -containerWidth * 2;
+  else if (settleDirection === "prev") trackOffsetPx = 0;
 
   useEffect(() => {
     if (openIndex === null) return;
@@ -199,15 +329,24 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
       {openIndex !== null ? (
         <div
           className="fixed inset-0 z-[2000] flex touch-pan-y items-center justify-center bg-black/90 p-4"
-          onClick={() => setOpenIndex(null)}
+          onClick={() => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            setOpenIndex(null);
+          }}
           onPointerDown={handleLightboxPointerDown}
-          onPointerUp={handleLightboxPointerUp}
+          onPointerMove={handleLightboxPointerMove}
+          onPointerUp={finishLightboxDrag}
+          onPointerCancel={finishLightboxDrag}
         >
           <button
             type="button"
             onClick={() => setOpenIndex(null)}
+            onPointerDown={(e) => e.stopPropagation()}
             aria-label="Schließen"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/40 text-xl text-white transition-colors hover:bg-white/60"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/40 text-xl text-white transition-colors hover:bg-white/60"
           >
             ✕
           </button>
@@ -218,13 +357,37 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 e.stopPropagation();
                 setOpenIndex((i) => (i === null ? i : (i - 1 + photos.length) % photos.length));
               }}
+              onPointerDown={(e) => e.stopPropagation()}
               aria-label="Vorheriges Bild"
-              className="absolute left-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/40 text-2xl text-white transition-colors hover:bg-white/60"
+              className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/40 text-2xl text-white transition-colors hover:bg-white/60"
             >
               ‹
             </button>
           ) : null}
-          {photos[openIndex].type === "VIDEO" && photos[openIndex].isVideoLink ? (
+          <div ref={trackRef} className="h-full max-h-[90vh] w-full max-w-5xl overflow-hidden">
+            <div
+              className="flex h-full"
+              style={{
+                width: containerWidth ? containerWidth * 3 : "300%",
+                transform: `translateX(${trackOffsetPx}px)`,
+                transition:
+                  isDragging || suppressTransition ? "none" : "transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+              }}
+              onTransitionEnd={handleLightboxTrackTransitionEnd}
+            >
+              <div
+                className="flex h-full shrink-0 items-center justify-center"
+                style={{ width: containerWidth || "100%" }}
+              >
+                {photos.length > 1 ? (
+                  <LightboxSlidePreview photo={photos[(openIndex - 1 + photos.length) % photos.length]} />
+                ) : null}
+              </div>
+              <div
+                className="flex h-full shrink-0 items-center justify-center"
+                style={{ width: containerWidth || "100%" }}
+              >
+                {photos[openIndex].type === "VIDEO" && photos[openIndex].isVideoLink ? (
             // storageKey already holds the embeddable player URL for a
             // video-link row (see toEmbeddableUrl in src/lib/video-link.ts)
             // — embedded directly regardless of provider, per explicit
@@ -241,10 +404,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
             // would need it to do anything malicious — see
             // normalizeVideoLinkUrl's same-origin rejection for the other
             // half of this defense.
-            <div
-              className="h-full max-h-[90vh] w-full max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="h-full w-full" onClick={(e) => e.stopPropagation()}>
               {globalConsent === "allowed" || sessionAllowedIds.has(photos[openIndex].id) ? (
                 <iframe
                   key={photos[openIndex].id}
@@ -299,10 +459,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
             // stopping propagation here, they'd bubble up to the backdrop's
             // onClick above and immediately close the lightbox, exactly like
             // the plain <img> below already guards against.
-            <div
-              className="h-full max-h-[90vh] w-full max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="h-full w-full" onClick={(e) => e.stopPropagation()}>
               <video
                 key={photos[openIndex].id}
                 src={`/api/media/${photos[openIndex].storageKey}`}
@@ -316,10 +473,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
             // stopping propagation here, every one of them bubbles up to the
             // backdrop's onClick above and immediately closes the lightbox
             // again, exactly like the plain <img> below already guards against.
-            <div
-              className="h-full w-full max-h-[90vh] max-w-5xl"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="h-full w-full" onClick={(e) => e.stopPropagation()}>
               <PanoramaViewer
                 url={`/api/media/${photos[openIndex].storageKey}`}
                 mode="interactive"
@@ -336,6 +490,17 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
               onClick={(e) => e.stopPropagation()}
             />
           )}
+              </div>
+              <div
+                className="flex h-full shrink-0 items-center justify-center"
+                style={{ width: containerWidth || "100%" }}
+              >
+                {photos.length > 1 ? (
+                  <LightboxSlidePreview photo={photos[(openIndex + 1) % photos.length]} />
+                ) : null}
+              </div>
+            </div>
+          </div>
           {photos.length > 1 ? (
             <button
               type="button"
@@ -343,13 +508,14 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 e.stopPropagation();
                 setOpenIndex((i) => (i === null ? i : (i + 1) % photos.length));
               }}
+              onPointerDown={(e) => e.stopPropagation()}
               aria-label="Nächstes Bild"
-              className="absolute right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/40 text-2xl text-white transition-colors hover:bg-white/60"
+              className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/40 text-2xl text-white transition-colors hover:bg-white/60"
             >
               ›
             </button>
           ) : null}
-          <div className="absolute bottom-4 text-sm text-white/80">
+          <div className="absolute bottom-4 z-10 text-sm text-white/80">
             {openIndex + 1} / {photos.length}
           </div>
         </div>

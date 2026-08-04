@@ -99,6 +99,17 @@ export default async function MeinKontoPage({
         </p>
       ) : null}
 
+      {user.mustChangePassword ? (
+        <p role="alert" className="mt-6 rounded-xl bg-warning/10 px-4 py-3 text-warning">
+          Dieses Konto wurde mit einem voreingestellten Passwort angelegt.
+          Bitte lege jetzt unten ein eigenes, sicheres Passwort fest —{" "}
+          <a href="#passwort-aendern" className="font-medium underline">
+            direkt zum Formular
+          </a>
+          .
+        </p>
+      ) : null}
+
       <section className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Profilbild</h2>
         <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -205,7 +216,7 @@ export default async function MeinKontoPage({
       </section>
 
       {hasPassword ? (
-        <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <section id="passwort-aendern" className="mt-6 scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Passwort ändern</h2>
           <form action={updatePassword} className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

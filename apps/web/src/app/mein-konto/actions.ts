@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteObject } from "@/lib/storage";
 import { MAX_IMAGE_SIZE, storeAvatar } from "@/lib/media";
@@ -97,7 +97,7 @@ export async function updatePassword(formData: FormData): Promise<void> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { passwordHash: true },
+    select: { passwordHash: true, mustChangePassword: true },
   });
   if (!user?.passwordHash || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
     redirect("/mein-konto?error=passwort-falsch");
@@ -106,8 +106,19 @@ export async function updatePassword(formData: FormData): Promise<void> {
   const passwordHash = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { passwordHash },
+    data: { passwordHash, mustChangePassword: false },
   });
+
+  // The forced-change case (see proxy.ts) started from a session whose JWT
+  // already carries `mustChangePassword: true` — that claim only gets
+  // refreshed on a new sign-in, so without forcing one here the very next
+  // request would still see the stale token and redirect straight back to
+  // this same form, forever. A voluntary password change (the flag was
+  // already false) has no such staleness to fix and keeps the normal
+  // stay-logged-in redirect below.
+  if (user.mustChangePassword) {
+    await signOut({ redirectTo: "/anmelden?ok=passwort-geaendert" });
+  }
 
   redirect("/mein-konto?ok=passwort");
 }

@@ -1,15 +1,22 @@
 import { NextResponse, after } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Every route except: Next.js/static internals, API routes (media/geocode/
-// auth callbacks aren't "page views"), and — the one content-specific
-// exclusion — /projekte* and /termine*, which already get much more
-// detailed tracking of their own (see recordListingViews/recordEventViews)
-// and would otherwise be double-counted here on top of that.
+// Safe to import the full auth.ts (Credentials/bcrypt/Prisma `pg` adapter
+// and all) directly here: unlike the older `middleware.ts` convention,
+// Next.js 16's Proxy file always runs on the regular Node.js runtime —
+// explicitly setting `export const runtime = "nodejs"` for this file is
+// actually rejected ("Route segment config is not allowed in Proxy file").
+import { auth } from "@/lib/auth";
+
+// Every route except Next.js/static internals and API routes (media/
+// geocode/auth callbacks aren't "page views", and /api/auth/* specifically
+// must stay reachable regardless of the mustChangePassword gate below —
+// otherwise sign-in/sign-out themselves would be blocked). Unlike the
+// page-view tracker further down, the mustChangePassword gate DOES need to
+// cover /projekte* and /termine* too, so that content-specific exclusion is
+// handled inside the function body instead of here.
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|projekte|termine).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };
 
 /**
@@ -35,6 +42,19 @@ export const config = {
  * View-recording helper already works unmodified.
  */
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // Force a just-installed/still-default-password account (currently: only
+  // the seeded installation admin, see prisma/seed.ts) straight to its own
+  // password form before it can do anything else — /mein-konto itself and
+  // /anmelden (the sign-out redirect target once the password is actually
+  // changed, see updatePassword) are the only exemptions, everything else
+  // bounces back here on every request until the flag is cleared.
+  const session = await auth();
+  if (session?.user?.mustChangePassword && path !== "/mein-konto" && !path.startsWith("/anmelden")) {
+    return NextResponse.redirect(new URL("/mein-konto?mussPasswortAendern=1#passwort-aendern", request.url));
+  }
+
   // Next.js's client-side router prefetches linked routes in the
   // background (e.g. any <Link> that scrolls into view) before they're
   // actually visited — those aren't real page views and would otherwise
@@ -43,7 +63,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const path = request.nextUrl.pathname;
+  // The one content-specific exclusion for the page-view relay below (not
+  // for the mustChangePassword gate above, which already ran): /projekte*
+  // and /termine* get much more detailed tracking of their own (see
+  // recordListingViews/recordEventViews) and would otherwise be
+  // double-counted here on top of that.
+  if (path.startsWith("/projekte") || path.startsWith("/termine")) {
+    return NextResponse.next();
+  }
+
   const forwardHeaders: Record<string, string> = { "content-type": "application/json" };
   for (const name of ["user-agent", "referer", "x-forwarded-for", "x-real-ip", "cookie"]) {
     const value = request.headers.get(name);

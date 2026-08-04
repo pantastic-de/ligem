@@ -34,12 +34,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.mustChangePassword = user.mustChangePassword ?? false;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user && typeof token.id === "string") {
         session.user.id = token.id;
+        session.user.mustChangePassword = token.mustChangePassword ?? false;
       }
       return session;
     },
@@ -77,17 +79,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        email: { label: "E-Mail", type: "email" },
+        // A single field accepting either — see User.username in
+        // schema.prisma (currently only set for the seeded installation
+        // admin, see prisma/seed.ts). Deliberately `type: "text"`, not
+        // `"email"`: the login page's native email-format validation would
+        // otherwise reject a plain username like "admin" before the form
+        // could even submit.
+        identifier: { label: "E-Mail-Adresse oder Benutzername", type: "text" },
         password: { label: "Passwort", type: "password" },
       },
       authorize: async (credentials) => {
-        const email = credentials?.email;
+        const identifier = credentials?.identifier;
         const password = credentials?.password;
-        if (typeof email !== "string" || typeof password !== "string") {
+        if (typeof identifier !== "string" || typeof password !== "string") {
           return null;
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findFirst({
+          where: { OR: [{ email: identifier }, { username: identifier }] },
+        });
         if (!user?.passwordHash) {
           return null;
         }
@@ -97,7 +107,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        return { id: user.id, email: user.email, name: user.name };
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          mustChangePassword: user.mustChangePassword,
+        };
       },
     }),
     // Each OAuth provider is only registered when its env vars are
