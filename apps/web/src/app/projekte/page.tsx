@@ -629,9 +629,9 @@ export default async function ProjektePage({
   return (
     <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <div className="text-center">
-        <h1 className="text-3xl font-bold leading-tight sm:text-5xl">Wohnprojekte</h1>
+        <h1 className="text-3xl font-bold leading-tight sm:text-5xl">Projekte</h1>
         <p className="mt-3 text-text-muted sm:text-lg">
-          Aktuelle Projekte auf LiGem.
+          Aktuelle Wohnprojekte und Gemeinschaften auf LiGem.
         </p>
       </div>
 
