@@ -128,8 +128,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     // Each OAuth provider is only registered when its env vars are
     // configured, so the provider list stays valid without requiring
-    // secrets in every environment.
-    ...(hasGoogleOAuth ? [Google] : []),
+    // secrets in every environment. Explicit clientId/clientSecret here —
+    // not just a bare `Google` — is required: Auth.js's built-in providers
+    // only auto-infer credentials from its own `AUTH_GOOGLE_ID`/
+    // `AUTH_GOOGLE_SECRET` env var convention, not this app's
+    // `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` naming (matching every other
+    // env var in this app, see docker-compose.yml) — a bare `Google` here
+    // silently ended up with an undefined client_id (reported directly: the
+    // initial Google consent screen failed with "invalid_client"/"OAuth
+    // client was not found", and the callback failed with `TypeError:
+    // "client.client_id" must be a string"). Apple/Microsoft below were
+    // already configured explicitly and never had this bug.
+    ...(hasGoogleOAuth
+      ? [Google({ clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET })]
+      : []),
     // Apple's clientSecret is not a plain string but a JWT signed with a
     // private key (Team ID/Key ID/`.p8` file from the Apple Developer
     // portal) — that JWT generation happens outside this app, whatever

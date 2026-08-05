@@ -101,7 +101,20 @@ export async function proxy(request: NextRequest) {
   }
 
   after(() => {
-    fetch(new URL("/api/internal/page-view", request.url), {
+    // Deliberately NOT `new URL("/api/internal/page-view", request.url)` —
+    // request.url now correctly reflects the app's real public origin (see
+    // AUTH_URL in docker-compose.yml), but this fetch is a same-process,
+    // same-container call that never leaves the server at all. Reusing the
+    // public https:// origin here made this fetch try to TLS-handshake
+    // against the container's own plain-HTTP port 3000 (TLS termination
+    // only happens externally, at the reverse proxy) — reported directly as
+    // a repeating "ERR_SSL_WRONG_VERSION_NUMBER" once request.url started
+    // correctly reporting https://ligem.de instead of a stale
+    // http://localhost:3000. Always targeting the container's own plain-HTTP
+    // listener directly avoids both the TLS mismatch and a real round-trip
+    // out to the internet and back through the reverse proxy for a call
+    // that's purely internal.
+    fetch(`http://localhost:3000/api/internal/page-view`, {
       method: "POST",
       headers: forwardHeaders,
       body: JSON.stringify({ path }),
