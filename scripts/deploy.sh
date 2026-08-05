@@ -12,10 +12,11 @@
 # your own CI job) once you've filled in the variables below.
 #
 # Usage:
-#   DEPLOY_HOST=your.server.tld \
-#   DEPLOY_USER=deploy \
-#   DEPLOY_PATH=/srv/ligem \
-#   scripts/deploy.sh
+export DEPLOY_HOST=ligem.de \
+export DEPLOY_USER=web58 \
+export DEPLOY_PATH=/var/www/ligem.de/web/ligem \
+
+#scripts/deploy.sh
 #
 # Optional:
 #   DEPLOY_SSH_KEY=~/.ssh/id_ligem_deploy   # defaults to your default SSH key
@@ -86,3 +87,4 @@ fi
 
 echo "Deploy complete."
 REMOTE
+DEPLOY_PATH=//ligem \
