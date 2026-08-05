@@ -12,9 +12,9 @@
 # your own CI job) once you've filled in the variables below.
 #
 # Usage:
-export DEPLOY_HOST=ligem.de \
-export DEPLOY_USER=web58 \
-export DEPLOY_PATH=/var/www/ligem.de/web/ligem \
+export DEPLOY_HOST=ligem.de
+export DEPLOY_USER=web58
+export DEPLOY_PATH=/var/www/ligem.de/web/ligem
 
 #scripts/deploy.sh
 #
