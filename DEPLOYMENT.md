@@ -73,6 +73,7 @@ MEILI_MASTER_KEY=<generate a strong key>
 MINIO_ROOT_USER=<choose a username>
 MINIO_ROOT_PASSWORD=<generate a strong password>
 AUTH_SECRET=<generate with: openssl rand -base64 32>
+AUTH_URL=https://your-domain.tld
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 APPLE_CLIENT_ID=
@@ -84,6 +85,17 @@ MICROSOFT_CLIENT_SECRET=
 `DATABASE_URL` must use the user/database/password from step 2, and the host
 must be `host.docker.internal` (not `localhost` — from inside the `web`
 container, `localhost` refers to the container itself, not the server).
+
+`AUTH_URL` **must** be set to the real public `https://` URL in production —
+`auth.ts`'s `trustHost: true` alone (deriving the app's own URL from the
+`Host`/`X-Forwarded-Host` request headers) proved too unreliable behind a
+real reverse proxy in practice: even with the Apache `ProxyPreserveHost On`
+fix below correctly applied, sign-in/callback/CSRF-cookie URLs kept coming
+out as `http://localhost:3000/...` instead of the real domain, breaking
+every login. Setting `AUTH_URL` explicitly removes the guesswork — Auth.js
+uses it directly instead of inferring anything from headers. Leave it unset
+in dev (`docker-compose.yml` defaults it to empty there), where
+`http://localhost:3000` actually is correct.
 
 `POSTGRES_PASSWORD` is only read by the Dockerized `postgres` service, which
 production never starts (see step 4) — it's still referenced by the shared
@@ -174,24 +186,35 @@ Run Caddy directly on the host (or as another container on the same Docker
 network, proxying to `web:3000`). Nginx + certbot works equally well if
 that's already your standard setup.
 
-**If you use Apache instead**: `auth.ts` sets `trustHost: true`, so Auth.js
-derives its own public URL from the `Host`/`X-Forwarded-Host` header it
-receives — but a plain Apache `ProxyPass`/`ProxyPassReverse` vhost does
-*not* forward the original Host header by default (unlike Caddy/Nginx,
-which do). Without it, every login redirect (and the CSRF callback-url
-cookie) ends up pointing at the backend's own address — observed in
-practice as `Location: https://localhost:3000/anmelden?error=...` after a
+**If you use Apache instead**: a plain Apache `ProxyPass`/`ProxyPassReverse`
+vhost does *not* forward the original Host header by default (unlike
+Caddy/Nginx, which do) — without it, every login redirect (and the CSRF
+callback-url cookie) ends up pointing at the backend's own address, observed
+in practice as `Location: https://localhost:3000/anmelden?error=...` after a
 login attempt, breaking sign-in entirely. Add to the vhost:
 
 ```apache
 ProxyPreserveHost On
 RequestHeader set X-Forwarded-Proto "https"
-RequestHeader set X-Forwarded-Host "your-domain.tld"
 ```
 
 `ProxyPreserveHost On` is the important line — it makes Apache forward the
 real Host header through to the `web` container. Reload Apache
 (`apachectl graceful`) after changing this; no app restart needed.
+
+**Do not also add `RequestHeader set X-Forwarded-Host "your-domain.tld"`.**
+Apache's `mod_proxy` already adds its own `X-Forwarded-Host` header
+automatically once `ProxyPreserveHost On` is set (`ProxyAddHeaders` defaults
+to `On`) — an additional manual directive doesn't replace that, it adds a
+*second* `X-Forwarded-Host` header. Node then sees both values joined as one
+comma-separated string (`"your-domain.tld, your-domain.tld"`), which Auth.js
+tries to parse as a URL and crashes on (`TypeError: Invalid URL`) — observed
+in practice as the entire site returning a 500 on every request, not just
+sign-in. This class of header-forwarding issue (fragile even once the
+obvious duplicate is fixed — see the incident this section is based on) is
+exactly why **`AUTH_URL` in step 3 is the primary, reliable fix**; the
+Apache directives above are still worth having for anything else that reads
+`X-Forwarded-*`, but sign-in itself no longer depends on them being correct.
 
 ## 7. Updating
 
