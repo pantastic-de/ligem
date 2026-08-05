@@ -84,6 +84,9 @@ export default async function TerminePage({
         <div>
           <h1 className="text-3xl font-bold">Termine</h1>
           <p className="mt-1 text-text-muted">für {listing.projectName}</p>
+          <Link href={`/projekte/${listingId}`} className="mt-1 inline-block text-primary hover:underline">
+            Projekt ansehen →
+          </Link>
         </div>
         <Link
           href={`/projekte/${listingId}/termine/neu`}

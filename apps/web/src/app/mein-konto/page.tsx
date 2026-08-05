@@ -5,13 +5,13 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PasswordField } from "@/components/password-field";
+import { ImageUploadForm } from "@/components/image-upload-form";
 import {
   addListingManager,
   removeListingManager,
   resendVerificationEmail,
   updatePassword,
   updateProfile,
-  uploadAvatar,
 } from "./actions";
 
 export const metadata: Metadata = {
@@ -28,9 +28,6 @@ const errorMessages: Record<string, string> = {
   "passwort-ungueltig": "Das neue Passwort muss mindestens 8 Zeichen lang sein.",
   "passwort-mismatch": "Die neuen Passwörter stimmen nicht überein.",
   "passwort-falsch": "Das aktuelle Passwort ist falsch.",
-  nofile: "Bitte wähle ein Bild aus.",
-  toobig: "Das Bild ist größer als 8 MB.",
-  "avatar-format": "Diese Datei konnte nicht als Bild gelesen werden.",
   "nutzer-nicht-gefunden": "Kein Konto mit dieser E-Mail-Adresse gefunden.",
   "sich-selbst": "Du bist bereits Ersteller:in dieses Projekts.",
 };
@@ -39,7 +36,6 @@ const okMessages: Record<string, string> = {
   profil: "Persönliche Daten gespeichert.",
   "profil-email-bestaetigen": "Persönliche Daten gespeichert. Bitte bestätige deine neue E-Mail-Adresse, wir haben dir einen Link geschickt.",
   passwort: "Passwort geändert.",
-  avatar: "Profilbild aktualisiert.",
   "mitverwalter-hinzugefuegt": "Mitverwalter:in hinzugefügt.",
   "mitverwalter-entfernt": "Mitverwalter:in entfernt.",
   "bestaetigung-gesendet": "Bestätigungs-E-Mail wurde erneut gesendet.",
@@ -125,21 +121,14 @@ export default async function MeinKontoPage({
               {(user.name ?? user.email).charAt(0).toUpperCase()}
             </div>
           )}
-          <form action={uploadAvatar} className="flex flex-wrap items-center gap-3">
-            <input
-              type="file"
-              name="avatar"
-              accept="image/*"
-              required
-              className="min-h-11 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
+          <div className="min-w-[16rem] flex-1">
+            <ImageUploadForm
+              endpoint="/api/mein-konto/avatar"
+              fieldName="avatar"
+              multiple={false}
+              className="flex flex-col gap-3"
             />
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
-            >
-              Hochladen
-            </button>
-          </form>
+          </div>
         </div>
       </section>
 

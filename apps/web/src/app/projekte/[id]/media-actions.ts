@@ -7,13 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
-import {
-  MAX_PANORAMA_SIZE,
-  isPanoramaAspectRatio,
-  processAndStoreImage,
-  splitBySize,
-  storeThumbnailOnly,
-} from "@/lib/media";
+import { storeThumbnailOnly } from "@/lib/media";
 import { fetchVideoLinkThumbnail, normalizeVideoLinkUrl, toEmbeddableUrl } from "@/lib/video-link";
 
 async function requireListingAccess(listingId: string) {
@@ -32,102 +26,6 @@ async function requireListingAccess(listingId: string) {
     notFound();
   }
   return session.user.id;
-}
-
-export async function uploadListingMedia(formData: FormData): Promise<void> {
-  const listingId = formData.get("listingId")?.toString();
-  if (!listingId) return;
-  const userId = await requireListingAccess(listingId);
-
-  const files = formData
-    .getAll("photos")
-    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
-
-  if (files.length === 0) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=nofile`);
-  }
-
-  const { valid, oversizedCount } = splitBySize(files);
-  if (valid.length === 0) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=toobig`);
-  }
-
-  const lastPosition = await prisma.media.aggregate({
-    where: { listingId },
-    _max: { position: true },
-  });
-  let nextPosition = (lastPosition._max.position ?? -1) + 1;
-
-  for (const file of valid) {
-    const stored = await processAndStoreImage(file, `listings/${listingId}`);
-    if (!stored) continue;
-
-    await prisma.media.create({
-      data: {
-        listingId,
-        type: "PHOTO",
-        storageKey: stored.storageKey,
-        thumbnailKey: stored.thumbnailKey,
-        position: nextPosition,
-        uploadedById: userId,
-      },
-    });
-    nextPosition += 1;
-  }
-
-  redirect(
-    oversizedCount > 0
-      ? `/projekte/${listingId}/bearbeiten?fotos=1&uebersprungen=${oversizedCount}`
-      : `/projekte/${listingId}/bearbeiten?fotos=1`,
-  );
-}
-
-/**
- * Dedicated upload path for a single 360°/equirectangular panorama photo —
- * separate from uploadListingMedia above since it takes exactly one file,
- * validates it's close to the 2:1 aspect ratio a panorama needs (rather
- * than accepting any photo), and flags the resulting Media row so the
- * gallery can badge it and render it through the panorama viewer.
- */
-export async function uploadListingPanorama(formData: FormData): Promise<void> {
-  const listingId = formData.get("listingId")?.toString();
-  if (!listingId) return;
-  const userId = await requireListingAccess(listingId);
-
-  const file = formData.get("panorama");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=nofile`);
-  }
-  if (file.size > MAX_PANORAMA_SIZE) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=panorama-toobig`);
-  }
-  if (!(await isPanoramaAspectRatio(file))) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=panorama-format`);
-  }
-
-  const stored = await processAndStoreImage(file, `listings/${listingId}`);
-  if (!stored) {
-    redirect(`/projekte/${listingId}/bearbeiten?error=panorama-format`);
-  }
-
-  const lastPosition = await prisma.media.aggregate({
-    where: { listingId },
-    _max: { position: true },
-  });
-
-  await prisma.media.create({
-    data: {
-      listingId,
-      type: "PHOTO",
-      storageKey: stored.storageKey,
-      thumbnailKey: stored.thumbnailKey,
-      position: (lastPosition._max.position ?? -1) + 1,
-      uploadedById: userId,
-      isPanorama: true,
-    },
-  });
-
-  redirect(`/projekte/${listingId}/bearbeiten?fotos=1`);
 }
 
 /**

@@ -5,8 +5,6 @@ import bcrypt from "bcryptjs";
 
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { deleteObject } from "@/lib/storage";
-import { MAX_IMAGE_SIZE, storeAvatar } from "@/lib/media";
 import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 
 export async function updateProfile(formData: FormData): Promise<void> {
@@ -121,45 +119,6 @@ export async function updatePassword(formData: FormData): Promise<void> {
   }
 
   redirect("/mein-konto?ok=passwort");
-}
-
-export async function uploadAvatar(formData: FormData): Promise<void> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/anmelden");
-  }
-
-  const file = formData.get("avatar");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect("/mein-konto?error=nofile");
-  }
-  if (file.size > MAX_IMAGE_SIZE) {
-    redirect("/mein-konto?error=toobig");
-  }
-
-  const key = await storeAvatar(file, session.user.id);
-  if (!key) {
-    redirect("/mein-konto?error=avatar-format");
-  }
-
-  // Fetch the previous avatar before overwriting so a self-uploaded one
-  // (as opposed to a Google-provided avatar URL, which isn't ours to
-  // delete) can be cleaned up from MinIO afterwards.
-  const existing = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { image: true },
-  });
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { image: `/api/media/${key}` },
-  });
-
-  if (existing?.image?.startsWith("/api/media/users/")) {
-    await deleteObject(existing.image.replace("/api/media/", ""));
-  }
-
-  redirect("/mein-konto?ok=avatar");
 }
 
 async function requireListingOwner(listingId: string, userId: string): Promise<void> {

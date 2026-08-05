@@ -7,13 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/authz";
 import { deleteObject } from "@/lib/storage";
-import {
-  MAX_PANORAMA_SIZE,
-  isPanoramaAspectRatio,
-  processAndStoreImage,
-  splitBySize,
-  storeThumbnailOnly,
-} from "@/lib/media";
+import { storeThumbnailOnly } from "@/lib/media";
 import { fetchVideoLinkThumbnail, normalizeVideoLinkUrl, toEmbeddableUrl } from "@/lib/video-link";
 
 async function requireEventAccess(eventId: string) {
@@ -32,102 +26,6 @@ async function requireEventAccess(eventId: string) {
     notFound();
   }
   return { userId: session.user.id, listingId: event.listingId };
-}
-
-export async function uploadEventMedia(formData: FormData): Promise<void> {
-  const listingId = formData.get("listingId")?.toString();
-  const eventId = formData.get("eventId")?.toString();
-  if (!listingId || !eventId) return;
-  const { userId } = await requireEventAccess(eventId);
-
-  const files = formData
-    .getAll("photos")
-    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
-
-  if (files.length === 0) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=nofile`);
-  }
-
-  const { valid, oversizedCount } = splitBySize(files);
-  if (valid.length === 0) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=toobig`);
-  }
-
-  const lastPosition = await prisma.media.aggregate({
-    where: { eventId },
-    _max: { position: true },
-  });
-  let nextPosition = (lastPosition._max.position ?? -1) + 1;
-
-  for (const file of valid) {
-    const stored = await processAndStoreImage(file, `events/${eventId}`);
-    if (!stored) continue;
-
-    await prisma.media.create({
-      data: {
-        eventId,
-        type: "PHOTO",
-        storageKey: stored.storageKey,
-        thumbnailKey: stored.thumbnailKey,
-        position: nextPosition,
-        uploadedById: userId,
-      },
-    });
-    nextPosition += 1;
-  }
-
-  redirect(
-    oversizedCount > 0
-      ? `/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1&uebersprungen=${oversizedCount}`
-      : `/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1`,
-  );
-}
-
-/**
- * Dedicated upload path for a single 360°/equirectangular panorama photo —
- * mirrors uploadListingPanorama in media-actions.ts (see there for the
- * rationale: single file, 2:1 aspect-ratio validation, isPanorama flag).
- */
-export async function uploadEventPanorama(formData: FormData): Promise<void> {
-  const listingId = formData.get("listingId")?.toString();
-  const eventId = formData.get("eventId")?.toString();
-  if (!listingId || !eventId) return;
-  const { userId } = await requireEventAccess(eventId);
-
-  const file = formData.get("panorama");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=nofile`);
-  }
-  if (file.size > MAX_PANORAMA_SIZE) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=panorama-toobig`);
-  }
-  if (!(await isPanoramaAspectRatio(file))) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=panorama-format`);
-  }
-
-  const stored = await processAndStoreImage(file, `events/${eventId}`);
-  if (!stored) {
-    redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?error=panorama-format`);
-  }
-
-  const lastPosition = await prisma.media.aggregate({
-    where: { eventId },
-    _max: { position: true },
-  });
-
-  await prisma.media.create({
-    data: {
-      eventId,
-      type: "PHOTO",
-      storageKey: stored.storageKey,
-      thumbnailKey: stored.thumbnailKey,
-      position: (lastPosition._max.position ?? -1) + 1,
-      uploadedById: userId,
-      isPanorama: true,
-    },
-  });
-
-  redirect(`/projekte/${listingId}/termine/${eventId}/bearbeiten?fotos=1`);
 }
 
 /**

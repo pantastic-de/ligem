@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -7,14 +8,9 @@ import { canManageListing } from "@/lib/authz";
 import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
+import { ImageUploadForm } from "@/components/image-upload-form";
 import { updateListing } from "./actions";
-import {
-  addListingVideoLink,
-  deleteListingMedia,
-  reorderListingMedia,
-  uploadListingMedia,
-  uploadListingPanorama,
-} from "../media-actions";
+import { addListingVideoLink, deleteListingMedia, reorderListingMedia } from "../media-actions";
 
 export const metadata: Metadata = {
   title: "Projekt bearbeiten",
@@ -33,13 +29,12 @@ export default async function ProjektBearbeitenPage({
   searchParams: Promise<{
     error?: string;
     fotos?: string;
-    uebersprungen?: string;
     importiert?: string;
     termine?: string;
   }>;
 }) {
   const { id } = await params;
-  const { error, fotos, uebersprungen, importiert, termine } = await searchParams;
+  const { error, fotos, importiert, termine } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
@@ -73,6 +68,9 @@ export default async function ProjektBearbeitenPage({
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Projekt bearbeiten</h1>
+      <Link href={`/projekte/${id}`} className="mt-1 inline-block text-primary hover:underline">
+        Projekt ansehen →
+      </Link>
       <p className="mt-2 text-text-muted">
         Nach dem Speichern wird euer Projekt erneut geprüft, bevor die
         Änderungen öffentlich sichtbar sind.
@@ -81,32 +79,6 @@ export default async function ProjektBearbeitenPage({
       {fotos ? (
         <p className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
           Fotos aktualisiert.
-          {uebersprungen
-            ? ` ${uebersprungen} Datei(en) wurden übersprungen, weil sie größer als 8 MB waren.`
-            : ""}
-        </p>
-      ) : null}
-      {error === "nofile" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Bitte wähle mindestens ein Bild aus.
-        </p>
-      ) : null}
-      {error === "toobig" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Alle ausgewählten Bilder waren größer als 8 MB. Bitte kleinere
-          Dateien wählen.
-        </p>
-      ) : null}
-      {error === "panorama-format" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Dieses Bild hat nicht das für 360°-Panoramen nötige Seitenverhältnis
-          von ca. 2:1. Bitte ein equirektangulares Panoramabild hochladen.
-        </p>
-      ) : null}
-      {error === "panorama-toobig" ? (
-        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Dieses Bild ist größer als 12 MB. Bitte ein kleineres Panoramabild
-          hochladen.
         </p>
       ) : null}
       {error === "videolink-ungueltig" ? (
@@ -130,6 +102,8 @@ export default async function ProjektBearbeitenPage({
           Das erste Foto wird als Vorschaubild in der Projektliste verwendet.
           Per Drag &amp; Drop oder den Pfeilen ein Foto an die erste Stelle
           schieben, um es als Vorschaubild festzulegen. Maximal 8 MB pro Bild.
+          Bilder im Format ca. 2:1 werden automatisch als 360°-Panorama
+          erkannt und in der 360°-Ansicht angezeigt.
         </p>
 
         {listing.media.length > 0 ? (
@@ -141,56 +115,26 @@ export default async function ProjektBearbeitenPage({
           />
         ) : null}
 
-        <form
-          action={uploadListingMedia}
-          className="mt-4 flex flex-wrap items-center gap-3"
-        >
-          <input type="hidden" name="listingId" value={listing.id} />
-          <input
-            type="file"
-            name="photos"
-            accept="image/*"
-            multiple
-            required
-            className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
-          >
-            Hochladen
-          </button>
-        </form>
+        <ImageUploadForm endpoint={`/api/projekte/${listing.id}/photos`} fieldName="photo" multiple />
       </section>
 
       <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">360°-Bild</h2>
         <p className="mt-1 text-sm text-text-muted">
-          Ein einzelnes equirektangulares Panoramabild im Format ca. 2:1,
-          wird in der Galerie mit einem 360°-Symbol hervorgehoben und in der
+          Für ein einzelnes equirektangulares Panoramabild größer als 8 MB
+          (bis 12 MB) — kleinere 2:1-Panoramen können auch direkt über
+          „Fotos“ oben hochgeladen werden, sie werden automatisch erkannt.
+          Wird in der Galerie mit einem 360°-Symbol hervorgehoben und in der
           Projektansicht als Ausschnitt mit leichter automatischer Drehung
-          angezeigt. Maximal 12 MB.
+          angezeigt.
         </p>
 
-        <form
-          action={uploadListingPanorama}
-          className="mt-4 flex flex-wrap items-center gap-3"
-        >
-          <input type="hidden" name="listingId" value={listing.id} />
-          <input
-            type="file"
-            name="panorama"
-            accept="image/*"
-            required
-            className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center rounded-full bg-secondary px-5 font-semibold text-white transition-colors hover:bg-secondary-hover"
-          >
-            360°-Bild hochladen
-          </button>
-        </form>
+        <ImageUploadForm
+          endpoint={`/api/projekte/${listing.id}/panorama`}
+          fieldName="panorama"
+          multiple={false}
+          submitLabel="360°-Bild hochladen"
+        />
       </section>
 
       <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
