@@ -1,4 +1,5 @@
-import NextAuth from "next-auth";
+import NextAuth, { type Session } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
@@ -38,7 +39,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    session({ session, token }) {
+    // Explicitly typed params (not inferred from NextAuth's own contextual
+    // callback signature): without this, TypeScript resolves the write
+    // target for `session.user.mustChangePassword = ...` as `{}` instead of
+    // `boolean` and fails `next build`'s full project type-check — a
+    // reproducible TS quirk with writing (not reading) a custom property
+    // that's genuinely new to the intersection NextAuth's own `Session`
+    // type builds up from `AdapterUser & User`. Verified with a from-empty
+    // `pnpm build` (not just `tsc --noEmit`, which had shown this
+    // inconsistently depending on incremental-build cache state) —
+    // reproduced the failure, confirmed this annotation is what fixes it.
+    session({ session, token }: { session: Session; token: JWT }) {
       if (session.user && typeof token.id === "string") {
         session.user.id = token.id;
         session.user.mustChangePassword = token.mustChangePassword ?? false;

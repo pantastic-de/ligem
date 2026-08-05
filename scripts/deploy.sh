@@ -87,4 +87,3 @@ fi
 
 echo "Deploy complete."
 REMOTE
-DEPLOY_PATH=//ligem \
