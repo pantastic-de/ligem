@@ -3,6 +3,18 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { SITE_URL } from "@/lib/site";
 
+// Without this, Next.js treats sitemap.ts as eligible for static generation
+// and renders it once at `next build` time — freezing the listing/event
+// URLs to whatever was published at that exact moment (stale until the next
+// deploy, actively working against the point of a sitemap) and requiring
+// live database access during the build itself, which isn't guaranteed to
+// be available/authorized in every build environment (reported directly: a
+// production build failed with "User was denied access on the database",
+// since that build's DB credentials weren't the same as the running app's
+// runtime credentials). Forcing dynamic rendering makes this run per
+// request at runtime instead, like every other DB-backed route in this app.
+export const dynamic = "force-dynamic";
+
 // Fixed list of public, indexable static pages — everything else (admin,
 // owner-only edit/management forms, auth-gated dashboards) is excluded here
 // and also disallowed in robots.ts.
