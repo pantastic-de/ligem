@@ -6,7 +6,14 @@ import { requireAdminPage } from "@/lib/authz";
 import { DEMO_EMAIL_DOMAIN } from "@/lib/demo-data/shared";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
-import { bulkAddRole, bulkDeleteUsers, bulkRemoveRole, updateUserRoles } from "./actions";
+import {
+  bulkAddRole,
+  bulkDeleteUserContent,
+  bulkDeleteUsers,
+  bulkReassignUserContent,
+  bulkRemoveRole,
+  updateUserRoles,
+} from "./actions";
 
 export const metadata: Metadata = {
   title: "Nutzer verwalten - Admin",
@@ -24,6 +31,19 @@ const statusLabels: Record<string, string> = {
   ARCHIVED: "Archiviert",
 };
 
+// Jumps straight into /admin/projekte's / /admin/termine's own moderation
+// view, pre-filtered to the right status tab and the item's own name/title
+// as a search term (see the `suche` field both pages gained for exactly
+// this) — there's no per-item admin detail route, so "the admin page for
+// this project/event" means landing on the filtered list with just that
+// one row visible.
+function adminProjektLink(listing: { status: string; projectName: string }): string {
+  return `/admin/projekte?status=${listing.status}&suche=${encodeURIComponent(listing.projectName)}`;
+}
+function adminTerminLink(event: { status: string; title: string }): string {
+  return `/admin/termine?status=${event.status}&suche=${encodeURIComponent(event.title)}`;
+}
+
 const roleOptions: { value: string; label: string }[] = [
   { value: "SUCHENDE", label: "Suchende" },
   { value: "ANBIETER", label: "Anbieter" },
@@ -37,13 +57,35 @@ const errorMessages: Record<string, string> = {
     "Einige ausgewählte Nutzer besitzen noch Projekte oder Termine und können deshalb nicht gelöscht werden. Übertrage oder lösche zuerst deren Inhalte.",
 };
 
+// Distinct from errorMessages/okMessages above — bulkDeleteUserContent/
+// bulkReassignUserContent use their own inhalteFehler/inhalteOk params
+// specifically so they don't collide with bulkDeleteUsers' error/ok (which
+// render a hardcoded "{ok} Nutzer gelöscht." message that would be wrong
+// here — see actions.ts).
+const inhalteFehlerMessages: Record<string, string> = {
+  "keine-auswahl": "Bitte wähle mindestens ein Projekt oder einen Termin aus.",
+  "reassign-nutzer-nicht-gefunden":
+    "Kein registrierter Nutzer mit dieser E-Mail-Adresse gefunden. Bitte einen Vorschlag aus der Liste auswählen.",
+};
+const inhalteOkMessages: Record<string, string> = {
+  geloescht: "Ausgewählte Projekte/Termine gelöscht.",
+  zugeordnet: "Ausgewählte Projekte/Termine neu zugeordnet.",
+};
+
 export default async function AdminNutzerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; suche?: string; ausblendenDemo?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    ok?: string;
+    suche?: string;
+    ausblendenDemo?: string;
+    inhalteFehler?: string;
+    inhalteOk?: string;
+  }>;
 }) {
   const session = await requireAdminPage();
-  const { error, ok, suche, ausblendenDemo } = await searchParams;
+  const { error, ok, suche, ausblendenDemo, inhalteFehler, inhalteOk } = await searchParams;
   const sucheValue = typeof suche === "string" ? suche.trim() : "";
   const hideDemos = ausblendenDemo === "1";
 
@@ -66,14 +108,20 @@ export default async function AdminNutzerPage({
       roles: true,
       createdListings: {
         orderBy: { createdAt: "desc" },
-        select: { id: true, projectName: true, status: true, _count: { select: { managers: true } } },
+        select: {
+          id: true,
+          projectName: true,
+          status: true,
+          isDemo: true,
+          _count: { select: { managers: true } },
+        },
       },
       createdEvents: {
         orderBy: { startAt: "desc" },
-        select: { id: true, title: true, listingId: true },
+        select: { id: true, title: true, listingId: true, status: true },
       },
       listingManagerships: {
-        select: { listing: { select: { id: true, projectName: true } } },
+        select: { listing: { select: { id: true, projectName: true, status: true } } },
       },
     },
   });
@@ -96,6 +144,16 @@ export default async function AdminNutzerPage({
       {ok ? (
         <p role="status" className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
           {ok} Nutzer gelöscht.
+        </p>
+      ) : null}
+      {inhalteFehler ? (
+        <p role="alert" className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          {inhalteFehlerMessages[inhalteFehler] ?? inhalteFehler}
+        </p>
+      ) : null}
+      {inhalteOk ? (
+        <p role="status" className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          {inhalteOkMessages[inhalteOk] ?? inhalteOk}
         </p>
       ) : null}
 
@@ -253,41 +311,116 @@ export default async function AdminNutzerPage({
                       : ""}
                   </summary>
                   <div className="mt-2 flex flex-col gap-3 rounded-xl bg-bg p-3 text-sm">
-                    {user.createdListings.length > 0 ? (
-                      <ul className="flex flex-col gap-1">
-                        {user.createdListings.map((listing) => (
-                          <li key={listing.id} className="flex items-center justify-between gap-2">
-                            <Link href={`/projekte/${listing.id}`} className="text-primary">
-                              {listing.projectName}
-                            </Link>
-                            <span className="text-text-muted">
-                              {statusLabels[listing.status] ?? listing.status}
-                              {listing._count.managers > 0 ? (
-                                <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium align-middle">
-                                  {listing._count.managers} Mitverwalter
-                                </span>
-                              ) : null}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    {user.createdEvents.length > 0 ? (
-                      <ul className="flex flex-col gap-1">
-                        {user.createdEvents.map((event) => (
-                          <li key={event.id}>
-                            <span className="text-text-muted">Termin: </span>
-                            {event.title}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
+                    {(() => {
+                      const contentFormId = `bulk-inhalte-${user.id}`;
+                      const hasOwnedContent = user.createdListings.length > 0 || user.createdEvents.length > 0;
+                      return (
+                        <>
+                          {hasOwnedContent ? (
+                            // Checkboxes below reference this form via the
+                            // `form` attribute (see BULK_FORM_ID above for
+                            // why — same "can't nest a <form>" reasoning,
+                            // this whole block already sits inside the outer
+                            // Rollen-speichern form further down).
+                            <form
+                              id={contentFormId}
+                              className="flex flex-col gap-2 rounded-lg border border-text/10 bg-surface p-2"
+                            >
+                              <input type="hidden" name="targetUserId" value={user.id} />
+                              <input type="hidden" name="suche" value={sucheValue} />
+                              <input type="hidden" name="ausblendenDemo" value={hideDemos ? "1" : ""} />
+                              <BulkSelectControls formId={contentFormId} />
+                              <div className="flex flex-wrap items-center gap-2">
+                                <input
+                                  type="text"
+                                  name="neuerEigentuemer"
+                                  list="alle-nutzer-datalist"
+                                  placeholder="Name oder E-Mail des neuen Eigentümers"
+                                  className="min-h-11 flex-1 rounded-xl border border-text/20 bg-bg px-3 text-sm"
+                                />
+                                <button
+                                  type="submit"
+                                  formAction={bulkReassignUserContent}
+                                  className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+                                >
+                                  Zuordnen
+                                </button>
+                                <ConfirmSubmitButton
+                                  formAction={bulkDeleteUserContent}
+                                  confirmText="Ausgewählte Projekte/Termine wirklich unwiderruflich löschen?"
+                                  className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                                >
+                                  Löschen
+                                </ConfirmSubmitButton>
+                              </div>
+                            </form>
+                          ) : null}
+                          {user.createdListings.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                              {user.createdListings.map((listing) => (
+                                <li key={listing.id} className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    name="contentListingIds"
+                                    value={listing.id}
+                                    form={contentFormId}
+                                    data-demo={listing.isDemo ? "true" : undefined}
+                                    aria-label={`${listing.projectName} auswählen`}
+                                    className="h-4 w-4 shrink-0"
+                                  />
+                                  <span className="flex flex-1 items-center justify-between gap-2">
+                                    <Link href={adminProjektLink(listing)} className="text-primary">
+                                      {listing.projectName}
+                                    </Link>
+                                    <span className="text-text-muted">
+                                      {statusLabels[listing.status] ?? listing.status}
+                                      {listing._count.managers > 0 ? (
+                                        <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium align-middle">
+                                          {listing._count.managers} Mitverwalter
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {user.createdEvents.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                              {user.createdEvents.map((event) => (
+                                <li key={event.id} className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    name="contentEventIds"
+                                    value={event.id}
+                                    form={contentFormId}
+                                    aria-label={`${event.title} auswählen`}
+                                    className="h-4 w-4 shrink-0"
+                                  />
+                                  <span className="flex flex-1 items-center justify-between gap-2">
+                                    <span>
+                                      <span className="text-text-muted">Termin: </span>
+                                      <Link href={adminTerminLink(event)} className="text-primary">
+                                        {event.title}
+                                      </Link>
+                                    </span>
+                                    <span className="text-text-muted">
+                                      {statusLabels[event.status] ?? event.status}
+                                    </span>
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                     {user.listingManagerships.length > 0 ? (
                       <ul className="flex flex-col gap-1">
                         {user.listingManagerships.map((m) => (
                           <li key={m.listing.id}>
                             <span className="text-text-muted">Mitverwaltet: </span>
-                            <Link href={`/projekte/${m.listing.id}`} className="text-primary">
+                            <Link href={adminProjektLink(m.listing)} className="text-primary">
                               {m.listing.projectName}
                             </Link>
                           </li>
@@ -326,6 +459,19 @@ export default async function AdminNutzerPage({
           );
         })}
       </ul>
+
+      {/* Shared by every user's "Zuordnen"-Eingabe above (see
+          bulkReassignUserContent) — one page-wide list of every registered
+          user, keyed by email (the value actually submitted/looked up
+          server-side) with a "Name (E-Mail)" label so typing either finds a
+          match; browsers filter datalist suggestions against both. */}
+      <datalist id="alle-nutzer-datalist">
+        {users.map((u) => (
+          <option key={u.id} value={u.email}>
+            {u.name ? `${u.name} (${u.email})` : u.email}
+          </option>
+        ))}
+      </datalist>
     </div>
   );
 }

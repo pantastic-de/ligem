@@ -40,19 +40,33 @@ const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeS
 export default async function AdminTerminePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; suche?: string }>;
 }) {
   await requireAdminPage();
-  const { status } = await searchParams;
+  const { status, suche } = await searchParams;
   // Unlike Listings, Events are created as PUBLISHED directly (no
   // moderation gate before going live — see CLAUDE.md), so "Wird geprüft"
   // is normally empty; default to the tab that actually has content.
   const activeStatus: ListingStatus = statusTabs.some((t) => t.value === status)
     ? (status as ListingStatus)
     : "PUBLISHED";
+  const searchTerm = suche?.trim() || "";
 
   const events = await prisma.event.findMany({
-    where: { status: activeStatus },
+    where: {
+      status: activeStatus,
+      // Lets an admin quickly jump to one specific event by its own title
+      // or by the project it belongs to — same rationale as /admin/projekte's
+      // own search field.
+      ...(searchTerm
+        ? {
+            OR: [
+              { title: { contains: searchTerm, mode: "insensitive" } },
+              { listing: { projectName: { contains: searchTerm, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: "asc" },
     include: {
       listing: { select: { id: true, projectName: true, isDemo: true } },
@@ -74,7 +88,7 @@ export default async function AdminTerminePage({
         {statusTabs.map((tab) => (
           <Link
             key={tab.value}
-            href={`/admin/termine?status=${tab.value}`}
+            href={`/admin/termine?status=${tab.value}${searchTerm ? `&suche=${encodeURIComponent(searchTerm)}` : ""}`}
             prefetch={false}
             className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
               activeStatus === tab.value
@@ -87,9 +101,36 @@ export default async function AdminTerminePage({
         ))}
       </nav>
 
+      <form action="/admin/termine" className="mt-4 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="status" value={activeStatus} />
+        <input
+          type="search"
+          name="suche"
+          defaultValue={searchTerm}
+          placeholder="Termin oder Projekt suchen…"
+          className="min-h-11 w-full max-w-sm rounded-xl border border-text/20 bg-surface px-4 text-sm"
+        />
+        <button
+          type="submit"
+          className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+        >
+          Suchen
+        </button>
+        {searchTerm ? (
+          <Link
+            href={`/admin/termine?status=${activeStatus}`}
+            className="text-sm text-text-muted hover:underline"
+          >
+            Suche zurücksetzen
+          </Link>
+        ) : null}
+      </form>
+
       {events.length === 0 ? (
         <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine Termine mit diesem Status.
+          {searchTerm
+            ? `Keine Termine mit diesem Status für „${searchTerm}“ gefunden.`
+            : "Keine Termine mit diesem Status."}
         </p>
       ) : (
         <>
@@ -100,6 +141,7 @@ export default async function AdminTerminePage({
             className="mt-8 flex flex-col gap-3 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
           >
             <input type="hidden" name="status" value={activeStatus} />
+            <input type="hidden" name="suche" value={searchTerm} />
             <div>
               <h2 className="font-semibold">
                 Auswahl
@@ -201,6 +243,7 @@ export default async function AdminTerminePage({
                     <form action={approveEvent}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full bg-success px-5 font-semibold text-white transition-colors hover:opacity-90"
@@ -214,6 +257,7 @@ export default async function AdminTerminePage({
                     <form action={rejectEvent}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
@@ -227,6 +271,7 @@ export default async function AdminTerminePage({
                     <form action={archiveEvent}>
                       <input type="hidden" name="eventId" value={event.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"

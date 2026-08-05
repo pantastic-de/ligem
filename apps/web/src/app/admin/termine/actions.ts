@@ -8,11 +8,14 @@ import { requireAdminAction } from "@/lib/authz";
 
 function redirectBack(formData: FormData): never {
   const status = formData.get("status")?.toString() || "PUBLISHED";
+  const suche = formData.get("suche")?.toString().trim();
   revalidatePath("/admin/termine");
   // Same cache-busting-redirect approach as /admin/projekte — see that
   // route's actions.ts for why the plain revalidatePath isn't enough on its
   // own in dev.
-  redirect(`/admin/termine?status=${status}&_r=${Date.now()}`);
+  const params = new URLSearchParams({ status, _r: Date.now().toString() });
+  if (suche) params.set("suche", suche);
+  redirect(`/admin/termine?${params.toString()}`);
 }
 
 export async function approveEvent(formData: FormData): Promise<void> {

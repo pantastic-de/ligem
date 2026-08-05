@@ -8,12 +8,15 @@ import { requireAdminAction } from "@/lib/authz";
 
 function redirectBack(formData: FormData): never {
   const status = formData.get("status")?.toString() || "PENDING_REVIEW";
+  const suche = formData.get("suche")?.toString().trim();
   revalidatePath("/admin/projekte");
   // Next.js's client-side router cache can otherwise reuse a pre-mutation
   // copy of this exact URL (visited earlier in the same session) even after
   // revalidatePath + force-dynamic; a cache-busting param guarantees a fresh
   // fetch since the URL has never been seen before.
-  redirect(`/admin/projekte?status=${status}&_r=${Date.now()}`);
+  const params = new URLSearchParams({ status, _r: Date.now().toString() });
+  if (suche) params.set("suche", suche);
+  redirect(`/admin/projekte?${params.toString()}`);
 }
 
 export async function approveListing(formData: FormData): Promise<void> {

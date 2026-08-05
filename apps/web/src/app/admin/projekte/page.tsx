@@ -39,16 +39,34 @@ const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeS
 export default async function AdminProjektePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; suche?: string }>;
 }) {
   await requireAdminPage();
-  const { status } = await searchParams;
+  const { status, suche } = await searchParams;
   const activeStatus: ListingStatus = statusTabs.some((t) => t.value === status)
     ? (status as ListingStatus)
     : "PENDING_REVIEW";
+  const searchTerm = suche?.trim() || "";
 
   const listings = await prisma.listing.findMany({
-    where: { status: activeStatus },
+    where: {
+      status: activeStatus,
+      // Lets an admin quickly jump to one specific project by name, motto,
+      // city, or who submitted it, instead of scrolling/scanning the whole
+      // (potentially long) status queue by eye — matches by any of these,
+      // case-insensitive.
+      ...(searchTerm
+        ? {
+            OR: [
+              { projectName: { contains: searchTerm, mode: "insensitive" } },
+              { motto: { contains: searchTerm, mode: "insensitive" } },
+              { city: { contains: searchTerm, mode: "insensitive" } },
+              { createdBy: { name: { contains: searchTerm, mode: "insensitive" } } },
+              { createdBy: { email: { contains: searchTerm, mode: "insensitive" } } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: "asc" },
     include: {
       createdBy: { select: { name: true, email: true } },
@@ -74,7 +92,7 @@ export default async function AdminProjektePage({
         {statusTabs.map((tab) => (
           <Link
             key={tab.value}
-            href={`/admin/projekte?status=${tab.value}`}
+            href={`/admin/projekte?status=${tab.value}${searchTerm ? `&suche=${encodeURIComponent(searchTerm)}` : ""}`}
             prefetch={false}
             className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
               activeStatus === tab.value
@@ -87,9 +105,36 @@ export default async function AdminProjektePage({
         ))}
       </nav>
 
+      <form action="/admin/projekte" className="mt-4 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="status" value={activeStatus} />
+        <input
+          type="search"
+          name="suche"
+          defaultValue={searchTerm}
+          placeholder="Projekt, Ort oder E-Mail der einreichenden Person suchen…"
+          className="min-h-11 w-full max-w-sm rounded-xl border border-text/20 bg-surface px-4 text-sm"
+        />
+        <button
+          type="submit"
+          className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+        >
+          Suchen
+        </button>
+        {searchTerm ? (
+          <Link
+            href={`/admin/projekte?status=${activeStatus}`}
+            className="text-sm text-text-muted hover:underline"
+          >
+            Suche zurücksetzen
+          </Link>
+        ) : null}
+      </form>
+
       {listings.length === 0 ? (
         <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
-          Keine Projekte mit diesem Status.
+          {searchTerm
+            ? `Keine Projekte mit diesem Status für „${searchTerm}“ gefunden.`
+            : "Keine Projekte mit diesem Status."}
         </p>
       ) : (
         <>
@@ -102,6 +147,7 @@ export default async function AdminProjektePage({
             className="mt-8 flex flex-col gap-3 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
           >
             <input type="hidden" name="status" value={activeStatus} />
+            <input type="hidden" name="suche" value={searchTerm} />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">
@@ -230,6 +276,7 @@ export default async function AdminProjektePage({
                     <form action={approveListing}>
                       <input type="hidden" name="listingId" value={listing.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full bg-success px-5 font-semibold text-white transition-colors hover:opacity-90"
@@ -243,6 +290,7 @@ export default async function AdminProjektePage({
                     <form action={rejectListing} className="flex flex-wrap items-center gap-2">
                       <input type="hidden" name="listingId" value={listing.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <input
                         type="text"
                         name="moderationNote"
@@ -262,6 +310,7 @@ export default async function AdminProjektePage({
                     <form action={archiveListing}>
                       <input type="hidden" name="listingId" value={listing.id} />
                       <input type="hidden" name="status" value={activeStatus} />
+                      <input type="hidden" name="suche" value={searchTerm} />
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
