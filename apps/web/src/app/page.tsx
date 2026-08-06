@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Home as HomeIcon,
   CalendarDays,
@@ -11,6 +12,33 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ScrollReveal } from "@/components/scroll-reveal";
+
+// Kuratierte, personenfreie Stimmungsbilder fürs Hero-Bento-Grid (statt
+// zufälliger echter Projektfotos, die inhaltlich nichts mit "Leben in
+// Gemeinschaft" zu tun haben mussten) — zeigen bewusst Orte/Situationen des
+// Zusammenlebens, nie Gesichter/Personen, siehe public/homepage/.
+const heroImages = [
+  {
+    src: "/homepage/hero-garten-tisch.jpg",
+    alt: "Gedeckter langer Tisch auf einer Veranda bei Sonnenuntergang, umgeben von Bäumen",
+    className: "col-span-2 aspect-[4/3] -rotate-1",
+  },
+  {
+    src: "/homepage/hero-gemeinschaftsgarten.jpg",
+    alt: "Backsteingebäude mit gepflegtem Gemüsegarten und Blumenbeeten",
+    className: "aspect-square rotate-2",
+  },
+  {
+    src: "/homepage/hero-reetdachhaus.jpg",
+    alt: "Reetdachhaus mit blühendem Cottage-Garten",
+    className: "aspect-square -rotate-2",
+  },
+  {
+    src: "/homepage/hero-wohnzimmer.jpg",
+    alt: "Helles, gemütliches gemeinsames Wohnzimmer mit Pflanzen",
+    className: "col-span-2 aspect-[16/9] rotate-1",
+  },
+];
 
 const zielgruppen = [
   {
@@ -95,7 +123,7 @@ const schritte = [
 export default async function Home() {
   const now = new Date();
 
-  const [publishedListingsCount, upcomingEventsCount, cityRows, heroMedia] =
+  const [publishedListingsCount, upcomingEventsCount, cityRows] =
     await Promise.all([
       prisma.listing.count({ where: { status: "PUBLISHED" } }),
       prisma.event.count({
@@ -106,21 +134,6 @@ export default async function Home() {
         select: { city: true },
         distinct: ["city"],
       }),
-      prisma.media.findMany({
-        where: {
-          position: 0,
-          type: "PHOTO",
-          listing: { status: "PUBLISHED" },
-        },
-        orderBy: { listing: { publishedAt: "desc" } },
-        take: 4,
-        select: {
-          id: true,
-          thumbnailKey: true,
-          storageKey: true,
-          listing: { select: { projectName: true, city: true } },
-        },
-      }),
     ]);
 
   const stats = [
@@ -128,13 +141,6 @@ export default async function Home() {
     { value: upcomingEventsCount, label: "Veranstaltungen" },
     { value: cityRows.length, label: "Orte" },
   ].filter((stat) => stat.value > 0);
-
-  const heroTileClasses = [
-    "col-span-2 aspect-[4/3] -rotate-1",
-    "aspect-square rotate-2",
-    "aspect-square -rotate-2",
-    "col-span-2 aspect-[16/9] rotate-1",
-  ];
 
   return (
     <>
@@ -202,41 +208,35 @@ export default async function Home() {
             )}
           </div>
 
-          {heroMedia.length > 0 ? (
-            <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-              <div className="grid grid-cols-2 gap-4">
-                {heroMedia.map((media, index) => (
-                  <img
-                    key={media.id}
-                    src={`/api/media/${media.thumbnailKey ?? media.storageKey}`}
-                    alt={
-                      media.listing
-                        ? `${media.listing.projectName}${media.listing.city ? ` in ${media.listing.city}` : ""}`
-                        : ""
-                    }
-                    className={`w-full rounded-3xl object-cover shadow-lg ${heroTileClasses[index % heroTileClasses.length]}`}
+          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+            <div className="grid grid-cols-2 gap-4">
+              {heroImages.map((image, index) => (
+                <div
+                  key={image.src}
+                  className={`relative overflow-hidden rounded-3xl shadow-lg ${image.className}`}
+                >
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    sizes="(min-width: 1024px) 420px, (min-width: 640px) 50vw, 90vw"
+                    priority={index === 0}
+                    className="object-cover"
                   />
-                ))}
-              </div>
-              {stats.length > 0 && (
-                <div className="absolute -bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg sm:-left-6 sm:translate-x-0">
-                  <Users2 className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-                  <p className="text-sm font-medium leading-snug">
-                    Bereits {publishedListingsCount}{" "}
-                    {publishedListingsCount === 1 ? "Wohnprojekt" : "Wohnprojekte"}{" "}
-                    auf LiGem
-                  </p>
                 </div>
-              )}
+              ))}
             </div>
-          ) : (
-            <div
-              aria-hidden="true"
-              className="relative mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-3xl bg-surface/60 shadow-md lg:max-w-none"
-            >
-              <HomeIcon className="h-24 w-24 text-primary/40" />
-            </div>
-          )}
+            {stats.length > 0 && (
+              <div className="absolute -bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg sm:-left-6 sm:translate-x-0">
+                <Users2 className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                <p className="text-sm font-medium leading-snug">
+                  Bereits {publishedListingsCount}{" "}
+                  {publishedListingsCount === 1 ? "Wohnprojekt" : "Wohnprojekte"}{" "}
+                  auf LiGem
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
