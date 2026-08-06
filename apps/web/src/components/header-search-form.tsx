@@ -19,7 +19,7 @@ export function HeaderSearchForm() {
   const currentSearch = searchParams.get("suche") ?? "";
 
   return (
-    <form action="/projekte" method="GET" className="relative w-28 sm:w-36">
+    <form action="/projekte" method="GET" className="relative w-40 sm:w-56">
       {/*
         An actual <button type="submit"> here, not just a decorative icon —
         relying solely on the browser's implicit "Enter submits the lone

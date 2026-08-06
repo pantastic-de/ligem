@@ -262,17 +262,21 @@ export default async function Home() {
               eure Suche und eure Kontakte.
             </p>
           </ScrollReveal>
-          <div className="mt-12 grid gap-8 sm:grid-cols-3 sm:gap-6">
+          <div className="mt-10 grid gap-4 sm:grid-cols-3 sm:gap-6">
             {schritte.map((schritt, index) => (
-              <ScrollReveal key={schritt.title} delayMs={index * 120} className="relative text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                  <schritt.icon className="h-7 w-7 text-primary" aria-hidden="true" />
+              <ScrollReveal key={schritt.title} delayMs={index * 120}>
+                <div className="relative flex h-full flex-col items-center gap-4 rounded-2xl border border-text/10 bg-bg p-6 text-center shadow-sm">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                    <schritt.icon className="h-7 w-7 text-primary" aria-hidden="true" />
+                  </span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-text text-sm font-bold text-bg">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">{schritt.title}</h3>
+                    <p className="mt-1 text-text-muted">{schritt.text}</p>
+                  </div>
                 </div>
-                <div className="mx-auto mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-text text-sm font-bold text-bg">
-                  {index + 1}
-                </div>
-                <h3 className="mt-3 text-lg font-semibold">{schritt.title}</h3>
-                <p className="mt-2 text-text-muted">{schritt.text}</p>
               </ScrollReveal>
             ))}
           </div>
