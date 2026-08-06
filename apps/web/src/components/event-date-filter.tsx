@@ -56,9 +56,12 @@ export function EventDateFilter({
 }) {
   const [startDate, setStartDate] = useState(defaultVon ?? "");
   const [endDate, setEndDate] = useState(defaultBis ?? "");
-  // The calendar starts collapsed behind a single-line summary input — see
-  // the input below — and only opens once that input is clicked/focused.
-  const [expanded, setExpanded] = useState(false);
+  // The calendar starts open by default; the "✕" in its top-right corner
+  // collapses it down to a single-line summary input (see below) when the
+  // extra vertical space isn't needed — it otherwise stays open, including
+  // across selecting a range/preset, since collapsing is an explicit choice
+  // rather than an automatic side effect of picking a date.
+  const [expanded, setExpanded] = useState(true);
 
   // Stores the last [startDate, endDate] combination `onChange` actually
   // fired for (see location-radius-picker.tsx's identical pattern for why
@@ -106,9 +109,8 @@ export function EventDateFilter({
       setEndDate("");
     } else {
       // Range complete (including the same day clicked twice, for a
-      // single-day range) — collapse back to the compact summary input.
+      // single-day range).
       setEndDate(key);
-      setExpanded(false);
     }
   }
 
@@ -118,19 +120,16 @@ export function EventDateFilter({
     setStartDate(toDateKey(today));
     if (daysAhead == null) {
       setEndDate("");
-      setExpanded(false);
       return;
     }
     const end = new Date(today);
     end.setDate(end.getDate() + daysAhead);
     setEndDate(toDateKey(end));
-    setExpanded(false);
   }
 
   function clearRange() {
     setStartDate("");
     setEndDate("");
-    setExpanded(false);
   }
 
   const rangeSummary = startDate

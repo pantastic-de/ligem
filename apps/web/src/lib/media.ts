@@ -21,11 +21,6 @@ export function isAllowedVideoType(file: File): boolean {
   return file.type in VIDEO_EXTENSION_BY_TYPE;
 }
 
-export function splitBySize(files: File[]): { valid: File[]; oversizedCount: number } {
-  const valid = files.filter((f) => f.size <= MAX_IMAGE_SIZE);
-  return { valid, oversizedCount: files.length - valid.length };
-}
-
 const PANORAMA_ASPECT_RATIO = 2;
 const PANORAMA_ASPECT_RATIO_TOLERANCE = 0.05; // allow ~5% deviation from a perfect 2:1
 

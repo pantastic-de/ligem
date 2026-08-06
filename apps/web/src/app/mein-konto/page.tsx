@@ -173,14 +173,13 @@ export default async function MeinKontoPage({
             )}
           </div>
           {!user.emailVerified ? (
-            <form action={resendVerificationEmail}>
-              <button
-                type="submit"
-                className="inline-flex min-h-9 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
-              >
-                Bestätigungs-E-Mail erneut senden
-              </button>
-            </form>
+            <button
+              type="submit"
+              form="resend-verification-form"
+              className="inline-flex min-h-9 items-center self-start rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
+            >
+              Bestätigungs-E-Mail erneut senden
+            </button>
           ) : null}
           <p className="text-sm text-text-muted">
             Mitglied seit {dateFormat.format(user.createdAt)}.
@@ -206,6 +205,13 @@ export default async function MeinKontoPage({
             Speichern
           </button>
         </form>
+        {/* Rendered outside the form above (nested <form> elements are
+            invalid HTML and cause a hydration error) — the button referencing
+            it via the `form` attribute stays in its original visual spot
+            next to the E-Mail-Bestätigung status. */}
+        {!user.emailVerified ? (
+          <form id="resend-verification-form" action={resendVerificationEmail} className="hidden" />
+        ) : null}
       </section>
 
       {hasPassword ? (

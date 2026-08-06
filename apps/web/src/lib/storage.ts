@@ -14,7 +14,7 @@ export const MEDIA_BUCKET = "ligem-media";
 
 let bucketReady: Promise<void> | null = null;
 
-export function ensureMediaBucket(): Promise<void> {
+function ensureMediaBucket(): Promise<void> {
   if (!bucketReady) {
     bucketReady = (async () => {
       const exists = await minioClient.bucketExists(MEDIA_BUCKET).catch(() => false);

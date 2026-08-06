@@ -23,7 +23,7 @@ export function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-export function randomFloat(min: number, max: number): number {
+function randomFloat(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
@@ -85,7 +85,7 @@ export type City = {
 // exercise the "international" side) towns and cities, so radius search
 // actually has something meaningful to search across instead of every demo
 // listing sitting on the same point.
-export const CITIES: City[] = [
+const CITIES: City[] = [
   { city: "Berlin", postalCode: "10115", state: "Berlin", country: "Deutschland", lat: 52.52, lng: 13.405 },
   { city: "Hamburg", postalCode: "20095", state: "Hamburg", country: "Deutschland", lat: 53.5511, lng: 9.9937 },
   { city: "München", postalCode: "80331", state: "Bayern", country: "Deutschland", lat: 48.1351, lng: 11.582 },
@@ -123,7 +123,7 @@ export const CITIES: City[] = [
 // A spread of real small German/Austrian/Swiss villages and small towns, so
 // generated listings aren't just clustered in the same handful of big
 // cities — used alongside CITIES via pickLocation() below.
-export const VILLAGES: City[] = [
+const VILLAGES: City[] = [
   { city: "Beilstein", postalCode: "56814", state: "Rheinland-Pfalz", country: "Deutschland", lat: 50.0928, lng: 7.3833 },
   { city: "Monschau", postalCode: "52156", state: "Nordrhein-Westfalen", country: "Deutschland", lat: 50.5567, lng: 6.2417 },
   { city: "Schiltach", postalCode: "77761", state: "Baden-Württemberg", country: "Deutschland", lat: 48.2833, lng: 8.3333 },
@@ -181,12 +181,12 @@ export const STREET_NAMES = [
   "Hollerweg", "Streuobstweg", "Am Storchennest", "Waldrandstraße", "Brunnengasse",
 ];
 
-export const FIRST_NAMES = [
+const FIRST_NAMES = [
   "Anna", "Bo", "Charlie", "Dana", "Elia", "Frieda", "Greta", "Hanno", "Imke",
   "Jona", "Kim", "Lasse", "Mika", "Noa", "Ole", "Pia", "Quirin", "Rosa",
   "Sami", "Tove", "Uli", "Vera", "Wim", "Xenia", "Yara", "Zeno",
 ];
-export const LAST_NAMES = [
+const LAST_NAMES = [
   "Baumgart", "Steinweber", "Feldmann", "Hollerbusch", "Wiesengrund",
   "Kompostheim", "Sonnenberg", "Nussbaumer", "Wurzel", "Distelmeier",
   "Ackermann", "Lindqvist", "Moosgrün", "Sturmwald",

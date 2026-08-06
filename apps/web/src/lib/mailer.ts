@@ -23,8 +23,6 @@ const transport =
       })
     : null;
 
-export const emailEnabled = Boolean(transport);
-
 /**
  * Best-effort email send — never throws into its caller. Every call site in
  * this app fires this from inside an already-deferred after() callback (see
