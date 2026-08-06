@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageEvent } from "@/lib/authz";
+import { canManageEvent, isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "Anmeldungen",
@@ -37,6 +38,8 @@ export default async function AnmeldungenPage({
   if (!(await canManageEvent(session.user.id, event))) {
     notFound();
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   // Marks every still-unseen registration as read the moment the organizer
   // opens this list — EventRegistration otherwise has no read/status concept
@@ -54,7 +57,7 @@ export default async function AnmeldungenPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <Link
         href={`/projekte/${listingId}/termine`}
         className="text-sm font-medium text-primary"
@@ -101,6 +104,6 @@ export default async function AnmeldungenPage({
           ))}
         </ul>
       )}
-    </div>
+    </AppShell>
   );
 }

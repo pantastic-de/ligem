@@ -5,6 +5,8 @@ import { Eye, MousePointerClick } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "Meine Projekte",
@@ -24,6 +26,8 @@ export default async function MeineProjektePage() {
   if (!session?.user?.id) {
     redirect("/anmelden");
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   const listings = await prisma.listing.findMany({
     where: {
@@ -70,7 +74,7 @@ export default async function MeineProjektePage() {
   const pendingByListing = Object.fromEntries(pendingRequestGroups.map((g) => [g.listingId, g._count]));
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Meine Projekte</h1>
         <div className="flex flex-wrap gap-3">
@@ -158,6 +162,6 @@ export default async function MeineProjektePage() {
           })}
         </ul>
       )}
-    </div>
+    </AppShell>
   );
 }

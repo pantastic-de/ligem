@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { addCategory, deleteCategory } from "./actions";
 
 export const metadata: Metadata = {
@@ -10,7 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminKategorienPage() {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const categories = await prisma.listingCategory.findMany({
     orderBy: { name: "asc" },
@@ -18,7 +20,7 @@ export default async function AdminKategorienPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-kategorien" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Kategorien</h1>
       <p className="mt-2 text-text-muted">
         &bdquo;Art des Projektinserates&ldquo; ist die Taxonomie, der ein
@@ -85,6 +87,6 @@ export default async function AdminKategorienPage() {
           Hinzufügen
         </button>
       </form>
-    </div>
+    </AppShell>
   );
 }

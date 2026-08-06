@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { EventFormFields } from "@/components/event-form-fields";
 import { createEvent } from "../actions";
 
@@ -48,6 +49,8 @@ export default async function NeuerTerminPage({
   if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   const attributeGroups = await prisma.attributeGroup.findMany({
     where: { appliesTo: "EVENT" },
@@ -56,7 +59,7 @@ export default async function NeuerTerminPage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Neuer Termin</h1>
       <p className="mt-2 text-text-muted">für {listing.projectName}</p>
 
@@ -111,6 +114,6 @@ export default async function NeuerTerminPage({
           Termin eintragen
         </button>
       </form>
-    </div>
+    </AppShell>
   );
 }

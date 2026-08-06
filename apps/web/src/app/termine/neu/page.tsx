@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "Termin eintragen",
@@ -27,6 +29,8 @@ export default async function TerminEintragenEinstiegPage() {
   if (!session?.user?.id) {
     redirect("/anmelden");
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   const listings = await prisma.listing.findMany({
     where: {
@@ -40,7 +44,7 @@ export default async function TerminEintragenEinstiegPage() {
 
   if (listings.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+      <AppShell active="termine" isAdmin={admin} displayName={displayName}>
         <h1 className="text-3xl font-bold">Termin eintragen</h1>
         <p className="mt-4 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           Termine gehören immer zu einem Projekt. Du hast noch kein eigenes
@@ -50,7 +54,7 @@ export default async function TerminEintragenEinstiegPage() {
           </Link>
           , dann kannst du Termine dafür anlegen.
         </p>
-      </div>
+      </AppShell>
     );
   }
 
@@ -59,7 +63,7 @@ export default async function TerminEintragenEinstiegPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Termin eintragen</h1>
       <p className="mt-2 text-text-muted">Für welches Projekt?</p>
 
@@ -78,6 +82,6 @@ export default async function TerminEintragenEinstiegPage() {
           </li>
         ))}
       </ul>
-    </div>
+    </AppShell>
   );
 }

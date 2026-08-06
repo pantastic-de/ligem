@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { DEMO_EMAIL_DOMAIN } from "@/lib/demo-data/shared";
+import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
@@ -85,6 +86,7 @@ export default async function AdminNutzerPage({
   }>;
 }) {
   const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { error, ok, suche, ausblendenDemo, inhalteFehler, inhalteOk } = await searchParams;
   const sucheValue = typeof suche === "string" ? suche.trim() : "";
   const hideDemos = ausblendenDemo === "1";
@@ -129,7 +131,7 @@ export default async function AdminNutzerPage({
   const demoCount = users.filter((u) => isDemoEmail(u.email)).length;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-nutzer" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Nutzerverwaltung</h1>
       <p className="mt-2 text-text-muted">
         Rollen bestimmen, was jemand tun darf. Ein Nutzer kann mehrere Rollen
@@ -472,6 +474,6 @@ export default async function AdminNutzerPage({
           </option>
         ))}
       </datalist>
-    </div>
+    </AppShell>
   );
 }

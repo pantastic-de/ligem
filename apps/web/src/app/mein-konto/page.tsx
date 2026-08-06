@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { PasswordField } from "@/components/password-field";
 import { ImageUploadForm } from "@/components/image-upload-form";
 import {
@@ -79,9 +81,11 @@ export default async function MeinKontoPage({
   });
 
   const hasPassword = Boolean(user.passwordHash);
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="konto" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Mein Konto</h1>
 
       {error ? (
@@ -319,6 +323,6 @@ export default async function MeinKontoPage({
           </ul>
         </section>
       ) : null}
-    </div>
+    </AppShell>
   );
 }

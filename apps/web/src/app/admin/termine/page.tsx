@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import type { ListingStatus } from "@/generated/prisma/client";
+import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
@@ -42,7 +43,8 @@ export default async function AdminTerminePage({
 }: {
   searchParams: Promise<{ status?: string; suche?: string }>;
 }) {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { status, suche } = await searchParams;
   // Unlike Listings, Events are created as PUBLISHED directly (no
   // moderation gate before going live — see CLAUDE.md), so "Wird geprüft"
@@ -77,7 +79,7 @@ export default async function AdminTerminePage({
   const demoCount = events.filter((e) => e.listing?.isDemo).length;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-termine" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Termine prüfen</h1>
       <p className="mt-2 text-text-muted">
         Termine werden beim Anlegen direkt veröffentlicht. Hier können sie
@@ -286,6 +288,6 @@ export default async function AdminTerminePage({
           </ul>
         </>
       )}
-    </div>
+    </AppShell>
   );
 }

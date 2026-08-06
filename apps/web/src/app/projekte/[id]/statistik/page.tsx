@@ -13,6 +13,7 @@ import {
   getListingViewTypeCounts,
   getListingViewsOverTime,
 } from "@/lib/view-stats";
+import { AppShell } from "@/components/app-shell";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
 
@@ -45,6 +46,7 @@ export default async function ProjektStatistikPage({
     notFound();
   }
   const viewerIsAdmin = await isAdmin(session.user.id);
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const [{ overview, detail }, breakdown, timeline, geo, searchBreakdown] = await Promise.all([
     getListingViewTypeCounts({ listingId: listing.id }),
@@ -55,7 +57,7 @@ export default async function ProjektStatistikPage({
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="projekte" isAdmin={viewerIsAdmin} displayName={displayName}>
       <Link href={`/projekte/${listing.id}`} className="text-sm font-medium text-primary hover:underline">
         ← Zurück zum Projekt
       </Link>
@@ -143,6 +145,6 @@ export default async function ProjektStatistikPage({
           </div>
         </section>
       ) : null}
-    </div>
+    </AppShell>
   );
 }

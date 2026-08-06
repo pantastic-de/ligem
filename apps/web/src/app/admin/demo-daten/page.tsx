@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { DemoDataGenerateForm } from "@/components/demo-data-generate-form";
 import {
@@ -24,7 +25,8 @@ export default async function AdminDemoDatenPage({
 }: {
   searchParams: Promise<{ error?: string; ok?: string }>;
 }) {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { error, ok } = await searchParams;
 
   const [demoListingsCount, demoEventsCount] = await Promise.all([
@@ -33,7 +35,7 @@ export default async function AdminDemoDatenPage({
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-demo-daten" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Demo-Daten</h1>
       <p className="mt-2 text-text-muted">
         Erzeugt synthetische, klar als solche gekennzeichnete Wohnprojekte und
@@ -107,6 +109,6 @@ export default async function AdminDemoDatenPage({
           Alle Demo-Daten löschen
         </ConfirmSubmitButton>
       </form>
-    </div>
+    </AppShell>
   );
 }

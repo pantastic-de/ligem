@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { acceptContactRequest, declineContactRequest } from "./actions";
 
 export const metadata: Metadata = {
@@ -41,6 +42,8 @@ export default async function AnfragenPage({
   if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   const requests = await prisma.contactRequest.findMany({
     where: { listingId },
@@ -48,7 +51,7 @@ export default async function AnfragenPage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
       <Link href={`/projekte/${listingId}`} className="text-sm font-medium text-primary hover:underline">
         ← Zurück zum Projekt
       </Link>
@@ -118,6 +121,6 @@ export default async function AnfragenPage({
           ))}
         </ul>
       )}
-    </div>
+    </AppShell>
   );
 }

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import type { ListingStatus } from "@/generated/prisma/client";
+import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import {
@@ -41,7 +42,8 @@ export default async function AdminProjektePage({
 }: {
   searchParams: Promise<{ status?: string; suche?: string }>;
 }) {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { status, suche } = await searchParams;
   const activeStatus: ListingStatus = statusTabs.some((t) => t.value === status)
     ? (status as ListingStatus)
@@ -81,7 +83,7 @@ export default async function AdminProjektePage({
   const demoCount = listings.filter((l) => l.isDemo).length;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-projekte" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Projekte prüfen</h1>
       <p className="mt-2 text-text-muted">
         Neue und geänderte Projekte landen hier zur Prüfung, bevor sie auf{" "}
@@ -326,6 +328,6 @@ export default async function AdminProjektePage({
           </ul>
         </>
       )}
-    </div>
+    </AppShell>
   );
 }

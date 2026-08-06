@@ -4,6 +4,7 @@ import { Eye, MousePointerClick, Bot, Layers } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import {
   getEventFilterBreakdown,
   getEventGeoBreakdown,
@@ -95,7 +96,8 @@ function TopContentList({
 }
 
 export default async function AdminStatistikPage() {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const [
     listingCounts,
@@ -132,7 +134,7 @@ export default async function AdminStatistikPage() {
   const grandTotal = listingTotal + eventTotal + pageStats.total;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-statistik" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Statistik</h1>
       <p className="mt-2 text-text-muted">
         Zugriffe auf die gesamte Seite. Projekte und Termine werden darunter
@@ -369,6 +371,6 @@ export default async function AdminStatistikPage() {
           <ViewSourceBreakdown sources={pageStats.sources} viewerIsAdmin />
         </div>
       </section>
-    </div>
+    </AppShell>
   );
 }

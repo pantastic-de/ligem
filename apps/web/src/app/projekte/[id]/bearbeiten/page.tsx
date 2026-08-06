@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
@@ -64,9 +65,11 @@ export default async function ProjektBearbeitenPage({
   if (!canEdit) {
     notFound();
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Projekt bearbeiten</h1>
       <Link href={`/projekte/${id}`} className="mt-1 inline-block text-primary hover:underline">
         Projekt ansehen →
@@ -221,6 +224,6 @@ export default async function ProjektBearbeitenPage({
           Speichern
         </button>
       </form>
-    </div>
+    </AppShell>
   );
 }

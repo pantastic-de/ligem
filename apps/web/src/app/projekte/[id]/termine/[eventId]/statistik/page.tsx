@@ -13,6 +13,7 @@ import {
   getEventViewTypeCounts,
   getEventViewsOverTime,
 } from "@/lib/view-stats";
+import { AppShell } from "@/components/app-shell";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
 
@@ -45,6 +46,7 @@ export default async function TerminStatistikPage({
     notFound();
   }
   const viewerIsAdmin = await isAdmin(session.user.id);
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const [{ overview, detail }, breakdown, timeline, geo, filters] = await Promise.all([
     getEventViewTypeCounts({ eventId: event.id }),
@@ -55,7 +57,7 @@ export default async function TerminStatistikPage({
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="termine" isAdmin={viewerIsAdmin} displayName={displayName}>
       <Link
         href={`/projekte/${listingId}/termine`}
         className="text-sm font-medium text-primary hover:underline"
@@ -134,6 +136,6 @@ export default async function TerminStatistikPage({
           </div>
         </section>
       ) : null}
-    </div>
+    </AppShell>
   );
 }

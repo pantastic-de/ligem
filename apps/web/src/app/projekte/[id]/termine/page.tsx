@@ -5,7 +5,8 @@ import { Eye, MousePointerClick } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { deleteEvent } from "./actions";
 
 export const metadata: Metadata = {
@@ -39,6 +40,8 @@ export default async function TerminePage({
   if (!(await canManageListing(session.user.id, listingId, listing.createdById))) {
     notFound();
   }
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const admin = await isAdmin(session.user.id);
 
   const events = await prisma.event.findMany({
     where: { listingId },
@@ -79,7 +82,7 @@ export default async function TerminePage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Termine</h1>
@@ -170,6 +173,6 @@ export default async function TerminePage({
           })}
         </ul>
       )}
-    </div>
+    </AppShell>
   );
 }

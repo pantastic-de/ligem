@@ -6,6 +6,7 @@ import type {
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
+import { AppShell } from "@/components/app-shell";
 import { addGroup, addOption, deleteGroup, deleteOption } from "./actions";
 
 export const metadata: Metadata = {
@@ -96,7 +97,8 @@ function GroupCard({ group, countKey }: { group: GroupWithOptions; countKey: "li
 }
 
 export default async function AdminAttributePage() {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const allGroups = await prisma.attributeGroup.findMany({
     orderBy: { sortOrder: "asc" },
@@ -111,7 +113,7 @@ export default async function AdminAttributePage() {
   const eventGroups = allGroups.filter((g) => g.appliesTo === "EVENT");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
+    <AppShell active="admin-attribute" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Attribute &amp; Filter</h1>
       <p className="mt-2 text-text-muted">
         Jede Gruppe ist ein Filter (z. B. Projekt Typ, Grundwerte, oder
@@ -185,6 +187,6 @@ export default async function AdminAttributePage() {
           Gruppe anlegen
         </button>
       </form>
-    </div>
+    </AppShell>
   );
 }

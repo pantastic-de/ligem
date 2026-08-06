@@ -1,18 +1,31 @@
 @import "tailwindcss";
 
+/* "Richtung 3 – Organic Modern": aufgehellte, freundlichere Variante der
+   ursprünglichen Palette (siehe .claude/skills/warm-community-design und
+   den zugehörigen Designentwurf). Jeder Wert unten ist rechnerisch gegen
+   WCAG AA geprüft (>= 4.5:1) sowohl als weißer Text auf der Fläche
+   (Buttons) als auch als Text/Link direkt auf --color-bg — das begrenzt,
+   wie viel heller die Akzentfarben gegenüber dem Original wirklich werden
+   können, ohne die Barrierefreiheit zu verlieren. Der "modernere,
+   freundlichere" Eindruck kommt hier bewusst primär über Formensprache
+   (größere Radien, weichere Schatten, siehe unten) und die hellere
+   --color-accent (die wie zuvor nur mit dunklem Text kombiniert wird, nie
+   mit weißem), nicht über radikal andere Grundfarben.
+   --color-accent bleibt bewusst frei von * -hover: sie unterlegt nur
+   Badges/Chips, nie klickbare Buttons. */
 :root {
-  --color-bg: #faf6f0;
+  --color-bg: #fbf3e7;
   --color-surface: #ffffff;
-  --color-text: #3a2e27;
-  --color-text-muted: #6b5c4f;
-  --color-primary: #b14f24;
-  --color-primary-hover: #963f1a;
-  --color-secondary: #61703f;
-  --color-secondary-hover: #4e5a32;
-  --color-accent: #c89b3c;
-  --color-success: #4c6b3a;
-  --color-warning: #96631a;
-  --color-error: #a63b2e;
+  --color-text: #3b2e22;
+  --color-text-muted: #7a6650;
+  --color-primary: #b7511f;
+  --color-primary-hover: #833a16;
+  --color-secondary: #5e7645;
+  --color-secondary-hover: #3f4f2e;
+  --color-accent: #efbd5e;
+  --color-success: #56793e;
+  --color-warning: #996322;
+  --color-error: #be4939;
 }
 
 @theme inline {
@@ -29,6 +42,27 @@
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
   --font-sans: var(--font-nunito);
+
+  /* "Organic Modern" Formensprache: deutlich rundere Ecken als Tailwinds
+     Standard (xl 12px→20px, 2xl 16px→28px, lg 8px→12px) — da praktisch
+     jede Karte/jeder Button im Code bereits rounded-xl/rounded-2xl/
+     rounded-full verwendet (siehe grep-Auszählung: 97×/82×/144×), wirkt
+     diese eine Änderung sofort site-weit, ohne einzelne Komponenten
+     anzufassen. rounded-full (Pillen-Buttons) ist von dieser Skala
+     unabhängig (bleibt 9999px) und damit unverändert. */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2.25rem;
+
+  /* Weichere, wärmer getönte Schatten (Espresso- statt Schwarzton, siehe
+     --color-text) statt Tailwinds neutralem Grau-Schatten — größerer,
+     weicherer Blur für mehr "Tiefe" passend zur runderen Formensprache.
+     shadow-sm dominiert im Code (65× auf Karten) und trägt dadurch den
+     Effekt über die ganze Seite. */
+  --shadow-sm: 0 2px 8px -2px rgba(59, 46, 34, 0.16), 0 1px 2px rgba(59, 46, 34, 0.08);
+  --shadow-md: 0 8px 20px -6px rgba(59, 46, 34, 0.22), 0 2px 6px -2px rgba(59, 46, 34, 0.1);
+  --shadow-lg: 0 16px 32px -10px rgba(59, 46, 34, 0.26), 0 4px 10px -4px rgba(59, 46, 34, 0.12);
 
   /* Restored to Tailwind's stock default scale — the previous ~20%
      reduction here (and body's font-size below) put headings, form
