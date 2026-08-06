@@ -58,6 +58,13 @@ export function TermineSearchForm({
       onSubmit={(e) => e.preventDefault()}
       className="flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
     >
+      <div>
+        <h2 className="text-lg font-semibold">Termine finden</h2>
+        <p className="text-sm text-text-muted">
+          Nach Zeitraum, Ort und weiteren Merkmalen filtern.
+        </p>
+      </div>
+
       <EventDateFilter
         defaultVon={defaults.von}
         defaultBis={defaults.bis}

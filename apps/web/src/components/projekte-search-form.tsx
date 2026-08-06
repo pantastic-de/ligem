@@ -62,6 +62,13 @@ export function ProjekteSearchForm({
       onSubmit={(e) => e.preventDefault()}
       className="flex flex-col gap-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
     >
+      <div>
+        <h2 className="text-lg font-semibold">Projekte finden</h2>
+        <p className="text-sm text-text-muted">
+          Nach Ort, Umkreis und weiteren Merkmalen filtern.
+        </p>
+      </div>
+
       {projektTyp ? (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="typ" className="font-medium">
