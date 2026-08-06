@@ -8,6 +8,20 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { registerAttempt, resetAttempts } from "@/lib/rate-limit";
+
+// Brute-force guard for the Credentials provider — keyed by the submitted
+// identifier (not IP), since that protects one specific account regardless
+// of how many source IPs an attacker spreads attempts across. bcrypt's own
+// cost factor slows down a single guess but doesn't cap the *rate* of
+// guesses, so this is still needed on top of it.
+const LOGIN_MAX_ATTEMPTS = 8;
+const LOGIN_WINDOW_MS = 15 * 60_000;
+
+// Fixed bcrypt hash (of an arbitrary, never-used password) run against a
+// non-existent identifier purely to keep that path's timing close to a real
+// user lookup's — see its use below.
+const DUMMY_BCRYPT_HASH = "$2b$12$db5C4QowAKggBR.hrNqbBenJvSr/ZQHwpES.Ui/YPGeVYt0c3mQSC";
 
 const hasGoogleOAuth = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
@@ -106,10 +120,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        const rateLimitKey = identifier.trim().toLowerCase();
+        if (!registerAttempt(rateLimitKey, LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS)) {
+          return null;
+        }
+
         const user = await prisma.user.findFirst({
           where: { OR: [{ email: identifier }, { username: identifier }] },
         });
         if (!user?.passwordHash) {
+          // Still runs a bcrypt.compare against a fixed dummy hash even
+          // though there's no real user to check — otherwise "no such
+          // account" would return near-instantly while a real account
+          // takes bcrypt's ~100ms+, letting an attacker enumerate valid
+          // identifiers purely by response timing.
+          await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
           return null;
         }
 
@@ -118,6 +143,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        resetAttempts(rateLimitKey);
         return {
           id: user.id,
           email: user.email,

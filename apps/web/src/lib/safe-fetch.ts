@@ -1,5 +1,6 @@
 import dns from "node:dns";
 import net from "node:net";
+import { Agent, fetch as undiciFetch } from "undici";
 
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_REDIRECTS = 3;
@@ -48,24 +49,72 @@ function isPrivateOrReservedIp(address: string): boolean {
   return true; // unrecognized format — reject rather than risk it
 }
 
-async function resolveIsSafeHost(hostname: string): Promise<boolean> {
-  try {
-    const { address } = await dns.promises.lookup(hostname);
-    return !isPrivateOrReservedIp(address);
-  } catch {
-    return false; // unresolvable host — treat as unsafe
-  }
+// dns.lookup-compatible callback used as undici's connect-time resolver
+// (Node's `net.connect({ lookup })` shape: `(hostname, options, callback)`,
+// though some callers invoke it with just `(hostname, callback)` — handled
+// below). Rejecting the connection *inside* the lookup that undici itself
+// uses to open the socket closes the TOCTOU gap a separate "resolve, check,
+// then let fetch() resolve again and connect" step would have: there is now
+// only ever one resolution per connection attempt, and it's the one that
+// gets validated.
+//
+// Must preserve whatever `options` Node/undici actually passed rather than
+// normalizing it — verified directly: undici's Happy-Eyeballs connection
+// logic calls this with `{ all: true, ... }` and expects an array of
+// `{ address, family }` back; forcing `all: false` to get a plain string
+// made every real HTTPS fetch throw ("Invalid IP address: undefined") since
+// the caller received a string where it expected that array. So this
+// handles both shapes: an `all: true` call gets every candidate address
+// checked (rejecting if *any* is private/reserved, since Happy Eyeballs may
+// connect to whichever one succeeds first), an `all: false`/default call
+// gets the single address checked.
+function validatingLookup(
+  hostname: string,
+  optionsOrCallback: dns.LookupOptions | ((err: NodeJS.ErrnoException | null, address: never, family: never) => void),
+  maybeCallback?: (err: NodeJS.ErrnoException | null, address: never, family: never) => void,
+): void {
+  const callback = typeof optionsOrCallback === "function" ? optionsOrCallback : maybeCallback!;
+  const options = typeof optionsOrCallback === "function" ? {} : optionsOrCallback;
+  const onResolved = (
+    err: NodeJS.ErrnoException | null,
+    address: string | dns.LookupAddress[],
+    family: number,
+  ) => {
+    if (err) {
+      callback(err, address as never, family as never);
+      return;
+    }
+    const addresses = Array.isArray(address) ? address.map((entry) => entry.address) : [address];
+    if (addresses.some((addr) => isPrivateOrReservedIp(addr))) {
+      callback(
+        Object.assign(new Error(`safe-fetch: blocked private/reserved address for ${hostname}`), {
+          code: "EBLOCKEDIP",
+        }),
+        address as never,
+        family as never,
+      );
+      return;
+    }
+    callback(null, address as never, family as never);
+  };
+  dns.lookup(hostname, options as dns.LookupAllOptions, onResolved);
 }
+
+// Shared dispatcher for every safeFetch call — a single Agent instance is
+// the documented undici pattern (not re-created per request) and carries no
+// per-request state itself, just the validating lookup above.
+const safeDispatcher = new Agent({ connect: { lookup: validatingLookup } });
 
 /**
  * Fetches a user-supplied URL with SSRF guards: only http/https, no
- * automatic redirect-following (each hop is re-resolved and re-checked
- * against private/reserved IP ranges before being followed), a timeout, and
- * a response-size cap. Returns null on any failure or safety violation
+ * automatic redirect-following (each hop is independently resolved and
+ * validated at actual connection time via `safeDispatcher`, not pre-checked
+ * and then reconnected separately — see validatingLookup above), a timeout,
+ * and a response-size cap. Returns null on any failure or safety violation
  * rather than throwing, since callers treat "couldn't fetch" as a normal,
  * recoverable outcome (not an exception-worthy bug).
  */
-async function safeFetch(startUrl: string, maxBytes: number): Promise<Response | null> {
+async function safeFetch(startUrl: string, maxBytes: number) {
   let currentUrl = startUrl;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     let parsed: URL;
@@ -75,14 +124,23 @@ async function safeFetch(startUrl: string, maxBytes: number): Promise<Response |
       return null;
     }
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-    if (!(await resolveIsSafeHost(parsed.hostname))) return null;
 
-    let response: Response;
+    // validatingLookup above only runs for hostnames that actually need DNS
+    // resolution — verified directly: undici skips calling a custom
+    // `connect.lookup` entirely when the URL's host is already a literal IP
+    // (e.g. `http://127.0.0.1/...` or a cloud metadata address like
+    // `169.254.169.254`), so that guard alone let a literal-IP URL straight
+    // through. This catches that case up front, synchronously, before any
+    // connection is attempted.
+    if (net.isIP(parsed.hostname) && isPrivateOrReservedIp(parsed.hostname)) return null;
+
+    let response: Awaited<ReturnType<typeof undiciFetch>>;
     try {
-      response = await fetch(parsed.toString(), {
+      response = await undiciFetch(parsed.toString(), {
         redirect: "manual",
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: { "User-Agent": "LiGem-Homepage-Import/1.0" },
+        dispatcher: safeDispatcher,
       });
     } catch {
       return null;

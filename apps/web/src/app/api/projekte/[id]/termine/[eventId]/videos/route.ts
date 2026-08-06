@@ -55,6 +55,10 @@ export async function POST(
       `events/${eventId}`,
       thumbnail instanceof File ? thumbnail : null,
     );
+    if (!stored) {
+      skipped += 1;
+      continue;
+    }
 
     await prisma.media.create({
       data: {

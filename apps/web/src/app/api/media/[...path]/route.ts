@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { NextResponse } from "next/server";
 
 import { getObjectStream, minioClient, MEDIA_BUCKET } from "@/lib/storage";
+import { isMediaKeyAccessible } from "@/lib/media-access";
 
 // MinIO is only reachable from inside the Docker network (bound to
 // 127.0.0.1 on the host), so browsers can't load images/videos directly
@@ -16,6 +17,14 @@ export async function GET(
 ) {
   const { path } = await params;
   const key = path.join("/");
+
+  // 404, not 403 — doesn't confirm to an unauthorized requester whether the
+  // key even corresponds to something real, matching this app's existing
+  // "invalid/inaccessible id silently falls back" convention elsewhere
+  // (see the /projekte, /termine inline detail panes).
+  if (!(await isMediaKeyAccessible(key))) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   let stat;
   try {

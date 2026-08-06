@@ -59,6 +59,10 @@ export async function POST(
       `listings/${listingId}`,
       thumbnail instanceof File ? thumbnail : null,
     );
+    if (!stored) {
+      skipped += 1;
+      continue;
+    }
 
     await prisma.media.create({
       data: {

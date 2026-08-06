@@ -21,6 +21,25 @@ export function isAllowedVideoType(file: File): boolean {
   return file.type in VIDEO_EXTENSION_BY_TYPE;
 }
 
+// Magic-byte checks, one per allowed video MIME type — the client-supplied
+// `file.type` (checked by isAllowedVideoType above) is just a form field an
+// attacker can set to anything; this looks at the actual first bytes of the
+// upload instead. mp4/mov (quicktime) share the same ISO-BMFF/QuickTime
+// container signature ("ftyp" at offset 4), webm/mkv start with the EBML
+// magic number, and ogg/ogv start with "OggS".
+const VIDEO_SIGNATURE_CHECKS: Record<string, (buf: Buffer) => boolean> = {
+  "video/mp4": (buf) => buf.length >= 8 && buf.subarray(4, 8).toString("ascii") === "ftyp",
+  "video/quicktime": (buf) => buf.length >= 8 && buf.subarray(4, 8).toString("ascii") === "ftyp",
+  "video/webm": (buf) =>
+    buf.length >= 4 && buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3,
+  "video/ogg": (buf) => buf.length >= 4 && buf.subarray(0, 4).toString("ascii") === "OggS",
+};
+
+function looksLikeDeclaredVideoType(buffer: Buffer, mimeType: string): boolean {
+  const check = VIDEO_SIGNATURE_CHECKS[mimeType];
+  return check ? check(buffer) : false;
+}
+
 const PANORAMA_ASPECT_RATIO = 2;
 const PANORAMA_ASPECT_RATIO_TOLERANCE = 0.05; // allow ~5% deviation from a perfect 2:1
 
@@ -94,13 +113,19 @@ const MAX_VIDEO_THUMBNAIL_SIZE = 2 * 1024 * 1024; // 2MB — sanity cap on the c
  * A missing or implausibly large thumbnail (tampered client, capture
  * failure) is simply skipped rather than stored — the gallery already
  * falls back to a placeholder tile when thumbnailKey is null.
+ *
+ * Returns null (skip, don't throw — matching processAndStoreImage's
+ * convention) when the file's actual bytes don't match the container
+ * format its declared MIME type promises (see looksLikeDeclaredVideoType) —
+ * `file.type` is just a client-supplied form field, not proof of content.
  */
 export async function storeVideo(
   file: File,
   keyPrefix: string,
   thumbnail?: File | null,
-): Promise<{ storageKey: string; thumbnailKey: string | null }> {
+): Promise<{ storageKey: string; thumbnailKey: string | null } | null> {
   const buffer = Buffer.from(await file.arrayBuffer());
+  if (!looksLikeDeclaredVideoType(buffer, file.type)) return null;
   const extension = VIDEO_EXTENSION_BY_TYPE[file.type] ?? "mp4";
   const id = randomUUID();
   const storageKey = `${keyPrefix}/${id}-video.${extension}`;
