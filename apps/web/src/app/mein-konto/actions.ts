@@ -154,7 +154,7 @@ export async function addListingManager(formData: FormData): Promise<void> {
 
   await requireListingOwner(listingId, session.user.id);
 
-  const targetUser = await prisma.user.findUnique({ where: { email } });
+  const targetUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (!targetUser) {
     redirect("/mein-konto?error=nutzer-nicht-gefunden");
   }

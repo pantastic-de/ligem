@@ -19,7 +19,7 @@ export async function registerUser(formData: FormData): Promise<void> {
     redirect("/registrieren?error=password");
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
     redirect("/registrieren?error=exists");
   }

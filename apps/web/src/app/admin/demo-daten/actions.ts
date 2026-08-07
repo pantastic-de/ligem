@@ -18,8 +18,14 @@ import {
   type ProgressState,
 } from "@/lib/demo-data/progress-store";
 
+// Logs the real error server-side (so it's still diagnosable) but never
+// forwards its raw message to the browser — a Prisma/driver/MinIO error's
+// text isn't guaranteed to be free of internal details (query fragments,
+// connection info), and there's no reason an admin-only progress bar/error
+// banner needs the exact wording rather than a generic one.
 function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : "Unbekannter Fehler.";
+  console.error("[admin/demo-daten]", err);
+  return "Ein Fehler ist aufgetreten. Details siehe Server-Log.";
 }
 
 // Generating a full batch (each listing/event fetches a photo and writes

@@ -55,7 +55,7 @@ export default async function MeinKontoPage({
   }
   const { error, ok } = await searchParams;
 
-  const user = await prisma.user.findUnique({
+  const userWithHash = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
       createdListings: {
@@ -70,9 +70,15 @@ export default async function MeinKontoPage({
       },
     },
   });
-  if (!user) {
+  if (!userWithHash) {
     redirect("/anmelden");
   }
+  // Split off passwordHash immediately (only ever needed as the plain
+  // hasPassword boolean below) so the `user` object used through the rest
+  // of this page — and any future edit that passes it to a Client
+  // Component — never carries the hash at all.
+  const { passwordHash, ...user } = userWithHash;
+  const hasPassword = Boolean(passwordHash);
 
   const managedListings = await prisma.listing.findMany({
     where: { managers: { some: { userId: session.user.id } } },
@@ -80,7 +86,6 @@ export default async function MeinKontoPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const hasPassword = Boolean(user.passwordHash);
   const displayName = session.user.name ?? session.user.email ?? "Konto";
   const admin = await isAdmin(session.user.id);
 
