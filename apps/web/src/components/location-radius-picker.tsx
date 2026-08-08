@@ -27,20 +27,32 @@ function pinSvg(fill: string, stroke: string): string {
   </svg>`;
 }
 
-const PIN_SVG = pinSvg("#b14f24", "#7a3116");
 // Bigger and in the theme's secondary (green) color, so the "selected result"
 // pin reads as clearly distinct from both the small result dots and the
-// primary-colored "search from" origin pin above.
+// primary-colored "search from" origin marker below.
 const SELECTED_PIN_SVG = pinSvg("#61703f", "#3d4a27");
+
+// The search-origin marker — a target/crosshair glyph (lucide's
+// "locate-fixed", the exact same icon as the "Meinen Standort verwenden"
+// button next to the place-search input) on a solid primary-color circle
+// with a white ring, rather than a generic map pin — so this one specific
+// marker reads unambiguously as "this is where you're searching from" (the
+// same idea "Meinen Standort" buttons use everywhere) regardless of whether
+// it got there via that button, a place search, or a direct map click.
+const MY_LOCATION_ICON_HTML = `<span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9999px;background:#b14f24;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.5);color:#fff;">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="2" x2="5" y1="12" y2="12"/><line x1="19" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="5"/><line x1="12" x2="12" y1="19" y2="22"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>
+  </svg>
+</span>`;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createPinIcon(L: any) {
   return L.divIcon({
-    html: PIN_SVG,
+    html: MY_LOCATION_ICON_HTML,
     className: "",
-    iconSize: [30, 42],
-    iconAnchor: [15, 42],
-    popupAnchor: [0, -38],
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -17],
   });
 }
 
@@ -168,6 +180,14 @@ export function LocationRadiusPicker({
   const selectedMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
+  // Always holds the current render's `moveTo` closure — read from the
+  // map's own "click" listener, which is registered exactly once in the
+  // mount-only effect below. A listener registered there would otherwise
+  // permanently close over that first render's `moveTo` (and, transitively,
+  // its `radiusValue`), the same stale-closure trap documented at
+  // `lastChangeKey` below; updating this ref on every render instead keeps
+  // the click handler reading current state without re-registering it.
+  const moveToRef = useRef<(lat: number, lng: number) => void>(() => {});
   // Bounds that fit every result (+ the search origin, if set), captured
   // once at mount so we can zoom back out to it when a selection is
   // cleared — see renderSelectedMarker below.
@@ -371,6 +391,17 @@ export function LocationRadiusPicker({
       const marker = L.marker([startLat, startLng], { icon: createPinIcon(L) });
       if (lat != null && lng != null) marker.addTo(map);
 
+      // A plain click on the base map (never fired for clicks on markers/
+      // popups/controls — those are separate Leaflet layer events, not DOM
+      // bubbling) sets the search origin there, keeping whatever radius is
+      // already selected — see moveTo. Reads through moveToRef rather than
+      // closing over `moveTo` directly since this listener is registered
+      // exactly once here at mount (see moveToRef's own comment above).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      map.on("click", (e: any) => {
+        moveToRef.current(e.latlng.lat, e.latlng.lng);
+      });
+
       mapInstance.current = map;
       markerRef.current = marker;
       leafletRef.current = L;
@@ -502,6 +533,30 @@ export function LocationRadiusPicker({
       if (radiusValue == null) {
         mapInstance.current.setView([newLat, newLng], zoom);
       }
+    }
+  }
+  // Refreshed after every render (not written directly during render — the
+  // same "no ref writes during render" rule that bit homepage-hero-tiles.tsx
+  // earlier applies here too) so the map's click listener, registered once
+  // in the mount effect below, always calls a current `moveTo` via
+  // `moveToRef.current(...)`.
+  useEffect(() => {
+    moveToRef.current = moveTo;
+  });
+
+  // Clears the search origin entirely — both the map marker/circle and the
+  // "Ort oder Region eingeben" text field — via the small "✕" next to that
+  // input. Deliberately doesn't touch the radius selection itself (only the
+  // origin the radius would apply around), matching what was actually
+  // asked for.
+  function clearLocation() {
+    setPlaceQuery("");
+    setSuggestions([]);
+    setSuggestionsOpen(false);
+    setLat(null);
+    setLng(null);
+    if (mapInstance.current && markerRef.current && mapInstance.current.hasLayer(markerRef.current)) {
+      mapInstance.current.removeLayer(markerRef.current);
     }
   }
 
@@ -689,6 +744,21 @@ export function LocationRadiusPicker({
             autoComplete="off"
             className="min-h-11 w-full rounded-xl border border-text/20 bg-bg py-2 pl-3 pr-11 text-sm"
           />
+          {placeQuery || lat != null || lng != null ? (
+            // Same small "✕ overlapping the top-right corner" badge as the
+            // MultiSelectDropdown filter chips' own clear button (see
+            // multi-select-dropdown.tsx) — same size/position/dark-gray
+            // styling, for the same "clear this selection" action language.
+            <button
+              type="button"
+              onClick={clearLocation}
+              aria-label="Ort entfernen"
+              title="Ort entfernen"
+              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-text/60 text-[9px] leading-none text-white shadow-sm transition-colors hover:bg-text"
+            >
+              ✕
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={useMyLocation}
