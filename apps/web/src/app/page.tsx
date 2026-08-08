@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   Home as HomeIcon,
   CalendarDays,
@@ -7,18 +6,21 @@ import {
   Handshake,
   CalendarCheck,
   ArrowRight,
-  Users2,
   MapPin,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { HomepageHeroTiles, type HeroPoolItem } from "@/components/homepage-hero-tiles";
 
-// Bento-Grid-Layout fürs Hero: 3 zufällige Projektbilder + 1 zufälliges
-// Terminbild (statt fixer Logos/Stimmungsbilder), siehe getHeroTiles()
-// unten. Diese vier kuratierten, personenfreien Stimmungsbilder dienen nur
-// noch als Lückenfüller, solange es noch keine (oder zu wenige) echten
-// Fotos gibt — zeigen bewusst Orte/Situationen des Zusammenlebens, nie
-// Gesichter/Personen, siehe public/homepage/.
+// Hero-Bento-Grid: 3 Projekt- + 1 Terminbild, gezogen aus einem größeren
+// zufälligen Pool (siehe getHeroPools()) statt nur genau 3+1 Kandidaten —
+// HomepageHeroTiles (Client-Komponente) rotiert clientseitig durch diesen
+// Pool, damit die gezeigten Beispiele sich immer wieder ändern, statt nur
+// einmal pro Seitenaufruf zufällig zu sein. Diese vier kuratierten,
+// personenfreien Stimmungsbilder dienen nur als Lückenfüller, solange es
+// noch keine (oder zu wenige) echten Fotos gibt — zeigen bewusst
+// Orte/Situationen des Zusammenlebens, nie Gesichter/Personen, siehe
+// public/homepage/.
 const FALLBACK_HERO_IMAGES = [
   {
     src: "/homepage/hero-garten-tisch.jpg",
@@ -38,25 +40,16 @@ const FALLBACK_HERO_IMAGES = [
   },
 ];
 
-const HERO_TILE_GRID_CLASS = ["col-span-2", "", "", "col-span-2"];
-const HERO_TILE_VISUAL_CLASS = [
-  "aspect-[4/3] -rotate-1",
-  "aspect-square rotate-2",
-  "aspect-square -rotate-2",
-  "aspect-[16/9] rotate-1",
-];
+// Deutlich größer als die 3+1 tatsächlich gezeigten Kacheln, damit die
+// clientseitige Rotation in HomepageHeroTiles echte Abwechslung hat, statt
+// nur dieselben 3-4 Beispiele endlos neu anzuordnen.
+const LISTING_POOL_SIZE = 9;
+const EVENT_POOL_SIZE = 4;
 
-type HeroTile = {
-  key: string;
-  src: string;
-  alt: string;
-  label?: string;
-  href?: string;
-  gridClassName: string;
-  visualClassName: string;
-};
-
-async function getHeroTiles(): Promise<HeroTile[]> {
+async function getHeroPools(): Promise<{
+  listingPool: HeroPoolItem[];
+  eventPool: HeroPoolItem[];
+}> {
   const [listingRows, upcomingEventRows] = await Promise.all([
     prisma.$queryRaw<
       { id: string; slug: string; projectName: string; thumbnailKey: string | null; storageKey: string }[]
@@ -66,7 +59,7 @@ async function getHeroTiles(): Promise<HeroTile[]> {
       JOIN "Media" m ON m."listingId" = l.id AND m.position = 0
       WHERE l.status = 'PUBLISHED'
       ORDER BY random()
-      LIMIT 3
+      LIMIT ${LISTING_POOL_SIZE}
     `,
     prisma.$queryRaw<
       { id: string; slug: string; title: string; thumbnailKey: string | null; storageKey: string }[]
@@ -76,12 +69,12 @@ async function getHeroTiles(): Promise<HeroTile[]> {
       JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
       WHERE e.status = 'PUBLISHED' AND e."startAt" >= NOW()
       ORDER BY random()
-      LIMIT 1
+      LIMIT ${EVENT_POOL_SIZE}
     `,
   ]);
 
-  // Falls es (noch) keinen anstehenden Termin mit Foto gibt, notfalls auch
-  // ein vergangenes Terminbild zeigen, statt gleich auf den Lückenfüller
+  // Falls es (noch) keine anstehenden Termine mit Foto gibt, notfalls auch
+  // vergangene Terminbilder einbeziehen, statt gleich auf den Lückenfüller
   // zurückzufallen.
   const eventRows =
     upcomingEventRows.length > 0
@@ -94,45 +87,45 @@ async function getHeroTiles(): Promise<HeroTile[]> {
           JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
           WHERE e.status = 'PUBLISHED'
           ORDER BY random()
-          LIMIT 1
+          LIMIT ${EVENT_POOL_SIZE}
         `;
 
-  const listingTiles: Omit<HeroTile, "gridClassName" | "visualClassName">[] = listingRows.map((listing) => ({
+  const listingPool: HeroPoolItem[] = listingRows.map((listing) => ({
     key: `listing-${listing.id}`,
     src: `/api/media/${listing.thumbnailKey ?? listing.storageKey}`,
     alt: listing.projectName,
     label: listing.projectName,
     href: `/projekt/${listing.slug}`,
+    kind: "projekt",
   }));
-  while (listingTiles.length < 3) {
-    const fallback = FALLBACK_HERO_IMAGES[listingTiles.length];
-    listingTiles.push({
-      key: `fallback-listing-${listingTiles.length}`,
+  let fallbackIndex = 0;
+  while (listingPool.length < 3) {
+    const fallback = FALLBACK_HERO_IMAGES[fallbackIndex % FALLBACK_HERO_IMAGES.length];
+    listingPool.push({
+      key: `fallback-listing-${fallbackIndex}`,
       src: fallback.src,
       alt: fallback.alt,
     });
+    fallbackIndex++;
   }
 
-  const event = eventRows[0];
-  const eventTile: Omit<HeroTile, "gridClassName" | "visualClassName"> = event
-    ? {
-        key: `event-${event.id}`,
-        src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
-        alt: event.title,
-        label: event.title,
-        href: `/event/${event.slug}`,
-      }
-    : {
-        key: "fallback-event",
-        src: FALLBACK_HERO_IMAGES[3].src,
-        alt: FALLBACK_HERO_IMAGES[3].alt,
-      };
-
-  return [...listingTiles, eventTile].map((tile, index) => ({
-    ...tile,
-    gridClassName: HERO_TILE_GRID_CLASS[index],
-    visualClassName: HERO_TILE_VISUAL_CLASS[index],
+  const eventPool: HeroPoolItem[] = eventRows.map((event) => ({
+    key: `event-${event.id}`,
+    src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
+    alt: event.title,
+    label: event.title,
+    href: `/event/${event.slug}`,
+    kind: "termin",
   }));
+  if (eventPool.length === 0) {
+    eventPool.push({
+      key: "fallback-event",
+      src: FALLBACK_HERO_IMAGES[3].src,
+      alt: FALLBACK_HERO_IMAGES[3].alt,
+    });
+  }
+
+  return { listingPool, eventPool };
 }
 
 const zielgruppen = [
@@ -218,7 +211,7 @@ const schritte = [
 export default async function Home() {
   const now = new Date();
 
-  const [publishedListingsCount, upcomingEventsCount, cityRows, heroImages] =
+  const [publishedListingsCount, upcomingEventsCount, cityRows, heroPools] =
     await Promise.all([
       prisma.listing.count({ where: { status: "PUBLISHED" } }),
       prisma.event.count({
@@ -229,7 +222,7 @@ export default async function Home() {
         select: { city: true },
         distinct: ["city"],
       }),
-      getHeroTiles(),
+      getHeroPools(),
     ]);
 
   const stats = [
@@ -271,20 +264,56 @@ export default async function Home() {
               Veranstalten. Ohne automatisiertes Matching, immer mit
               eigenständiger Suche.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Link
                 href="/projekte"
-                className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-8 text-base font-semibold text-white shadow-md transition-colors hover:bg-primary-hover sm:w-auto"
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl bg-primary p-5 text-left text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
-                <HomeIcon className="h-5 w-5" aria-hidden="true" />
-                Wohnprojekte entdecken
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125"
+                />
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none">
+                  <HomeIcon className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-lg font-bold">Wohnprojekte entdecken</span>
+                  <span className="mt-1 block text-sm text-white/85">
+                    Alle Wohnprojekte durchsuchen und filtern – nach Ort, Lebensform und mehr, ganz ohne Anmeldung.
+                  </span>
+                </span>
+                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold">
+                  Jetzt durchstöbern
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5 motion-reduce:transition-none"
+                    aria-hidden="true"
+                  />
+                </span>
               </Link>
               <Link
                 href="/termine"
-                className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-secondary px-8 text-base font-semibold text-white shadow-md transition-colors hover:bg-secondary-hover sm:w-auto"
+                className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl bg-secondary p-5 text-left text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
-                <CalendarDays className="h-5 w-5" aria-hidden="true" />
-                Veranstaltungen ansehen
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125"
+                />
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none">
+                  <CalendarDays className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-lg font-bold">Veranstaltungen ansehen</span>
+                  <span className="mt-1 block text-sm text-white/85">
+                    Infotage, Besuchstage und mehr – Gelegenheiten zum persönlichen Kennenlernen.
+                  </span>
+                </span>
+                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold">
+                  Termine ansehen
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5 motion-reduce:transition-none"
+                    aria-hidden="true"
+                  />
+                </span>
               </Link>
             </div>
 
@@ -304,74 +333,12 @@ export default async function Home() {
             )}
           </div>
 
-          <div className="relative mx-auto w-full max-w-sm lg:max-w-md">
-            <div className="grid grid-cols-2 gap-3">
-              {heroImages.map((image, index) => {
-                const tile = (
-                  <>
-                    <Image
-                      src={image.src}
-                      alt={image.alt}
-                      fill
-                      sizes="(min-width: 1024px) 340px, (min-width: 640px) 45vw, 80vw"
-                      priority={index === 0}
-                      className="object-cover"
-                    />
-                    {image.label && (
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-8">
-                        <p className="truncate text-center text-sm font-semibold text-white [text-shadow:0_1px_2px_rgb(0_0_0_/_0.6)]">
-                          {image.label}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                );
-                const isLastTile = index === heroImages.length - 1;
-                return (
-                  <div key={image.key} className={`relative ${image.gridClassName}`}>
-                    <div
-                      className={`relative overflow-hidden rounded-3xl shadow-lg ${image.visualClassName}`}
-                    >
-                      {image.href ? (
-                        <Link
-                          href={image.href}
-                          className="absolute inset-0 block"
-                          aria-label={image.label}
-                        >
-                          {tile}
-                        </Link>
-                      ) : (
-                        tile
-                      )}
-                    </div>
-                    {isLastTile && upcomingEventsCount > 0 && (
-                      <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg">
-                        <CalendarDays
-                          className="h-6 w-6 shrink-0 text-secondary"
-                          aria-hidden="true"
-                        />
-                        <p className="whitespace-nowrap text-sm font-medium leading-snug">
-                          {upcomingEventsCount}{" "}
-                          {upcomingEventsCount === 1 ? "Veranstaltung" : "Veranstaltungen"} auf
-                          LiGem
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {stats.length > 0 && (
-              <div className="absolute -top-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg sm:-left-6 sm:translate-x-0">
-                <Users2 className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-                <p className="whitespace-nowrap text-sm font-medium leading-snug">
-                  Bereits {publishedListingsCount}{" "}
-                  {publishedListingsCount === 1 ? "Wohnprojekt" : "Wohnprojekte"}{" "}
-                  auf LiGem
-                </p>
-              </div>
-            )}
-          </div>
+          <HomepageHeroTiles
+            listingPool={heroPools.listingPool}
+            eventPool={heroPools.eventPool}
+            upcomingEventsCount={upcomingEventsCount}
+            publishedListingsCount={publishedListingsCount}
+          />
         </div>
       </section>
 
