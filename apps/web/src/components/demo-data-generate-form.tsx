@@ -19,6 +19,7 @@ export function DemoDataGenerateForm({
   defaultValue,
   start,
   getProgress,
+  countryOptions,
 }: {
   title: string;
   description: string;
@@ -26,11 +27,20 @@ export function DemoDataGenerateForm({
   min: number;
   max: number;
   defaultValue: number;
-  start: (count: number) => Promise<{ jobId: string }>;
+  start: (count: number, countries: string[]) => Promise<{ jobId: string }>;
   getProgress: (jobId: string) => Promise<ProgressState>;
+  // Only passed for the "Demo-Projekte generieren" form — when set, renders
+  // a collapsible "Länder" checkbox multi-select (see EUROPEAN_COUNTRIES in
+  // shared.ts) restricting which countries' cities/villages newly generated
+  // listings can land in; an empty selection means every country, matching
+  // the default weighting pickLocation() already used before this existed.
+  // The events form has no location of its own (it inherits the listing's),
+  // so it never passes this.
+  countryOptions?: string[];
 }) {
   const router = useRouter();
   const [count, setCount] = useState(defaultValue);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [busy, setBusy] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -48,7 +58,7 @@ export function DemoDataGenerateForm({
     setBusy(true);
     setProgress({ total: count, completed: 0, done: false, error: null, label: "" });
 
-    const { jobId } = await start(count);
+    const { jobId } = await start(count, selectedCountries);
     pollRef.current = setInterval(async () => {
       const state = await getProgress(jobId);
       setProgress(state);
@@ -87,6 +97,38 @@ export function DemoDataGenerateForm({
           className="min-h-12 w-32 rounded-xl border border-text/20 bg-bg px-4 text-text disabled:opacity-60"
         />
       </div>
+
+      {countryOptions && countryOptions.length > 0 ? (
+        <details className="rounded-xl border border-text/20">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-4 py-2 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
+            Länder
+            <span className="ml-2 text-text-muted">
+              {selectedCountries.length === 0
+                ? "(alle)"
+                : `(${selectedCountries.length} ausgewählt)`}
+            </span>
+          </summary>
+          <div className="grid grid-cols-2 gap-2 border-t border-text/10 p-3 sm:grid-cols-3">
+            {countryOptions.map((country) => (
+              <label key={country} className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selectedCountries.includes(country)}
+                  disabled={busy}
+                  onChange={(e) =>
+                    setSelectedCountries((prev) =>
+                      e.target.checked ? [...prev, country] : prev.filter((c) => c !== country),
+                    )
+                  }
+                  className="h-5 w-5"
+                />
+                {country}
+              </label>
+            ))}
+          </div>
+        </details>
+      ) : null}
+
       <button
         type="submit"
         disabled={busy}

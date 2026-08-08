@@ -194,7 +194,7 @@ export type GenerateProgress = (current: number, total: number, message: string)
 /**
  * Creates `count` (clamped 1-100) synthetic, clearly-fake Wohnprojekt
  * listings with a wide randomized spread of attributes, categories, address/
- * geo data and 1-2 photos each. Every created row has `isDemo: true`, and
+ * geo data and 3-6 photos each. Every created row has `isDemo: true`, and
  * every project name/motto/"So leben wir"/"Wen wir suchen" is unique both
  * within this batch and against demo listings already in the database (see
  * pickUniqueComposed in shared.ts).
@@ -202,6 +202,10 @@ export type GenerateProgress = (current: number, total: number, message: string)
 export async function generateDemoListings(
   count: number,
   onProgress?: GenerateProgress,
+  // Restricts generated locations to these countries (see pickLocation in
+  // shared.ts) — empty/undefined means every supported country, matching
+  // the previous unconditional behavior.
+  countries?: string[],
 ): Promise<{ created: number }> {
   const clamped = Math.min(100, Math.max(1, Math.floor(count)));
 
@@ -235,13 +239,37 @@ export async function generateDemoListings(
   const usedWhoWeSeek = new Set(
     existingDemoListings.map((l) => l.whoWeAreLooking).filter((v): v is string => Boolean(v)),
   );
+  // Shared across this whole batch (not persisted/re-seeded from the
+  // database like the text-uniqueness sets above) so photo repeats are
+  // avoided within a single generation run — see attachRandomPhoto.
+  const usedPhotoIds = new Set<string>();
+
+  const projektTypGroup = listingGroups.find((g) => g.slug === "projekt-typ");
+  const geschlechterGroup = listingGroups.find((g) => g.slug === "geschlechterverteilung");
 
   for (let i = 0; i < clamped; i++) {
-    const { location: city, isVillage } = pickLocation();
+    const { location: city, isVillage } = pickLocation(countries);
     const projectName = pickUniqueComposed(buildProjectNameCandidate, usedNames);
     const motto = chance(0.85) ? pickUniqueComposed(buildMottoCandidate, usedMottos) : null;
+    // Picked here (both are single-value groups, allowMultiple: false) —
+    // *before* generating howWeLive — rather than inside the generic
+    // attribute-assignment loop below, so the same actual selection can be
+    // woven into the "So leben wir" text (see buildLongDescriptionCandidate
+    // in long-description.ts) instead of the text and the listing's own
+    // filterable attributes describing two different, inconsistent things.
+    const projektTypOption = projektTypGroup && chance(0.9) ? pick(projektTypGroup.options) : null;
+    const geschlechterOption = geschlechterGroup && chance(0.9) ? pick(geschlechterGroup.options) : null;
     const howWeLive = chance(0.8)
-      ? pickUniqueComposed(() => buildLongDescriptionCandidate(city.city, isVillage), usedHowWeLive)
+      ? pickUniqueComposed(
+          () =>
+            buildLongDescriptionCandidate(
+              city.city,
+              isVillage,
+              projektTypOption?.name,
+              geschlechterOption?.name,
+            ),
+          usedHowWeLive,
+        )
       : null;
     const whoWeAreLooking = chance(0.75)
       ? pickUniqueComposed(buildWhoWeSeekCandidate, usedWhoWeSeek)
@@ -312,13 +340,25 @@ export async function generateDemoListings(
     });
 
     // One attribute option per group (respecting allowMultiple), mixed
-    // wildly across all groups so every filter combination gets exercised.
+    // wildly across all groups so every filter combination gets exercised —
+    // except projekt-typ/geschlechterverteilung, already decided above
+    // (and woven into howWeLive), reused here rather than re-rolled so the
+    // assigned attribute and the free-text description actually agree.
     for (const group of listingGroups) {
-      const selected = group.allowMultiple
-        ? pickMultiple(group.options, 3)
-        : chance(0.9)
-          ? [pick(group.options)]
-          : [];
+      const selected =
+        group.slug === "projekt-typ"
+          ? projektTypOption
+            ? [projektTypOption]
+            : []
+          : group.slug === "geschlechterverteilung"
+            ? geschlechterOption
+              ? [geschlechterOption]
+              : []
+            : group.allowMultiple
+              ? pickMultiple(group.options, 3)
+              : chance(0.9)
+                ? [pick(group.options)]
+                : [];
       for (const option of selected) {
         await prisma.listingAttributeOption.create({
           data: { listingId: listing.id, optionId: option.id },
@@ -331,7 +371,7 @@ export async function generateDemoListings(
     // Three to six photos per listing, enough to exercise a real gallery.
     const photoCount = randomInt(3, 6);
     for (let p = 0; p < photoCount; p++) {
-      const stored = await attachRandomPhoto(`listings/${listing.id}`);
+      const stored = await attachRandomPhoto(`listings/${listing.id}`, usedPhotoIds);
       if (!stored) continue;
       await prisma.media.create({
         data: {

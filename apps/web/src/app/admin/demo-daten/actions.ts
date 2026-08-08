@@ -8,6 +8,7 @@ import { requireAdminAction } from "@/lib/authz";
 import { generateDemoListings } from "@/lib/demo-data/listings";
 import { generateDemoEvents } from "@/lib/demo-data/events";
 import { deleteAllDemoData } from "@/lib/demo-data/cleanup";
+import { EUROPEAN_COUNTRIES } from "@/lib/demo-data/shared";
 import {
   completeJob,
   createJob,
@@ -34,16 +35,27 @@ function errorMessage(err: unknown): string {
 // `after()`, Next's sanctioned way to keep running background work past the
 // point the response was sent (see DemoDataGenerateForm, which polls
 // getGenerateProgress for this job id until it's done).
-export async function startGenerateListings(count: number): Promise<{ jobId: string }> {
+export async function startGenerateListings(
+  count: number,
+  // From /admin/demo-daten's "Länder" checkbox multi-select — filtered
+  // against the known-real EUROPEAN_COUNTRIES list rather than trusted
+  // as-is, since this ultimately reaches a raw Prisma create() call.
+  countries?: string[],
+): Promise<{ jobId: string }> {
   await requireAdminAction();
   const clamped = Math.min(100, Math.max(1, Math.floor(count)));
+  const validCountries = (countries ?? []).filter((c) => EUROPEAN_COUNTRIES.includes(c));
   const jobId = createJob(clamped);
 
   after(async () => {
     try {
-      await generateDemoListings(clamped, (current, _total, message) => {
-        updateJob(jobId, current, message);
-      });
+      await generateDemoListings(
+        clamped,
+        (current, _total, message) => {
+          updateJob(jobId, current, message);
+        },
+        validCountries,
+      );
       completeJob(jobId);
     } catch (err) {
       failJob(jobId, errorMessage(err));

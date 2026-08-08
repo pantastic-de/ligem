@@ -101,6 +101,28 @@ const ABSURD_TOPICS = [
   "Wie spreche ich fließend mit meinem Komposthaufen", "Extremstaubsaugen: Ein Wettbewerb",
   "Wie zähme ich meinen inneren Waschbären", "Vogelspinnen-Kuscheltherapie für Fortgeschrittene",
   "Wie trainiere ich meine Schnecke für den Stadtmarathon",
+
+  // Weitere Esoterik/Spiritualität
+  "Numerologie der Restmülltonne", "Aurareinigung für die Waschmaschine",
+  "Schutzkristalle für den Fahrradkeller", "Tarot-Legung für die nächste Nachbarschaftsversammlung",
+  "Räuchern gegen schlechte Laune im Treppenhaus", "Mondkalender-Kompost für Fortgeschrittene",
+  "Engelsbotschaften beim Rasenmähen", "Handauflegen für den klemmenden Gartentorriegel",
+  "Astralreisen für Late-Riser:innen", "Zahlenmystik unserer Nebenkostenabrechnung, Teil 2",
+
+  // Weitere harmlos-kleinteilige Schwurbel/Verschwörungstheorien-Satire —
+  // wie oben bewusst albern statt real, keine echten Verschwörungsideologien
+  "Wer klaut wirklich die Gartenschläuche? Eine Spurensuche", "Steuert die Kompostwurm-Lobby unseren Speiseplan?",
+  "5G und die Sache mit den schrumpfenden Radieschen", "Wurde der Rasenmäher wirklich nur „ausgeliehen“?",
+  "Die Wahrheit über das zweite Gartentor, das niemand gebaut hat", "Verschwörung im Treppenhaus: Wer stellt die Schuhe um?",
+
+  // Weitere legale Alternativ-Szene-Themen
+  "Cuddle-Yoga für Frühaufsteher:innen", "Slow-Dating beim gemeinsamen Unkrautjäten",
+  "FKK-Frühstück, wetterfest verschiebbar", "Tantrisches Wäscheaufhängen, ganz ohne Zeitdruck",
+
+  // Weitere absurde Hobby/Tier-Kombinationen
+  "Wie ich meinem Kaktus das Klavierspielen beibrachte", "Speed-Stricken gegen die eigene Zimmerpflanze",
+  "Meerschweinchen-Yoga, die zweite Stufe", "Wie überzeuge ich meine Schnecke vom Vegetarismus",
+  "Extrembügeln bei Vollmond", "Wie bringe ich meinem Goldfisch das Ämtli-System bei",
 ];
 
 const MITMACHTAG_ACTIONS = [
@@ -551,6 +573,9 @@ export async function generateDemoEvents(
 
   const usedTitles = new Set(existingDemoEvents.map((e) => e.title));
   const usedDescriptions = new Set(existingDemoEvents.map((e) => e.description).filter((v): v is string => Boolean(v)));
+  // Shared across this whole batch so photo repeats are avoided within a
+  // single generation run — see attachRandomPhoto in shared.ts.
+  const usedPhotoIds = new Set<string>();
 
   for (let i = 0; i < clamped; i++) {
     const listing = pick(demoListings);
@@ -600,20 +625,22 @@ export async function generateDemoEvents(
 
     await setEventLocation(event.id, listing.latitude, listing.longitude);
 
-    if (chance(0.7)) {
-      const stored = await attachRandomPhoto(`events/${event.id}`);
-      if (stored) {
-        await prisma.media.create({
-          data: {
-            eventId: event.id,
-            type: "PHOTO",
-            storageKey: stored.storageKey,
-            thumbnailKey: stored.thumbnailKey,
-            position: 0,
-            uploadedById: listing.createdById,
-          },
-        });
-      }
+    // One to five photos per event, matching listings' own randomized
+    // gallery size (see generateDemoListings) rather than at most one.
+    const photoCount = randomInt(1, 5);
+    for (let p = 0; p < photoCount; p++) {
+      const stored = await attachRandomPhoto(`events/${event.id}`, usedPhotoIds);
+      if (!stored) continue;
+      await prisma.media.create({
+        data: {
+          eventId: event.id,
+          type: "PHOTO",
+          storageKey: stored.storageKey,
+          thumbnailKey: stored.thumbnailKey,
+          position: p,
+          uploadedById: listing.createdById,
+        },
+      });
     }
 
     onProgress?.(i + 1, clamped, `${event.title} (${duration})`);

@@ -158,6 +158,41 @@ const THEMES: Theme[] = [
     ],
   },
   {
+    // Bewusst kleinteilig-albern (verschwundene Gartengeräte, Straßenlaternen,
+    // Wetterbericht) statt real — dieselbe harmlose Selbstironie wie
+    // ABSURD_TOPICS' "Schwurbel/Verschwörungstheorien"-Abschnitt in events.ts,
+    // niemals eine echte Verschwörungsideologie oder ein politisches Thema.
+    slug: "verschwoerung",
+    opener: [
+      "Am Gartentor hängt eine handgemalte Karte, auf der eingezeichnet ist, aus welcher Richtung angeblich die Funkmasten am stärksten strahlen.",
+      "Schon beim Betreten wird man gebeten, das Handy kurz in eine kleine Alu-Dose zu legen, „nur für den Hausfrieden, nicht dass wir was gegen Technik hätten“.",
+      "Im Flur hängt ein Whiteboard mit Pfeilen, Fragezeichen und der Aufschrift „Wer hat wirklich die Kompostgabel versteckt?“.",
+      "Am Zaun klebt ein Aufkleber: „Wir glauben nicht alles, aber wir hinterfragen alles, auch den Wetterbericht.“",
+      "Wer hier ankommt, bekommt zur Begrüßung erstmal die aktuelle Theorie zum verschwundenen zweiten Gartenschlauch erklärt.",
+    ],
+    building: [
+      "Im Keller steht ein selbstgebauter Faraday-Käfig, der offiziell für die Nachbarschaftsdrohne gedacht ist, inoffiziell für „alles Mögliche“.",
+      "An der Wand hängt eine Weltkarte mit roten Fäden, die aber, wie jede und jeder betont, nur den Gemüselieferweg vom letzten Sommer nachzeichnet.",
+      "Im Wohnzimmer liegt ein Stapel Bücher über Erdstrahlen, direkt neben dem WLAN-Router, was schon mehrfach für Diskussionen sorgte.",
+      "Auf dem Dach steht eine Antenne unklarer Funktion, die laut Bauplan „nur für besseren Fußball-Empfang“ montiert wurde.",
+      "In der Küche hängt ein Kalender, der neben Vollmondphasen penibel jeden Stromausfall der letzten drei Jahre dokumentiert.",
+    ],
+    people: [
+      "Hier lebt ein pensionierter Elektriker, der fest davon überzeugt ist, dass der Nachbarort heimlich seine Ampelschaltung manipuliert.",
+      "Man erkennt die Bewohner:innen daran, dass sie beim Wetterbericht regelmäßig skeptisch die Augenbraue heben.",
+      "Zuletzt gab es eine lange, sehr ernsthaft geführte Diskussion darüber, ob die neue Straßenlaterne wirklich nur eine Straßenlaterne ist, mit einem versöhnlichen, aber ungeklärten Ende.",
+      "Alle hier haben eine eigene Theorie dazu, wer den Gartenzwerg letzten Herbst wirklich verschoben hat.",
+      "Neuankömmlinge werden freundlich, aber bestimmt gefragt, ob sie zufällig auch etwas über die Sache mit dem Funkmast wissen.",
+    ],
+    closer: [
+      "Ob da wirklich etwas dran ist oder einfach nur viel Fantasie und noch mehr Kaffee im Spiel war, bleibt am Ende jedem selbst überlassen.",
+      "So bleibt dieses Haus, was es schon immer war: misstrauisch gegenüber der Welt, aber herzlich zueinander.",
+      "Am Ende des Tages einigt man sich meist auf einen Kompromiss: vielleicht ist es wirklich nur der Wind gewesen.",
+      "Wer hier einzieht, sollte zumindest offen für ungewöhnliche Theorien beim Frühstück sein.",
+      "Und egal, was wirklich hinter der Sache mit der Kompostgabel steckt: gemeinsam nach ihr gesucht wird hier auf jeden Fall.",
+    ],
+  },
+  {
     slug: "sekte",
     opener: [
       "Am Eingangstor hängt ein handgemaltes Porträt des Gründers, das freundlich, aber unübersehbar jeden Besuch begrüßt.",
@@ -549,6 +584,80 @@ const CITY_REGION_FLAVOR = [
   "Die Nachbarschaft rund um dieses Haus in {city} ist bunt gemischt, laut, lebendig und garantiert nie langweilig.",
 ];
 
+// One extra sentence woven into the "Das Zuhause" paragraph, reflecting the
+// listing's actual "Projekt Typ" attribute (see CLAUDE.md's Generic
+// filter-attribute system) — several themes' own building sentences
+// otherwise describe a whole standalone house (cellar, attic, barn, ...)
+// regardless of whether the listing is actually a single "Zimmer" or a
+// mobile "Wohnwagen"/"Tipi", which read as inconsistent once someone
+// compared the free-text description against the listing's own filters.
+// Several short variants per type avoid the same sentence repeating across
+// every listing of that type.
+const PROJEKT_TYP_HINTS: Record<string, string[]> = {
+  Zimmer: [
+    "Konkret geht es hier um ein einzelnes Zimmer innerhalb der gemeinsam bewohnten Wohnung, nicht um ein ganzes Haus für sich allein.",
+    "Wer einzieht, bekommt genau dieses eine Zimmer, alles andere im Haus bleibt ganz selbstverständlich Gemeinschaftsfläche.",
+    "Das angebotene Zimmer liegt mitten im übrigen Trubel des Hauses, Rückzug und Gemeinschaft nur eine Tür voneinander entfernt.",
+  ],
+  Wohnwagen: [
+    "Gewohnt wird hier tatsächlich in einem Wohnwagen, fest auf dem Grundstück verankert, aber jederzeit bereit, auch mal woanders zu stehen.",
+    "Der Wohnwagen selbst ist klein, das Gelände drumherum wird dafür umso großzügiger mitgenutzt.",
+    "Wände aus Blech statt Mauerwerk, dafür ein Grundstück, das sich anfühlt wie ein viel größeres Zuhause.",
+  ],
+  Tipi: [
+    "Gewohnt wird in einem echten Tipi, Leinwand statt Mauern, mit allem, was das an Nähe zu Wetter und Jahreszeiten mit sich bringt.",
+    "Wer hier übernachtet, hört den Regen auf der Zeltplane, bevor die Kaffeemaschine überhaupt an ist.",
+    "Fest steht hier vor allem der Feuerplatz, das Tipi selbst könnte im Grunde jederzeit woanders wieder aufgebaut werden.",
+  ],
+  Seminarhaus: [
+    "Das Gebäude war ursprünglich als Seminarhaus gedacht, entsprechend großzügig fallen Gemeinschaftsräume und Übernachtungskapazität aus.",
+    "Neben dem eigentlichen Wohnen finden hier regelmäßig auch Seminare und Workshops für Gäste von außerhalb statt.",
+    "Der große Seminarraum ist das eigentliche Herzstück des Hauses, Wohnen findet drumherum in kleineren Zimmern statt.",
+  ],
+  Bauernhaus: [
+    "Das ehemalige Bauernhaus bringt Stallungen, Scheune und weitläufige Nebengebäude gleich mit, die alle irgendwie mitgenutzt werden.",
+    "Wer hier wohnt, lebt in einem echten alten Bauernhaus, mit allem an Charme und Sanierungsbedarf, den das mit sich bringt.",
+    "Rund um das Bauernhaus gehören Stall, Scheune und ein gutes Stück Land ganz selbstverständlich mit zum Alltag.",
+  ],
+  Haus: [
+    "Gewohnt wird in einem ganz gewöhnlichen, aber gemeinsam bewohnten Haus, ohne besondere bauliche Eigenheiten.",
+    "Das Haus selbst ist unspektakulär, was hier zählt, ist eindeutig das Leben darin.",
+  ],
+};
+
+// Same idea as PROJEKT_TYP_HINTS, but for the listing's "Geschlechterverteilung
+// der Gruppe" attribute — one extra sentence woven into "Die Menschen hier",
+// stated plainly and without tying it to any particular hobby/theme (that
+// would tip into exactly the kind of gender stereotyping this is meant to
+// avoid, e.g. "yoga is for women" — this only ever states the composition
+// itself as a fact of the household, nothing more).
+const GESCHLECHTERVERTEILUNG_HINTS: Record<string, string[]> = {
+  "Nur Frauen": [
+    "Bewusst leben hier ausschließlich Frauen zusammen, eine klare, gemeinsam getroffene Entscheidung der Gruppe.",
+    "Diese Wohngemeinschaft ist ganz bewusst ein reiner Frauenhaushalt, das war von Anfang an so gewollt.",
+  ],
+  "Nur Männer": [
+    "Hier leben ausschließlich Männer zusammen, eine bewusste Entscheidung, kein Zufall der Belegung.",
+    "Diese Wohngemeinschaft ist ganz bewusst ein reiner Männerhaushalt.",
+  ],
+  "Überwiegend weiblich": [
+    "Aktuell leben hier deutlich mehr Frauen als Männer, ohne dass das eine feste Regel wäre.",
+    "Die Gruppe ist derzeit überwiegend weiblich besetzt, künftige Zuzüge sind aber nicht darauf beschränkt.",
+  ],
+  "Überwiegend männlich": [
+    "Aktuell leben hier deutlich mehr Männer als Frauen, ohne dass das eine feste Regel wäre.",
+    "Die Gruppe ist derzeit überwiegend männlich besetzt, künftige Zuzüge sind aber nicht darauf beschränkt.",
+  ],
+  "Divers/offen": [
+    "Bei der Geschlechterverteilung ist hier bewusst alles offen, Hauptsache, es passt menschlich.",
+    "Wie sich die Gruppe geschlechtlich zusammensetzt, ist hier ausdrücklich zweitrangig, offen für alle ist wörtlich gemeint.",
+  ],
+  Gemischt: [
+    "Die Gruppe ist geschlechtlich gemischt, ganz ohne festes Verhältnis oder Quote.",
+    "Männer, Frauen, und alles dazwischen leben hier ganz selbstverständlich Tür an Tür.",
+  ],
+};
+
 /**
  * Composes a long (~200-400 word), deliberately absurd/over-the-top "So
  * leben wir" text: one random theme's opener, two region-flavor sentences
@@ -565,19 +674,39 @@ const CITY_REGION_FLAVOR = [
  * as a `<blockquote>` instead of plain paragraph text since it already
  * reads like a quoted anecdote, and the closing paragraph is wrapped in
  * `<u>` for a touch of emphasis.
+ *
+ * `projektTyp`/`geschlechterverteilung` (the listing's actual "Projekt Typ"/
+ * "Geschlechterverteilung der Gruppe" attribute option names, when the
+ * listing has one — see listings.ts, which picks these *before* generating
+ * this text specifically so they can be threaded through here) each add one
+ * extra sentence from PROJEKT_TYP_HINTS/GESCHLECHTERVERTEILUNG_HINTS above,
+ * so the free-text description stays consistent with what the listing's own
+ * filterable attributes actually say rather than describing, say, a whole
+ * farmhouse for a listing that's actually just a "Zimmer".
  */
-export function buildLongDescriptionCandidate(cityName: string, isVillage: boolean): string {
+export function buildLongDescriptionCandidate(
+  cityName: string,
+  isVillage: boolean,
+  projektTyp?: string | null,
+  geschlechterverteilung?: string | null,
+): string {
   const theme = pick(THEMES);
   const vars = { city: cityName };
   const regionBank = isVillage ? VILLAGE_REGION_FLAVOR : CITY_REGION_FLAVOR;
   const fill = (sentence: string) => fillTemplate(sentence, vars);
 
   const intro = [pick(theme.opener), ...pickNDistinct(regionBank, 2)].map(fill).join(" ");
-  const building = pickNDistinct(theme.building, 4).map(fill).join(" ");
+  const typHints = projektTyp ? PROJEKT_TYP_HINTS[projektTyp] : undefined;
+  const building = [...pickNDistinct(theme.building, 4), ...(typHints ? [pick(typHints)] : [])]
+    .map(fill)
+    .join(" ");
 
   const vignette = theme.people.find((s) => s.includes("Zuletzt gab es"));
   const remainingPeople = theme.people.filter((s) => s !== vignette);
-  const people = pickNDistinct(remainingPeople, vignette ? 3 : 4).map(fill).join(" ");
+  const genderHints = geschlechterverteilung ? GESCHLECHTERVERTEILUNG_HINTS[geschlechterverteilung] : undefined;
+  const people = [...pickNDistinct(remainingPeople, vignette ? 3 : 4), ...(genderHints ? [pick(genderHints)] : [])]
+    .map(fill)
+    .join(" ");
 
   const closing = pickNDistinct(theme.closer, 2).map(fill).join(" ");
 

@@ -118,6 +118,79 @@ const CITIES: City[] = [
   { city: "Salzburg", postalCode: "5020", state: "Salzburg", country: "Österreich", lat: 47.8095, lng: 13.055 },
   { city: "Zürich", postalCode: "8001", state: "Zürich", country: "Schweiz", lat: 47.3769, lng: 8.5417 },
   { city: "Bern", postalCode: "3011", state: "Bern", country: "Schweiz", lat: 46.948, lng: 7.4474 },
+
+  // Further European countries — no VILLAGES pool for these (see below),
+  // just real major cities, so the international-platform aspect (see
+  // CLAUDE.md's project description) has more than DACH to search across.
+  { city: "Paris", postalCode: "75001", state: "Île-de-France", country: "Frankreich", lat: 48.8566, lng: 2.3522 },
+  { city: "Lyon", postalCode: "69001", state: "Auvergne-Rhône-Alpes", country: "Frankreich", lat: 45.764, lng: 4.8357 },
+  { city: "Marseille", postalCode: "13001", state: "Provence-Alpes-Côte d'Azur", country: "Frankreich", lat: 43.2965, lng: 5.3698 },
+  { city: "Toulouse", postalCode: "31000", state: "Okzitanien", country: "Frankreich", lat: 43.6047, lng: 1.4442 },
+  { city: "Straßburg", postalCode: "67000", state: "Grand Est", country: "Frankreich", lat: 48.5734, lng: 7.7521 },
+
+  { city: "Rom", postalCode: "00100", state: "Latium", country: "Italien", lat: 41.9028, lng: 12.4964 },
+  { city: "Mailand", postalCode: "20100", state: "Lombardei", country: "Italien", lat: 45.4642, lng: 9.19 },
+  { city: "Florenz", postalCode: "50100", state: "Toskana", country: "Italien", lat: 43.7696, lng: 11.2558 },
+  { city: "Turin", postalCode: "10100", state: "Piemont", country: "Italien", lat: 45.0703, lng: 7.6869 },
+  { city: "Bologna", postalCode: "40100", state: "Emilia-Romagna", country: "Italien", lat: 44.4949, lng: 11.3426 },
+
+  { city: "Madrid", postalCode: "28001", state: "Madrid", country: "Spanien", lat: 40.4168, lng: -3.7038 },
+  { city: "Barcelona", postalCode: "08001", state: "Katalonien", country: "Spanien", lat: 41.3874, lng: 2.1686 },
+  { city: "Valencia", postalCode: "46001", state: "Valencia", country: "Spanien", lat: 39.4699, lng: -0.3763 },
+  { city: "Sevilla", postalCode: "41001", state: "Andalusien", country: "Spanien", lat: 37.3891, lng: -5.9845 },
+  { city: "Bilbao", postalCode: "48001", state: "Baskenland", country: "Spanien", lat: 43.263, lng: -2.935 },
+
+  { city: "Amsterdam", postalCode: "1011", state: "Nordholland", country: "Niederlande", lat: 52.3676, lng: 4.9041 },
+  { city: "Rotterdam", postalCode: "3011", state: "Südholland", country: "Niederlande", lat: 51.9244, lng: 4.4777 },
+  { city: "Utrecht", postalCode: "3511", state: "Utrecht", country: "Niederlande", lat: 52.0907, lng: 5.1214 },
+  { city: "Den Haag", postalCode: "2511", state: "Südholland", country: "Niederlande", lat: 52.0705, lng: 4.3007 },
+
+  { city: "Brüssel", postalCode: "1000", state: "Region Brüssel-Hauptstadt", country: "Belgien", lat: 50.8503, lng: 4.3517 },
+  { city: "Antwerpen", postalCode: "2000", state: "Flandern", country: "Belgien", lat: 51.2194, lng: 4.4025 },
+  { city: "Gent", postalCode: "9000", state: "Flandern", country: "Belgien", lat: 51.0543, lng: 3.7174 },
+  { city: "Brügge", postalCode: "8000", state: "Flandern", country: "Belgien", lat: 51.2093, lng: 3.2247 },
+
+  { city: "Lissabon", postalCode: "1100", state: "Lissabon", country: "Portugal", lat: 38.7223, lng: -9.1393 },
+  { city: "Porto", postalCode: "4000", state: "Porto", country: "Portugal", lat: 41.1579, lng: -8.6291 },
+  { city: "Coimbra", postalCode: "3000", state: "Coimbra", country: "Portugal", lat: 40.2033, lng: -8.4103 },
+
+  { city: "Warschau", postalCode: "00-001", state: "Masowien", country: "Polen", lat: 52.2297, lng: 21.0122 },
+  { city: "Krakau", postalCode: "30-001", state: "Kleinpolen", country: "Polen", lat: 50.0647, lng: 19.945 },
+  { city: "Breslau", postalCode: "50-001", state: "Niederschlesien", country: "Polen", lat: 51.1079, lng: 17.0385 },
+  { city: "Danzig", postalCode: "80-001", state: "Pommern", country: "Polen", lat: 54.352, lng: 18.6466 },
+
+  { city: "Prag", postalCode: "11000", state: "Prag", country: "Tschechien", lat: 50.0755, lng: 14.4378 },
+  { city: "Brünn", postalCode: "60200", state: "Südmähren", country: "Tschechien", lat: 49.1951, lng: 16.6068 },
+  { city: "Pilsen", postalCode: "30100", state: "Pilsen", country: "Tschechien", lat: 49.7384, lng: 13.3736 },
+
+  { city: "Kopenhagen", postalCode: "1050", state: "Hauptstadtregion", country: "Dänemark", lat: 55.6761, lng: 12.5683 },
+  { city: "Aarhus", postalCode: "8000", state: "Mitteljütland", country: "Dänemark", lat: 56.1629, lng: 10.2039 },
+  { city: "Odense", postalCode: "5000", state: "Süddänemark", country: "Dänemark", lat: 55.4038, lng: 10.4024 },
+
+  { city: "Stockholm", postalCode: "11120", state: "Stockholm", country: "Schweden", lat: 59.3293, lng: 18.0686 },
+  { city: "Göteborg", postalCode: "41103", state: "Västra Götaland", country: "Schweden", lat: 57.7089, lng: 11.9746 },
+  { city: "Malmö", postalCode: "21115", state: "Skåne", country: "Schweden", lat: 55.605, lng: 13.0038 },
+
+  { city: "Oslo", postalCode: "0010", state: "Oslo", country: "Norwegen", lat: 59.9139, lng: 10.7522 },
+  { city: "Bergen", postalCode: "5003", state: "Vestland", country: "Norwegen", lat: 60.3913, lng: 5.3221 },
+  { city: "Trondheim", postalCode: "7010", state: "Trøndelag", country: "Norwegen", lat: 63.4305, lng: 10.3951 },
+
+  { city: "Helsinki", postalCode: "00100", state: "Uusimaa", country: "Finnland", lat: 60.1699, lng: 24.9384 },
+  { city: "Tampere", postalCode: "33100", state: "Pirkanmaa", country: "Finnland", lat: 61.4978, lng: 23.761 },
+  { city: "Turku", postalCode: "20100", state: "Varsinais-Suomi", country: "Finnland", lat: 60.4518, lng: 22.2666 },
+
+  { city: "Dublin", postalCode: "D01", state: "Leinster", country: "Irland", lat: 53.3498, lng: -6.2603 },
+  { city: "Cork", postalCode: "T12", state: "Munster", country: "Irland", lat: 51.8985, lng: -8.4756 },
+  { city: "Galway", postalCode: "H91", state: "Connacht", country: "Irland", lat: 53.2707, lng: -9.0568 },
+
+  { city: "London", postalCode: "SW1A", state: "England", country: "Vereinigtes Königreich", lat: 51.5074, lng: -0.1278 },
+  { city: "Edinburgh", postalCode: "EH1", state: "Schottland", country: "Vereinigtes Königreich", lat: 55.9533, lng: -3.1883 },
+  { city: "Manchester", postalCode: "M1", state: "England", country: "Vereinigtes Königreich", lat: 53.4808, lng: -2.2426 },
+  { city: "Bristol", postalCode: "BS1", state: "England", country: "Vereinigtes Königreich", lat: 51.4545, lng: -2.5879 },
+
+  { city: "Athen", postalCode: "10431", state: "Attika", country: "Griechenland", lat: 37.9838, lng: 23.7275 },
+  { city: "Thessaloniki", postalCode: "54624", state: "Zentralmakedonien", country: "Griechenland", lat: 40.6401, lng: 22.9444 },
+  { city: "Heraklion", postalCode: "71202", state: "Kreta", country: "Griechenland", lat: 35.3387, lng: 25.1442 },
 ];
 
 // A spread of real small German/Austrian/Swiss villages and small towns, so
@@ -156,6 +229,15 @@ const VILLAGES: City[] = [
   { city: "Grindelwald", postalCode: "3818", state: "Bern", country: "Schweiz", lat: 46.6244, lng: 8.0356 },
 ];
 
+// Every country CITIES/VILLAGES actually cover — the source of truth for
+// the "Länder" checkbox multi-select on /admin/demo-daten (see that page
+// and pickLocation() below), so a new country only needs to be added above
+// (as CITIES/VILLAGES entries) to become selectable there, never hardcoded
+// separately in the UI. Sorted alphabetically for a stable checkbox order.
+export const EUROPEAN_COUNTRIES: string[] = Array.from(
+  new Set([...CITIES, ...VILLAGES].map((c) => c.country)),
+).sort((a, b) => a.localeCompare(b, "de"));
+
 /**
  * Picks a location for a new listing from either the big-city pool or the
  * small-village pool, weighted heavily toward villages (88%) — even the
@@ -164,10 +246,27 @@ const VILLAGES: City[] = [
  * all. Note this only affects newly generated listings; the already-
  * accumulated demo dataset keeps whatever mix it was generated with until
  * it's cleared and regenerated via /admin/demo-daten.
+ *
+ * `allowedCountries` (from /admin/demo-daten's "Länder" checkbox multi-
+ * select) restricts both pools to just those countries when non-empty —
+ * VILLAGES only covers Deutschland/Österreich/Schweiz, so selecting only
+ * e.g. Frankreich still works, it just always lands in the CITIES pool for
+ * that generated listing since there's no French village entry to weight
+ * against. An empty/undefined list means "every country", preserving the
+ * exact previous default behavior and weighting.
  */
-export function pickLocation(): { location: City; isVillage: boolean } {
-  const isVillage = chance(0.88);
-  return { location: isVillage ? pick(VILLAGES) : pick(CITIES), isVillage };
+export function pickLocation(allowedCountries?: string[]): { location: City; isVillage: boolean } {
+  const restrict = allowedCountries && allowedCountries.length > 0;
+  const villagePool = restrict ? VILLAGES.filter((c) => allowedCountries!.includes(c.country)) : VILLAGES;
+  const cityPool = restrict ? CITIES.filter((c) => allowedCountries!.includes(c.country)) : CITIES;
+  const isVillage = villagePool.length > 0 && chance(0.88);
+  if (isVillage) return { location: pick(villagePool), isVillage: true };
+  if (cityPool.length > 0) return { location: pick(cityPool), isVillage: false };
+  // Restricted to countries with neither a city nor village match (shouldn't
+  // happen via the UI, which only offers countries EUROPEAN_COUNTRIES
+  // actually lists) — fall back to the full, unrestricted pool rather than
+  // failing the whole generation batch.
+  return { location: pick(CITIES), isVillage: false };
 }
 
 /** Small random jitter (roughly +/- 3km) so listings in the same city don't all stack on one point. */
@@ -205,12 +304,42 @@ export function randomPhone(): string {
  * service built for exactly this kind of use — not scraped from anywhere,
  * safe and legal for dev/test data) and stores it via the app's normal
  * media pipeline (display + thumbnail JPEGs in MinIO).
+ *
+ * `usedPhotoIds`, when passed, dedupes against Picsum's own photo id: a
+ * request to the seed-less `/1200/800` endpoint 302-redirects to
+ * `/id/<id>/1200/800`, and `fetch` (which follows redirects by default)
+ * exposes that resolved URL via `res.url` — so the id is read back off the
+ * response with no extra request. Picsum's pool is a few thousand photos,
+ * small enough that generating a large batch (e.g. 100 listings × up to 6
+ * photos) has a real chance of repeating one without this; the caller
+ * passes one shared `Set` for the whole batch so a generation run avoids
+ * repeats "as much as possible" without needing to fail outright once the
+ * pool is exhausted (a few retries, then just accept the id — better than
+ * either an infinite loop or silently giving up on that photo).
  */
 export async function attachRandomPhoto(
   keyPrefix: string,
+  usedPhotoIds?: Set<string>,
 ): Promise<{ storageKey: string; thumbnailKey: string } | null> {
-  const res = await fetch(`https://picsum.photos/1200/800?_=${Date.now()}-${Math.random()}`);
-  if (!res.ok) return null;
+  let res: Response | null = null;
+  const maxAttempts = usedPhotoIds ? 5 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const candidate = await fetch(`https://picsum.photos/1200/800?_=${Date.now()}-${Math.random()}`);
+    if (!candidate.ok) return null;
+    if (!usedPhotoIds) {
+      res = candidate;
+      break;
+    }
+    const idMatch = candidate.url.match(/\/id\/(\d+)\//);
+    const id = idMatch?.[1];
+    if (!id || !usedPhotoIds.has(id)) {
+      if (id) usedPhotoIds.add(id);
+      res = candidate;
+      break;
+    }
+    res = candidate; // last attempt still wins even if it was a repeat
+  }
+  if (!res) return null;
   const arrayBuffer = await res.arrayBuffer();
   const file = new File([arrayBuffer], "photo.jpg", { type: "image/jpeg" });
   return processAndStoreImage(file, keyPrefix);

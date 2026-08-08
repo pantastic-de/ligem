@@ -6,6 +6,7 @@ import { requireAdminPage } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { DemoDataGenerateForm } from "@/components/demo-data-generate-form";
+import { EUROPEAN_COUNTRIES } from "@/lib/demo-data/shared";
 import {
   startGenerateListings,
   startGenerateEvents,
@@ -80,6 +81,7 @@ export default async function AdminDemoDatenPage({
         defaultValue={20}
         start={startGenerateListings}
         getProgress={getGenerateProgress}
+        countryOptions={EUROPEAN_COUNTRIES}
       />
 
       <DemoDataGenerateForm
