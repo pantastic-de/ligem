@@ -174,6 +174,10 @@ export function LocationRadiusPicker({
   const markerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const circleRef = useRef<any>(null);
+  // Debounces the "expensive" tail of the [lat,lng,radiusValue] effect below
+  // (re-fitting the map view + notifying the parent form via onChange, which
+  // triggers a real navigation) — see that effect for why.
+  const radiusEffectDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resultsLayerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -472,14 +476,36 @@ export function LocationRadiusPicker({
           }).addTo(map);
         }
       }
-      fitOverviewView(L, map);
     }
 
-    const key = `${lat}|${lng}|${radiusValue}`;
-    if (lastChangeKey.current !== key) {
-      lastChangeKey.current = key;
-      onChange?.();
-    }
+    // The circle's own position/radius above updates live on every tick so
+    // dragging the radius slider still gives instant visual feedback, but
+    // re-fitting the map's *view* (an animated pan/zoom) and notifying the
+    // parent form (a real navigation via onChange -> submitNow, refetching
+    // resultItems) are debounced — dragging the slider fires this effect
+    // once per intermediate step, and doing either of those on every single
+    // step made the map visibly lurch between zoom levels while dragging
+    // (reported directly as "scaling doesn't work"), since fitBounds was
+    // being called against resultItems that hadn't caught up with the
+    // radius yet. A plain click/place-search/geolocation change only ever
+    // fires this effect once, so debouncing it costs those a barely
+    // noticeable 300ms before the view settles, not a behavior change.
+    if (radiusEffectDebounceRef.current) clearTimeout(radiusEffectDebounceRef.current);
+    radiusEffectDebounceRef.current = setTimeout(() => {
+      const map = mapInstance.current;
+      const L = leafletRef.current;
+      if (map && L) fitOverviewView(L, map);
+
+      const key = `${lat}|${lng}|${radiusValue}`;
+      if (lastChangeKey.current !== key) {
+        lastChangeKey.current = key;
+        onChange?.();
+      }
+    }, 300);
+
+    return () => {
+      if (radiusEffectDebounceRef.current) clearTimeout(radiusEffectDebounceRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, radiusValue]);
 
