@@ -11,14 +11,21 @@ import { SITE_URL } from "@/lib/site";
 import { getClientIp } from "@/lib/ip-lookup";
 import { turnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
 
-// The contact form is rendered both on the standalone /projekte/[id] page
-// and inline in /projekte's results column (see listing-detail.tsx /
-// projekte/page.tsx's `?projekt=<id>` mechanism) — `returnTo` says which of
-// the two to redirect back to after submitting. It's client-supplied (a
-// hidden input), so it's restricted to same-origin /projekte paths rather
-// than trusted as-is, to rule out it being used as an open redirect.
+// The contact form is rendered both on the standalone /projekt/[slug] page
+// and inline in /projekte's results column (both via the shared
+// ProjektePageView, see projekte-page-view.tsx's buildProjekteHref) —
+// `returnTo` says which of the two to redirect back to after submitting.
+// It's client-supplied (a hidden input), so it's restricted to same-origin
+// /projekte or /projekt paths rather than trusted as-is, to rule out it
+// being used as an open redirect.
 function sanitizeReturnTo(value: string | undefined, fallback: string): string {
-  if (value && (value === "/projekte" || value.startsWith("/projekte/") || value.startsWith("/projekte?"))) {
+  if (
+    value &&
+    (value === "/projekte" ||
+      value.startsWith("/projekte/") ||
+      value.startsWith("/projekte?") ||
+      value.startsWith("/projekt/"))
+  ) {
     return value;
   }
   return fallback;

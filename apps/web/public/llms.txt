@@ -14,7 +14,7 @@ LiGem richtet sich an vier Zielgruppen gleichzeitig: Wohnprojekte, die sich prä
 ## Für Entwickler:innen und Agenten
 
 - [sitemap.xml](https://ligem.de/sitemap.xml): vollständige, laufend aktualisierte Liste aller veröffentlichten Projekt- und Termin-Seiten.
-- Einzelne Projekt- (`/projekte/<id>`) und Termin-Seiten (`/termine/<id>`) tragen strukturierte Daten (JSON-LD, u.a. schema.org/Event für Termine) für maschinenlesbares Verständnis von Ort, Zeit und Beschreibung.
+- Einzelne Projekt- (`/projekt/<slug>`) und Termin-Seiten (`/event/<slug>`) tragen strukturierte Daten (JSON-LD, u.a. schema.org/Event für Termine) für maschinenlesbares Verständnis von Ort, Zeit und Beschreibung.
 - Server-seitig gerendertes HTML — alle öffentlichen Inhalte sind ohne JavaScript-Ausführung lesbar.
 
 ## Rechtliches

@@ -363,6 +363,14 @@ model Listing {
 
   // Required
   projectName String
+  // URL-freundlicher, für Menschen lesbarer Identifikator (z. B.
+  // "eulenquartier") — der öffentliche Link zu einem Projekt lautet
+  // /projekte/<slug> statt der internen cuid. Einmal bei der Erstellung aus
+  // projectName generiert (siehe src/lib/slug.ts) und danach stabil, auch
+  // wenn projectName sich später ändert (sonst würden geteilte Links
+  // brechen). Eindeutigkeit wird bei Kollision durch einen angehängten
+  // Zähler ("-2", "-3", ...) sichergestellt.
+  slug        String  @unique
   createdById String
   createdBy   User   @relation("ListingCreatedBy", fields: [createdById], references: [id])
   motto       String? // kurzer Claim/Untertitel
@@ -577,6 +585,13 @@ model Event {
   id        String        @id @default(cuid())
   status    ListingStatus @default(DRAFT)
   title     String
+  // Wie Listing.slug oben: der öffentliche Link zu einem Termin lautet
+  // /event/<slug> statt der internen cuid, einmal aus title generiert (ein
+  // führendes "Wort:"-Präfix wie "Mitmachtag:" wird dabei abgeschnitten,
+  // siehe src/lib/slug.ts) und danach stabil. Wiederkehrende Termine teilen
+  // denselben Titel, bekommen aber wegen der Eindeutigkeitsprüfung
+  // automatisch unterscheidbare Slugs (Datum bzw. Zähler angehängt).
+  slug        String        @unique
   description String?
   startAt   DateTime
   endAt     DateTime?

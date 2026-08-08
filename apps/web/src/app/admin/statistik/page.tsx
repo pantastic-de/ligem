@@ -52,13 +52,18 @@ async function topEvents() {
   });
   const details = await prisma.event.findMany({
     where: { id: { in: groups.map((g) => g.eventId) } },
-    select: { id: true, title: true, listingId: true },
+    select: { id: true, slug: true, title: true, listingId: true },
   });
   const byId = new Map(details.map((e) => [e.id, e]));
   return groups
     .map((g) => ({ item: byId.get(g.eventId), count: g._count }))
-    .filter((row): row is { item: { id: string; title: string; listingId: string | null }; count: number } =>
-      Boolean(row.item),
+    .filter(
+      (
+        row,
+      ): row is {
+        item: { id: string; slug: string; title: string; listingId: string | null };
+        count: number;
+      } => Boolean(row.item),
     );
 }
 
@@ -275,7 +280,9 @@ export default async function AdminStatistikPage() {
             rows={eventTop}
             hrefFor={(id) => {
               const event = eventTop.find((r) => r.item.id === id)?.item;
-              return event?.listingId ? `/projekte/${event.listingId}/termine/${id}/statistik` : `/termine/${id}`;
+              return event?.listingId
+                ? `/projekte/${event.listingId}/termine/${id}/statistik`
+                : `/event/${event?.slug ?? id}`;
             }}
             labelFor={(item) => (item as { id: string; title: string }).title}
           />

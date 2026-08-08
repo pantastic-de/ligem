@@ -71,7 +71,7 @@ export default async function AdminTerminePage({
     },
     orderBy: { createdAt: "asc" },
     include: {
-      listing: { select: { id: true, projectName: true, isDemo: true } },
+      listing: { select: { id: true, slug: true, projectName: true, isDemo: true } },
       attributeOptions: { include: { option: true } },
     },
   });
@@ -196,7 +196,7 @@ export default async function AdminTerminePage({
                     />
                     <div>
                       <h2 className="text-lg font-semibold">
-                        <Link href={`/termine/${event.id}`} className="hover:underline">
+                        <Link href={`/event/${event.slug}`} className="hover:underline">
                           {event.title}
                         </Link>
                         {event.listing?.isDemo ? (
@@ -211,7 +211,7 @@ export default async function AdminTerminePage({
                           <>
                             {" "}
                             · von{" "}
-                            <Link href={`/projekte/${event.listing.id}`} className="hover:underline">
+                            <Link href={`/projekt/${event.listing.slug}`} className="hover:underline">
                               {event.listing.projectName}
                             </Link>
                           </>

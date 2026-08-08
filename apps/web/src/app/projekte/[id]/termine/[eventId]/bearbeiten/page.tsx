@@ -75,7 +75,7 @@ export default async function TerminBearbeitenPage({
   return (
     <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Termin bearbeiten</h1>
-      <Link href={`/termine/${eventId}`} className="mt-1 inline-block text-primary hover:underline">
+      <Link href={`/event/${event.slug}`} className="mt-1 inline-block text-primary hover:underline">
         Termin ansehen →
       </Link>
       <p className="mt-2 text-text-muted">für {listing.projectName}</p>

@@ -10,6 +10,7 @@ import { canManageEvent, canManageListing } from "@/lib/authz";
 import { setEventLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { generateRecurrenceOccurrences, type RecurrenceFrequency } from "@/lib/recurrence";
+import { slugify, generateUniqueSlug } from "@/lib/slug";
 
 function parseRecurrenceFrequency(value: FormDataEntryValue | null): RecurrenceFrequency | null {
   const str = value?.toString();
@@ -153,16 +154,36 @@ export async function createEvent(formData: FormData): Promise<void> {
     recurrenceGroupId,
   };
 
+  // Every occurrence shares the same title, so slugs must be reserved
+  // sequentially (not just checked against the DB, which doesn't see this
+  // batch's own not-yet-committed siblings) to avoid two occurrences
+  // colliding on the same base slug and both falling back to "-2".
+  const reservedSlugs = new Set<string>();
+  const slugs: string[] = [];
+  for (let i = 0; i < occurrences.length; i++) {
+    const slug = await generateUniqueSlug(slugify(title), async (candidate) => {
+      if (reservedSlugs.has(candidate)) return true;
+      const existing = await prisma.event.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+      return existing !== null;
+    });
+    reservedSlugs.add(slug);
+    slugs.push(slug);
+  }
+
   // One create() per occurrence rather than a single createMany() — every
   // occurrence also needs its own nested attributeOptions rows, which
   // createMany doesn't support, and the realistic occurrence counts here
   // (capped at MAX_OCCURRENCES in generateRecurrenceOccurrences) are small
   // enough that this is simple and fast enough without a bulk-insert path.
   const createdEvents = await prisma.$transaction(
-    occurrences.map((occurrence) =>
+    occurrences.map((occurrence, index) =>
       prisma.event.create({
         data: {
           ...sharedData,
+          slug: slugs[index],
           startAt: occurrence.startAt,
           endAt: occurrence.endAt,
           attributeOptions: {

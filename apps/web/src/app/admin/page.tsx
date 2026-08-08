@@ -57,6 +57,7 @@ export default async function AdminPage() {
       take: 5,
       select: {
         id: true,
+        slug: true,
         projectName: true,
         createdAt: true,
         isDemo: true,
@@ -66,12 +67,12 @@ export default async function AdminPage() {
     prisma.listing.findMany({
       orderBy: { createdAt: "desc" },
       take: 6,
-      select: { id: true, projectName: true, createdAt: true },
+      select: { id: true, slug: true, projectName: true, createdAt: true },
     }),
     prisma.event.findMany({
       orderBy: { createdAt: "desc" },
       take: 6,
-      select: { id: true, title: true, createdAt: true },
+      select: { id: true, slug: true, title: true, createdAt: true },
     }),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -87,14 +88,14 @@ export default async function AdminPage() {
       key: `listing-${l.id}`,
       timestamp: l.createdAt,
       label: `Projekt eingereicht: ${l.projectName}`,
-      href: `/projekte/${l.id}`,
+      href: `/projekt/${l.slug}`,
       icon: Home,
     })),
     ...recentEvents.map((e) => ({
       key: `event-${e.id}`,
       timestamp: e.createdAt,
       label: `Termin angelegt: ${e.title}`,
-      href: `/termine/${e.id}`,
+      href: `/event/${e.slug}`,
       icon: Calendar,
     })),
     ...recentUsers.map((u) => ({
@@ -199,7 +200,7 @@ export default async function AdminPage() {
                     className="flex flex-col gap-3 rounded-xl bg-bg p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
-                      <Link href={`/projekte/${listing.id}`} className="font-semibold hover:underline">
+                      <Link href={`/projekt/${listing.slug}`} className="font-semibold hover:underline">
                         {listing.projectName}
                       </Link>
                       {listing.isDemo ? (

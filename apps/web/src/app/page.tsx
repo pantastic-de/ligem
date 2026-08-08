@@ -13,32 +13,127 @@ import {
 import { prisma } from "@/lib/prisma";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
-// Kuratierte, personenfreie Stimmungsbilder fürs Hero-Bento-Grid (statt
-// zufälliger echter Projektfotos, die inhaltlich nichts mit "Leben in
-// Gemeinschaft" zu tun haben mussten) — zeigen bewusst Orte/Situationen des
-// Zusammenlebens, nie Gesichter/Personen, siehe public/homepage/.
-const heroImages = [
+// Bento-Grid-Layout fürs Hero: 3 zufällige Projektbilder + 1 zufälliges
+// Terminbild (statt fixer Logos/Stimmungsbilder), siehe getHeroTiles()
+// unten. Diese vier kuratierten, personenfreien Stimmungsbilder dienen nur
+// noch als Lückenfüller, solange es noch keine (oder zu wenige) echten
+// Fotos gibt — zeigen bewusst Orte/Situationen des Zusammenlebens, nie
+// Gesichter/Personen, siehe public/homepage/.
+const FALLBACK_HERO_IMAGES = [
   {
     src: "/homepage/hero-garten-tisch.jpg",
     alt: "Gedeckter langer Tisch auf einer Veranda bei Sonnenuntergang, umgeben von Bäumen",
-    className: "col-span-2 aspect-[4/3] -rotate-1",
   },
   {
     src: "/homepage/hero-gemeinschaftsgarten.jpg",
     alt: "Backsteingebäude mit gepflegtem Gemüsegarten und Blumenbeeten",
-    className: "aspect-square rotate-2",
   },
   {
     src: "/homepage/hero-reetdachhaus.jpg",
     alt: "Reetdachhaus mit blühendem Cottage-Garten",
-    className: "aspect-square -rotate-2",
   },
   {
     src: "/homepage/hero-wohnzimmer.jpg",
     alt: "Helles, gemütliches gemeinsames Wohnzimmer mit Pflanzen",
-    className: "col-span-2 aspect-[16/9] rotate-1",
   },
 ];
+
+const HERO_TILE_GRID_CLASS = ["col-span-2", "", "", "col-span-2"];
+const HERO_TILE_VISUAL_CLASS = [
+  "aspect-[4/3] -rotate-1",
+  "aspect-square rotate-2",
+  "aspect-square -rotate-2",
+  "aspect-[16/9] rotate-1",
+];
+
+type HeroTile = {
+  key: string;
+  src: string;
+  alt: string;
+  label?: string;
+  href?: string;
+  gridClassName: string;
+  visualClassName: string;
+};
+
+async function getHeroTiles(): Promise<HeroTile[]> {
+  const [listingRows, upcomingEventRows] = await Promise.all([
+    prisma.$queryRaw<
+      { id: string; slug: string; projectName: string; thumbnailKey: string | null; storageKey: string }[]
+    >`
+      SELECT l.id, l.slug, l."projectName", m."thumbnailKey", m."storageKey"
+      FROM "Listing" l
+      JOIN "Media" m ON m."listingId" = l.id AND m.position = 0
+      WHERE l.status = 'PUBLISHED'
+      ORDER BY random()
+      LIMIT 3
+    `,
+    prisma.$queryRaw<
+      { id: string; slug: string; title: string; thumbnailKey: string | null; storageKey: string }[]
+    >`
+      SELECT e.id, e.slug, e.title, m."thumbnailKey", m."storageKey"
+      FROM "Event" e
+      JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
+      WHERE e.status = 'PUBLISHED' AND e."startAt" >= NOW()
+      ORDER BY random()
+      LIMIT 1
+    `,
+  ]);
+
+  // Falls es (noch) keinen anstehenden Termin mit Foto gibt, notfalls auch
+  // ein vergangenes Terminbild zeigen, statt gleich auf den Lückenfüller
+  // zurückzufallen.
+  const eventRows =
+    upcomingEventRows.length > 0
+      ? upcomingEventRows
+      : await prisma.$queryRaw<
+          { id: string; slug: string; title: string; thumbnailKey: string | null; storageKey: string }[]
+        >`
+          SELECT e.id, e.slug, e.title, m."thumbnailKey", m."storageKey"
+          FROM "Event" e
+          JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
+          WHERE e.status = 'PUBLISHED'
+          ORDER BY random()
+          LIMIT 1
+        `;
+
+  const listingTiles: Omit<HeroTile, "gridClassName" | "visualClassName">[] = listingRows.map((listing) => ({
+    key: `listing-${listing.id}`,
+    src: `/api/media/${listing.thumbnailKey ?? listing.storageKey}`,
+    alt: listing.projectName,
+    label: listing.projectName,
+    href: `/projekt/${listing.slug}`,
+  }));
+  while (listingTiles.length < 3) {
+    const fallback = FALLBACK_HERO_IMAGES[listingTiles.length];
+    listingTiles.push({
+      key: `fallback-listing-${listingTiles.length}`,
+      src: fallback.src,
+      alt: fallback.alt,
+    });
+  }
+
+  const event = eventRows[0];
+  const eventTile: Omit<HeroTile, "gridClassName" | "visualClassName"> = event
+    ? {
+        key: `event-${event.id}`,
+        src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
+        alt: event.title,
+        label: event.title,
+        href: `/event/${event.slug}`,
+      }
+    : {
+        key: "fallback-event",
+        src: FALLBACK_HERO_IMAGES[3].src,
+        alt: FALLBACK_HERO_IMAGES[3].alt,
+      };
+
+  return [...listingTiles, eventTile].map((tile, index) => ({
+    ...tile,
+    gridClassName: HERO_TILE_GRID_CLASS[index],
+    visualClassName: HERO_TILE_VISUAL_CLASS[index],
+  }));
+}
 
 const zielgruppen = [
   {
@@ -123,7 +218,7 @@ const schritte = [
 export default async function Home() {
   const now = new Date();
 
-  const [publishedListingsCount, upcomingEventsCount, cityRows] =
+  const [publishedListingsCount, upcomingEventsCount, cityRows, heroImages] =
     await Promise.all([
       prisma.listing.count({ where: { status: "PUBLISHED" } }),
       prisma.event.count({
@@ -134,6 +229,7 @@ export default async function Home() {
         select: { city: true },
         distinct: ["city"],
       }),
+      getHeroTiles(),
     ]);
 
   const stats = [
@@ -208,28 +304,67 @@ export default async function Home() {
             )}
           </div>
 
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div className="grid grid-cols-2 gap-4">
-              {heroImages.map((image, index) => (
-                <div
-                  key={image.src}
-                  className={`relative overflow-hidden rounded-3xl shadow-lg ${image.className}`}
-                >
-                  <Image
-                    src={image.src}
-                    alt={image.alt}
-                    fill
-                    sizes="(min-width: 1024px) 420px, (min-width: 640px) 50vw, 90vw"
-                    priority={index === 0}
-                    className="object-cover"
-                  />
-                </div>
-              ))}
+          <div className="relative mx-auto w-full max-w-sm lg:max-w-md">
+            <div className="grid grid-cols-2 gap-3">
+              {heroImages.map((image, index) => {
+                const tile = (
+                  <>
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      sizes="(min-width: 1024px) 340px, (min-width: 640px) 45vw, 80vw"
+                      priority={index === 0}
+                      className="object-cover"
+                    />
+                    {image.label && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-8">
+                        <p className="truncate text-center text-sm font-semibold text-white [text-shadow:0_1px_2px_rgb(0_0_0_/_0.6)]">
+                          {image.label}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                );
+                const isLastTile = index === heroImages.length - 1;
+                return (
+                  <div key={image.key} className={`relative ${image.gridClassName}`}>
+                    <div
+                      className={`relative overflow-hidden rounded-3xl shadow-lg ${image.visualClassName}`}
+                    >
+                      {image.href ? (
+                        <Link
+                          href={image.href}
+                          className="absolute inset-0 block"
+                          aria-label={image.label}
+                        >
+                          {tile}
+                        </Link>
+                      ) : (
+                        tile
+                      )}
+                    </div>
+                    {isLastTile && upcomingEventsCount > 0 && (
+                      <div className="absolute -top-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg">
+                        <CalendarDays
+                          className="h-6 w-6 shrink-0 text-secondary"
+                          aria-hidden="true"
+                        />
+                        <p className="whitespace-nowrap text-sm font-medium leading-snug">
+                          {upcomingEventsCount}{" "}
+                          {upcomingEventsCount === 1 ? "Veranstaltung" : "Veranstaltungen"} auf
+                          LiGem
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             {stats.length > 0 && (
-              <div className="absolute -bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg sm:-left-6 sm:translate-x-0">
+              <div className="absolute -top-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-surface px-4 py-3 shadow-lg sm:-left-6 sm:translate-x-0">
                 <Users2 className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-                <p className="text-sm font-medium leading-snug">
+                <p className="whitespace-nowrap text-sm font-medium leading-snug">
                   Bereits {publishedListingsCount}{" "}
                   {publishedListingsCount === 1 ? "Wohnprojekt" : "Wohnprojekte"}{" "}
                   auf LiGem
@@ -269,11 +404,10 @@ export default async function Home() {
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
                     <schritt.icon className="h-7 w-7 text-primary" aria-hidden="true" />
                   </span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-text text-sm font-bold text-bg">
-                    {index + 1}
-                  </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{schritt.title}</h3>
+                    <h3 className="text-lg font-semibold">
+                      {index + 1}. {schritt.title}
+                    </h3>
                     <p className="mt-1 text-text-muted">{schritt.text}</p>
                   </div>
                 </div>

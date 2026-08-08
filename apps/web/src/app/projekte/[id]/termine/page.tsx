@@ -32,7 +32,7 @@ export default async function TerminePage({
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { id: true, projectName: true, createdById: true },
+    select: { id: true, slug: true, projectName: true, createdById: true },
   });
   if (!listing) {
     notFound();
@@ -87,7 +87,7 @@ export default async function TerminePage({
         <div>
           <h1 className="text-3xl font-bold">Termine</h1>
           <p className="mt-1 text-text-muted">für {listing.projectName}</p>
-          <Link href={`/projekte/${listingId}`} className="mt-1 inline-block text-primary hover:underline">
+          <Link href={`/projekt/${listing.slug}`} className="mt-1 inline-block text-primary hover:underline">
             Projekt ansehen →
           </Link>
         </div>
@@ -114,7 +114,7 @@ export default async function TerminePage({
               >
                 <div>
                   <h2 className="flex flex-wrap items-center gap-2 font-semibold">
-                    <Link href={`/termine/${event.id}`} className="hover:underline">
+                    <Link href={`/event/${event.slug}`} className="hover:underline">
                       {event.title}
                     </Link>
                     {event.recurrenceGroupId && (seriesSizes.get(event.recurrenceGroupId) ?? 0) > 1 ? (

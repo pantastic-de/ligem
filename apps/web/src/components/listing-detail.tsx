@@ -91,12 +91,14 @@ function formatLocation(listing: {
 /**
  * The actual content of a listing's detail view (status banner, photos,
  * "So leben wir", attributes, upcoming events, contact form, ...) — shared
- * between the standalone `/projekte/[id]` page and the inline preview pane
- * rendered in `/projekte`'s results column (see that page for the
- * `?projekt=<id>` query-param mechanism). `returnTo` is where the contact
- * form redirects back to after submitting, since that differs between the
- * two call sites; `backHref`, when set, renders a "Zurück zur Liste" link
- * at the top for the inline pane (the standalone page leaves it unset).
+ * between the standalone `/projekt/[slug]` page (which resolves the slug in
+ * that segment to a listing and renders this inside the same search sidebar
+ * `/projekte` itself uses, see projekte-page-view.tsx's `ProjektePageView`)
+ * and the inline preview pane in `/projekte`'s own results column.
+ * `returnTo` is where the contact form redirects back to after submitting,
+ * since that differs between the two call sites; `backHref`, when set,
+ * renders a "Zurück zur Liste" link at the top for the inline pane (the
+ * standalone page leaves it unset).
  */
 export function ListingDetail({
   listing,
@@ -178,7 +180,7 @@ export function ListingDetail({
   // Structured data only for actually-published listings — a pending/
   // rejected/archived draft has no business being described to search
   // engines or AI agents as a real, existing community.
-  const canonicalUrl = `${SITE_URL}/projekte/${listing.id}`;
+  const canonicalUrl = `${SITE_URL}/projekt/${listing.slug}`;
   const hasAddress = Boolean(listing.street || listing.city || listing.postalCode);
   const organizationJsonLd = {
     "@context": "https://schema.org",

@@ -37,6 +37,7 @@ import {
 } from "./shared";
 import { buildLongDescriptionCandidate } from "./long-description";
 import { setListingLocation } from "@/lib/geo";
+import { generateListingSlug } from "@/lib/entity-slug";
 
 // --- Project name ------------------------------------------------------
 // Compound nouns concatenate cleanly in German (no case/gender agreement
@@ -274,6 +275,7 @@ export async function generateDemoListings(
         isDemo: true,
         publishedAt: new Date(Date.now() - publishedDaysAgo * 24 * 60 * 60 * 1000),
         projectName,
+        slug: await generateListingSlug(projectName),
         createdById: pick(ownerIds),
         motto,
         howWeLive,

@@ -34,7 +34,7 @@ export default async function AnfragenPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { id: true, projectName: true, createdById: true },
+    select: { id: true, slug: true, projectName: true, createdById: true },
   });
   if (!listing) {
     notFound();
@@ -52,7 +52,7 @@ export default async function AnfragenPage({
 
   return (
     <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
-      <Link href={`/projekte/${listingId}`} className="text-sm font-medium text-primary hover:underline">
+      <Link href={`/projekt/${listing.slug}`} className="text-sm font-medium text-primary hover:underline">
         ← Zurück zum Projekt
       </Link>
       <h1 className="mt-2 text-3xl font-bold">Kontaktanfragen</h1>

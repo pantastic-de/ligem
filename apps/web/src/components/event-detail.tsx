@@ -12,7 +12,7 @@ import { PanoramaViewer } from "@/components/panorama-viewer";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
-    listing: { select: { id: true; projectName: true } };
+    listing: { select: { id: true; slug: true; projectName: true } };
     attributeOptions: { include: { option: true } };
     media: true;
   };
@@ -31,10 +31,10 @@ const currency = new Intl.NumberFormat("de-DE", {
 /**
  * The actual content of an event's detail view (photos, attributes,
  * description, cost/participant facts, registration form, ...) — shared
- * between the standalone `/termine/[eventId]` page and the inline preview
- * pane rendered in `/termine`'s results column (see that page for the
- * `?termin=<id>` query-param mechanism, mirroring `/projekte`'s
- * `?projekt=<id>`/`ListingDetail`). `returnTo` is where the registration
+ * between the standalone `/event/[slug]` page and the inline preview pane
+ * rendered in `/termine`'s results column (both render via the same
+ * `TerminePageView`, see termine-page-view.tsx, mirroring `/projekte`'s
+ * `ProjektePageView`/`ListingDetail`). `returnTo` is where the registration
  * form redirects back to after submitting, since that differs between the
  * two call sites; `backHref`, when set, renders a "Zurück zur Liste" link
  * at the top for the inline pane (the standalone page leaves it unset).
@@ -68,7 +68,7 @@ export function EventDetail({
   // is Google's/AI agents' natural fit here (unlike listings, which don't
   // map cleanly onto any one schema.org type), so this is worth getting
   // right: name, dates, location, organizer, and price/free-of-charge.
-  const canonicalUrl = `${SITE_URL}/termine/${event.id}`;
+  const canonicalUrl = `${SITE_URL}/event/${event.slug}`;
   const hasAddress = Boolean(event.street || event.city || event.postalCode);
   // First 360°-flagged photo, if any — see listing-detail.tsx for why this
   // gets a separate ambient auto-rotating preview above the regular gallery.
@@ -108,7 +108,7 @@ export function EventDetail({
           : undefined,
     },
     organizer: event.listing
-      ? { "@type": "Organization", name: event.listing.projectName, url: `${SITE_URL}/projekte/${event.listing.id}` }
+      ? { "@type": "Organization", name: event.listing.projectName, url: `${SITE_URL}/projekt/${event.listing.slug}` }
       : undefined,
   };
   const breadcrumbJsonLd = {
@@ -199,7 +199,7 @@ export function EventDetail({
       {event.listing ? (
         <p className="mt-1 text-sm text-text-muted">
           Veranstaltet von{" "}
-          <Link href={`/projekte?projekt=${event.listing.id}`} className="text-primary">
+          <Link href={`/projekt/${event.listing.slug}`} className="text-primary">
             {event.listing.projectName}
           </Link>
         </p>

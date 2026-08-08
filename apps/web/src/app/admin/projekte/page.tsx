@@ -212,7 +212,7 @@ export default async function AdminProjektePage({
                     />
                     <div>
                       <h2 className="text-lg font-semibold">
-                        <Link href={`/projekte/${listing.id}`} className="hover:underline">
+                        <Link href={`/projekt/${listing.slug}`} className="hover:underline">
                           {listing.projectName}
                         </Link>
                         {listing.isDemo ? (

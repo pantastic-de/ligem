@@ -43,7 +43,7 @@ export async function updateListing(formData: FormData): Promise<void> {
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    select: { createdById: true },
+    select: { createdById: true, slug: true },
   });
   if (!listing) {
     notFound();
@@ -123,5 +123,5 @@ export async function updateListing(formData: FormData): Promise<void> {
     parseOptionalFloat(formData.get("longitude")),
   );
 
-  redirect(`/projekte/${listingId}?aktualisiert=1`);
+  redirect(`/projekt/${listing.slug}?aktualisiert=1`);
 }

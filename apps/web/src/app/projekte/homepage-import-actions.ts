@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing } from "@/lib/authz";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
+import { generateListingSlug } from "@/lib/entity-slug";
 import { runHomepageExtraction, applyHomepageImportResult, type HomepageImportResult } from "@/lib/homepage-import";
 import {
   createImportJob,
@@ -58,6 +59,7 @@ export async function startHomepageImport(input: {
     const listing = await prisma.listing.create({
       data: {
         projectName,
+        slug: await generateListingSlug(projectName),
         createdById: session.user.id,
         status: "PENDING_REVIEW",
         homepageUrl: normalizedUrl,

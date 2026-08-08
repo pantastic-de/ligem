@@ -5,15 +5,22 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// The registration form is rendered both on the standalone /termine/[eventId]
-// page and inline in /termine's results column (see event-detail.tsx /
-// termine/page.tsx's `?termin=<id>` mechanism) — `returnTo` says which of
-// the two to redirect back to after submitting. It's client-supplied (a
-// hidden input), so it's restricted to same-origin /termine paths rather
-// than trusted as-is, to rule out it being used as an open redirect (same
-// pattern as /projekte/[id]/actions.ts's submitContactRequest).
+// The registration form is rendered both on the standalone /event/[slug]
+// page and inline in /termine's results column (both via the shared
+// TerminePageView, see termine-page-view.tsx's buildTermineHref) —
+// `returnTo` says which of the two to redirect back to after submitting.
+// It's client-supplied (a hidden input), so it's restricted to same-origin
+// /termine or /event paths rather than trusted as-is, to rule out it being
+// used as an open redirect (same pattern as /projekte/[id]/actions.ts's
+// submitContactRequest).
 function sanitizeReturnTo(value: string | undefined, fallback: string): string {
-  if (value && (value === "/termine" || value.startsWith("/termine/") || value.startsWith("/termine?"))) {
+  if (
+    value &&
+    (value === "/termine" ||
+      value.startsWith("/termine/") ||
+      value.startsWith("/termine?") ||
+      value.startsWith("/event/"))
+  ) {
     return value;
   }
   return fallback;

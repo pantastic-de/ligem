@@ -41,13 +41,19 @@ export default async function DashboardPage() {
     prisma.listing.findMany({
       where: listingWhere,
       orderBy: { createdAt: "desc" },
-      select: { id: true, projectName: true, status: true, createdAt: true },
+      select: { id: true, slug: true, projectName: true, status: true, createdAt: true },
     }),
     prisma.event.findMany({
       where: { listing: listingWhere, startAt: { gte: new Date() } },
       orderBy: { startAt: "asc" },
       take: 5,
-      select: { id: true, title: true, startAt: true, listing: { select: { id: true, projectName: true } } },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        startAt: true,
+        listing: { select: { id: true, projectName: true } },
+      },
     }),
     getOpenRequestsCount(userId),
   ]);
@@ -139,7 +145,7 @@ export default async function DashboardPage() {
                 {listings.slice(0, 5).map((listing) => (
                   <li key={listing.id}>
                     <Link
-                      href={`/projekte/${listing.id}`}
+                      href={`/projekt/${listing.slug}`}
                       className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 hover:bg-bg/70"
                     >
                       <span className="truncate font-medium">{listing.projectName}</span>
@@ -173,7 +179,7 @@ export default async function DashboardPage() {
                 {upcomingEvents.map((event) => (
                   <li key={event.id}>
                     <Link
-                      href={`/termine/${event.id}`}
+                      href={`/event/${event.slug}`}
                       className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 hover:bg-bg/70"
                     >
                       <span className="min-w-0">

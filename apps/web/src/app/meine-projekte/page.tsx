@@ -106,7 +106,7 @@ export default async function MeineProjektePage() {
             return (
               <li key={listing.id} className="rounded-2xl bg-surface shadow-sm">
                 <Link
-                  href={`/projekte/${listing.id}`}
+                  href={`/projekt/${listing.slug}`}
                   className="flex items-center justify-between gap-4 rounded-t-2xl p-4 transition-colors hover:bg-bg sm:p-6"
                 >
                   <span className="font-semibold">

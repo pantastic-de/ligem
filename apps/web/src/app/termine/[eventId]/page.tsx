@@ -1,81 +1,33 @@
-import { cache } from "react";
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-import { EventDetail } from "@/components/event-detail";
-import { stripHtml } from "@/lib/sanitize-html";
-import { recordEventViews } from "@/lib/event-views";
 
-// Shared between generateMetadata and the page body via React's cache() so
-// the identical query only hits the database once per request instead of
-// twice.
-const getEvent = cache((eventId: string) =>
-  prisma.event.findUnique({
-    where: { id: eventId },
-    include: {
-      listing: { select: { id: true, projectName: true } },
-      attributeOptions: { include: { option: true } },
-      media: { orderBy: { position: "asc" } },
-    },
-  }),
-);
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ eventId: string }>;
-}): Promise<Metadata> {
-  const { eventId } = await params;
-  const event = await getEvent(eventId);
-  if (!event) return {};
-
-  const description = event.description ? stripHtml(event.description, 160) : undefined;
-  const thumbnail = event.media[0];
-  const image = thumbnail ? `/api/media/${thumbnail.storageKey}` : undefined;
-
-  return {
-    title: event.title,
-    description,
-    alternates: { canonical: `/termine/${eventId}` },
-    robots: { index: event.status === "PUBLISHED", follow: true },
-    openGraph: {
-      type: "website",
-      title: event.title,
-      description,
-      images: image ? [{ url: image }] : undefined,
-    },
-  };
-}
-
-export default async function TerminDetailPage({
+// Legacy path — the standalone event detail page moved to /event/<slug>
+// (a deliberately English, top-level route, see that folder) so it can show
+// the same search sidebar /termine's inline pane always had. Old bookmarks/
+// shared links pointing at this id-based path get redirected straight to
+// the canonical slug URL rather than 404ing.
+export default async function LegacyTerminDetailRedirect({
   params,
   searchParams,
 }: {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ angemeldet?: string; error?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { eventId } = await params;
-  const { angemeldet, error } = await searchParams;
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { slug: true } });
+  if (!event) notFound();
 
-  const event = await getEvent(eventId);
-
-  if (!event || event.status !== "PUBLISHED") {
-    notFound();
+  const sp = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(sp)) {
+    if (value == null) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) qs.append(key, v);
+    } else {
+      qs.set(key, value);
+    }
   }
-
-  // No search/filter context here (see /termine/page.tsx for the version
-  // that has one) — a standalone visit didn't come from that filter form.
-  await recordEventViews([event.id], "DETAIL");
-
-  return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-16">
-      <EventDetail
-        event={event}
-        returnTo={`/termine/${event.id}`}
-        angemeldetSuccess={Boolean(angemeldet)}
-        registrationError={Boolean(error)}
-      />
-    </div>
-  );
+  const query = qs.toString();
+  redirect(`/event/${event.slug}${query ? `?${query}` : ""}`);
 }

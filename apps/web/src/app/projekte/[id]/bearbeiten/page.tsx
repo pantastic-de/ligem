@@ -71,7 +71,7 @@ export default async function ProjektBearbeitenPage({
   return (
     <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Projekt bearbeiten</h1>
-      <Link href={`/projekte/${id}`} className="mt-1 inline-block text-primary hover:underline">
+      <Link href={`/projekt/${listing.slug}`} className="mt-1 inline-block text-primary hover:underline">
         Projekt ansehen →
       </Link>
       <p className="mt-2 text-text-muted">

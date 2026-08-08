@@ -42,7 +42,7 @@ export default async function MeineTerminePage() {
     },
     orderBy: { startAt: "asc" },
     include: {
-      listing: { select: { id: true, projectName: true } },
+      listing: { select: { id: true, slug: true, projectName: true } },
       _count: { select: { registrations: true } },
     },
   });
@@ -92,7 +92,7 @@ export default async function MeineTerminePage() {
               >
                 <div>
                   <h2 className="flex flex-wrap items-center gap-2 font-semibold">
-                    <Link href={`/termine/${event.id}`} className="hover:underline">
+                    <Link href={`/event/${event.slug}`} className="hover:underline">
                       {event.title}
                     </Link>
                     <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-medium text-secondary">
@@ -102,7 +102,7 @@ export default async function MeineTerminePage() {
                   {event.listing ? (
                     <p className="text-sm text-text-muted">
                       für{" "}
-                      <Link href={`/projekte/${event.listing.id}`} className="hover:underline">
+                      <Link href={`/projekt/${event.listing.slug}`} className="hover:underline">
                         {event.listing.projectName}
                       </Link>
                     </p>

@@ -35,7 +35,7 @@ export default async function ProjektStatistikPage({
 
   const listing = await prisma.listing.findUnique({
     where: { id },
-    select: { id: true, projectName: true, createdById: true },
+    select: { id: true, slug: true, projectName: true, createdById: true },
   });
   if (!listing) {
     notFound();
@@ -58,7 +58,7 @@ export default async function ProjektStatistikPage({
 
   return (
     <AppShell active="projekte" isAdmin={viewerIsAdmin} displayName={displayName}>
-      <Link href={`/projekte/${listing.id}`} className="text-sm font-medium text-primary hover:underline">
+      <Link href={`/projekt/${listing.slug}`} className="text-sm font-medium text-primary hover:underline">
         ← Zurück zum Projekt
       </Link>
       <h1 className="mt-2 text-3xl font-bold">Statistik: {listing.projectName}</h1>

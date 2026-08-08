@@ -16,6 +16,7 @@
 
 import { attachRandomPhoto, chance, pick, pickMultiple, pickUniqueComposed, prisma, randomInt } from "./shared";
 import { setEventLocation } from "@/lib/geo";
+import { generateEventSlug } from "@/lib/entity-slug";
 
 type DurationCategory = "kurz" | "ganztag" | "mehrtaegig";
 
@@ -568,6 +569,7 @@ export async function generateDemoEvents(
       data: {
         status: "PUBLISHED",
         title,
+        slug: await generateEventSlug(title),
         description,
         startAt,
         endAt,

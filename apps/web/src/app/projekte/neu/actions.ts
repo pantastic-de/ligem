@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { setListingLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
+import { generateListingSlug } from "@/lib/entity-slug";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
@@ -52,9 +53,12 @@ export async function createListing(formData: FormData): Promise<void> {
     formData.getAll(`attr-${group.slug}`).map(String),
   );
 
+  const slug = await generateListingSlug(projectName);
+
   const listing = await prisma.listing.create({
     data: {
       projectName,
+      slug,
       createdById: session.user.id,
       status: "PENDING_REVIEW",
 
@@ -107,5 +111,5 @@ export async function createListing(formData: FormData): Promise<void> {
     parseOptionalFloat(formData.get("longitude")),
   );
 
-  redirect(`/projekte/${listing.id}?eingereicht=1`);
+  redirect(`/projekt/${slug}?eingereicht=1`);
 }
