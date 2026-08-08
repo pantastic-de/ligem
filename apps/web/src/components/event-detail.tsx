@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Globe } from "lucide-react";
+import { CalendarDays, Globe, Home } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
@@ -202,9 +202,17 @@ export function EventDetail({
         </p>
       ) : null}
       {event.listing ? (
-        <p className="mt-1 text-sm text-text-muted">
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-text-muted">
           Veranstaltet von{" "}
-          <Link href={`/projekt/${event.listing.slug}`} className="text-primary">
+          <Link
+            href={`/projekt/${event.listing.slug}`}
+            className="inline-flex items-center gap-1.5 font-medium text-primary"
+          >
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
+            >
+              <Home className="h-3 w-3" aria-hidden="true" />
+            </span>
             {event.listing.projectName}
           </Link>
         </p>
