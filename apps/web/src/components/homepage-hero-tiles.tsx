@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type RefObject, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Users2 } from "lucide-react";
+import { CalendarDays, Users2, Home as HomeIcon } from "lucide-react";
+import { SOLID_ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 export type HeroPoolItem = {
   key: string;
@@ -18,9 +19,9 @@ export type HeroPoolItem = {
   sublabel?: string;
   href?: string;
   // Only set for a real listing/event (never for a curated fallback mood
-  // photo) — drives the small "Wohnprojekt"/"Termin" badge so visitors
-  // understand these are real, clickable entries, not decorative stock
-  // photography.
+  // photo) — drives the small icon-in-circle badge (Home/CalendarDays,
+  // matching the homepage CTA cards' icon style) so visitors understand
+  // these are real, clickable entries, not decorative stock photography.
   kind?: "projekt" | "termin";
 };
 
@@ -202,8 +203,19 @@ function HeroTileContent({ item, priority }: { item: HeroPoolItem; priority?: bo
         className="object-cover"
       />
       {item.kind && (
-        <span className="absolute right-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-semibold text-secondary shadow-sm">
-          {item.kind === "projekt" ? "Wohnprojekt" : "Termin"}
+        // The solid variant (not the usual light-tinted ACTION_TONE_CLASSES)
+        // — this badge sits directly on a photo rather than a plain surface
+        // background, so it needs much more contrast than the subtle tint
+        // used elsewhere (header nav, menus, ...) to stay legible against
+        // arbitrary photo colors.
+        <span
+          className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-sm ${SOLID_ACTION_TONE_CLASSES[item.kind]}`}
+        >
+          {item.kind === "projekt" ? (
+            <HomeIcon className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          )}
         </span>
       )}
       {item.label && (

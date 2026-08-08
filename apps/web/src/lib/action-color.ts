@@ -15,3 +15,17 @@ export const ACTION_TONE_CLASSES = {
 } as const;
 
 export type ActionTone = keyof typeof ACTION_TONE_CLASSES;
+
+// A bolder, near-solid variant of the same two content tones (no
+// `verwaltung` — this variant is only used where a stronger accent is
+// wanted, e.g. floating over a photo or drawing extra attention to
+// prev/next navigation, not for routine menu items) — white icon on a
+// near-opaque fill instead of a colored icon on a light tint. First used
+// for the homepage hero tiles' badge (see homepage-hero-tiles.tsx, which
+// sits directly on a photo and needs much more contrast than the usual
+// tint), now shared with the prev/next chevrons on the listing/event
+// detail views for the same "same icon language, everywhere" consistency.
+export const SOLID_ACTION_TONE_CLASSES = {
+  projekt: "bg-primary/90 text-white",
+  termin: "bg-secondary/90 text-white",
+} as const;

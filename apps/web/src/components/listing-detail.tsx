@@ -9,8 +9,6 @@ import {
   MapPin,
   Target,
   Tag,
-  ChevronLeft,
-  ChevronRight,
   CalendarDays,
   Pencil,
   Mail,
@@ -27,7 +25,7 @@ import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
 import { HighlightText } from "@/components/highlight-text";
 import { highlightHtml } from "@/lib/highlight";
-import { ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { ACTION_TONE_CLASSES, SOLID_ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -240,9 +238,9 @@ export function ListingDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-primary transition-colors hover:text-primary-hover"
             >
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
               >
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                <Home className="h-4 w-4" aria-hidden="true" />
               </span>
               <span className="truncate">{prevItem.label}</span>
             </Link>
@@ -257,9 +255,9 @@ export function ListingDetail({
             >
               <span className="truncate">{nextItem.label}</span>
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
               >
-                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                <Home className="h-4 w-4" aria-hidden="true" />
               </span>
             </Link>
           ) : (
@@ -478,7 +476,7 @@ export function ListingDetail({
                   className="flex items-start gap-3 p-4 transition-colors hover:bg-secondary/5"
                 >
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.termin}`}
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.termin}`}
                   >
                     <CalendarDays className="h-5 w-5" aria-hidden="true" />
                   </span>

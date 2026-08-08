@@ -74,11 +74,13 @@ async function getHeroPools(): Promise<{
         slug: string;
         title: string;
         listingName: string | null;
+        city: string | null;
+        listingCity: string | null;
         thumbnailKey: string | null;
         storageKey: string;
       }[]
     >`
-      SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", m."thumbnailKey", m."storageKey"
+      SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", e.city, ln.city AS "listingCity", m."thumbnailKey", m."storageKey"
       FROM "Event" e
       JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
       LEFT JOIN "Listing" ln ON ln.id = e."listingId"
@@ -100,11 +102,13 @@ async function getHeroPools(): Promise<{
             slug: string;
             title: string;
             listingName: string | null;
+            city: string | null;
+            listingCity: string | null;
             thumbnailKey: string | null;
             storageKey: string;
           }[]
         >`
-          SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", m."thumbnailKey", m."storageKey"
+          SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", e.city, ln.city AS "listingCity", m."thumbnailKey", m."storageKey"
           FROM "Event" e
           JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
           LEFT JOIN "Listing" ln ON ln.id = e."listingId"
@@ -133,15 +137,22 @@ async function getHeroPools(): Promise<{
     fallbackIndex++;
   }
 
-  const eventPool: HeroPoolItem[] = eventRows.map((event) => ({
-    key: `event-${event.id}`,
-    src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
-    alt: event.title,
-    label: event.title,
-    sublabel: event.listingName ?? undefined,
-    href: `/event/${event.slug}`,
-    kind: "termin",
-  }));
+  const eventPool: HeroPoolItem[] = eventRows.map((event) => {
+    // The Termin's own city if it set one (its address can differ from the
+    // hosting project's, see the address-prefill note above), falling back
+    // to the project's city so there's still a location shown when the
+    // event itself has no address of its own.
+    const city = event.city ?? event.listingCity;
+    return {
+      key: `event-${event.id}`,
+      src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
+      alt: event.title,
+      label: event.title,
+      sublabel: [event.listingName, city].filter(Boolean).join(" · ") || undefined,
+      href: `/event/${event.slug}`,
+      kind: "termin",
+    };
+  });
   if (eventPool.length === 0) {
     eventPool.push({
       key: "fallback-event",
