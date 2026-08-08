@@ -180,14 +180,14 @@ export function LocationRadiusPicker({
   const selectedMarkerRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
-  // Always holds the current render's `moveTo` closure — read from the
-  // map's own "click" listener, which is registered exactly once in the
+  // Always holds the current render's `handleMapClick` closure — read from
+  // the map's own "click" listener, which is registered exactly once in the
   // mount-only effect below. A listener registered there would otherwise
-  // permanently close over that first render's `moveTo` (and, transitively,
+  // permanently close over that first render's closure (and, transitively,
   // its `radiusValue`), the same stale-closure trap documented at
   // `lastChangeKey` below; updating this ref on every render instead keeps
   // the click handler reading current state without re-registering it.
-  const moveToRef = useRef<(lat: number, lng: number) => void>(() => {});
+  const handleMapClickRef = useRef<(lat: number, lng: number) => void>(() => {});
   // Bounds that fit every result (+ the search origin, if set), captured
   // once at mount so we can zoom back out to it when a selection is
   // cleared — see renderSelectedMarker below.
@@ -393,13 +393,13 @@ export function LocationRadiusPicker({
 
       // A plain click on the base map (never fired for clicks on markers/
       // popups/controls — those are separate Leaflet layer events, not DOM
-      // bubbling) sets the search origin there, keeping whatever radius is
-      // already selected — see moveTo. Reads through moveToRef rather than
-      // closing over `moveTo` directly since this listener is registered
-      // exactly once here at mount (see moveToRef's own comment above).
+      // bubbling) sets the search origin there — see handleMapClick. Reads
+      // through handleMapClickRef rather than closing over it directly
+      // since this listener is registered exactly once here at mount (see
+      // handleMapClickRef's own comment above).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       map.on("click", (e: any) => {
-        moveToRef.current(e.latlng.lat, e.latlng.lng);
+        handleMapClickRef.current(e.latlng.lat, e.latlng.lng);
       });
 
       mapInstance.current = map;
@@ -535,13 +535,30 @@ export function LocationRadiusPicker({
       }
     }
   }
+  // A raw map click keeps the currently selected radius, defaulting it to
+  // 50km the same way applyPlaceResult does below when it's still "Alle" —
+  // without this, clicking the map before ever picking a radius moved the
+  // marker with no circle at all, which read as "the map stopped scaling/
+  // the radius circle disappeared" (reported directly, root-caused to
+  // exactly this: `radiusValue == null` on a fresh page means there's
+  // genuinely nothing to draw a circle from). Deliberately does *not* call
+  // applyPlaceResult's own closeUiAndScrollToResults() — a plain map click
+  // shouldn't collapse an expanded map or scroll the page away mid-click
+  // the way finishing a place search reasonably does.
+  function handleMapClick(newLat: number, newLng: number) {
+    moveTo(newLat, newLng);
+    if (radiusValue == null) {
+      const fiftyKmIndex = RADIUS_STEPS.indexOf(50);
+      if (fiftyKmIndex !== -1) setRadiusIndex(fiftyKmIndex);
+    }
+  }
   // Refreshed after every render (not written directly during render — the
   // same "no ref writes during render" rule that bit homepage-hero-tiles.tsx
   // earlier applies here too) so the map's click listener, registered once
-  // in the mount effect below, always calls a current `moveTo` via
-  // `moveToRef.current(...)`.
+  // in the mount effect below, always calls a current `handleMapClick` via
+  // `handleMapClickRef.current(...)`.
   useEffect(() => {
-    moveToRef.current = moveTo;
+    handleMapClickRef.current = handleMapClick;
   });
 
   // Clears the search origin entirely — both the map marker/circle and the
