@@ -6,6 +6,7 @@ import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -57,19 +58,25 @@ export async function SiteHeader() {
             <HeaderSearchForm />
           </Suspense>
 
-          <Link
-            href="/projekte"
-            className="flex flex-col items-center gap-0.5 text-primary transition-colors hover:text-primary-hover"
-          >
-            <HomeIcon className="h-6 w-6" aria-hidden="true" />
-            <span className="text-xs font-medium">Projekte</span>
+          <Link href="/projekte" className="group flex flex-col items-center gap-1">
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors group-hover:bg-primary/25 ${ACTION_TONE_CLASSES.projekt}`}
+            >
+              <HomeIcon className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-xs font-medium text-primary transition-colors group-hover:text-primary-hover">
+              Projekte
+            </span>
           </Link>
-          <Link
-            href="/termine"
-            className="flex flex-col items-center gap-0.5 text-secondary transition-colors hover:text-secondary-hover"
-          >
-            <CalendarDays className="h-6 w-6" aria-hidden="true" />
-            <span className="text-xs font-medium">Termine</span>
+          <Link href="/termine" className="group flex flex-col items-center gap-1">
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors group-hover:bg-secondary/25 ${ACTION_TONE_CLASSES.termin}`}
+            >
+              <CalendarDays className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-xs font-medium text-secondary transition-colors group-hover:text-secondary-hover">
+              Termine
+            </span>
           </Link>
 
           {session?.user ? (
@@ -91,12 +98,15 @@ export async function SiteHeader() {
             // "Registrieren" isn't a separate nav entry — /anmelden already
             // offers it as an option ("Noch kein Konto? Registrieren") right
             // below the login form, so the nav only needs one entry point.
-            <Link
-              href="/anmelden"
-              className="flex flex-col items-center gap-0.5 text-accent transition-colors hover:text-accent/80"
-            >
-              <LogIn className="h-6 w-6" aria-hidden="true" />
-              <span className="text-xs font-medium">Anmelden</span>
+            <Link href="/anmelden" className="group flex flex-col items-center gap-1">
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors group-hover:bg-accent/35 ${ACTION_TONE_CLASSES.verwaltung}`}
+              >
+                <LogIn className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="text-xs font-medium text-accent transition-colors group-hover:text-accent/80">
+                Anmelden
+              </span>
             </Link>
           )}
         </nav>

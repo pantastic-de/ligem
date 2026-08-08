@@ -52,9 +52,16 @@ async function getHeroPools(): Promise<{
 }> {
   const [listingRows, upcomingEventRows] = await Promise.all([
     prisma.$queryRaw<
-      { id: string; slug: string; projectName: string; thumbnailKey: string | null; storageKey: string }[]
+      {
+        id: string;
+        slug: string;
+        projectName: string;
+        city: string | null;
+        thumbnailKey: string | null;
+        storageKey: string;
+      }[]
     >`
-      SELECT l.id, l.slug, l."projectName", m."thumbnailKey", m."storageKey"
+      SELECT l.id, l.slug, l."projectName", l.city, m."thumbnailKey", m."storageKey"
       FROM "Listing" l
       JOIN "Media" m ON m."listingId" = l.id AND m.position = 0
       WHERE l.status = 'PUBLISHED'
@@ -62,11 +69,19 @@ async function getHeroPools(): Promise<{
       LIMIT ${LISTING_POOL_SIZE}
     `,
     prisma.$queryRaw<
-      { id: string; slug: string; title: string; thumbnailKey: string | null; storageKey: string }[]
+      {
+        id: string;
+        slug: string;
+        title: string;
+        listingName: string | null;
+        thumbnailKey: string | null;
+        storageKey: string;
+      }[]
     >`
-      SELECT e.id, e.slug, e.title, m."thumbnailKey", m."storageKey"
+      SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", m."thumbnailKey", m."storageKey"
       FROM "Event" e
       JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
+      LEFT JOIN "Listing" ln ON ln.id = e."listingId"
       WHERE e.status = 'PUBLISHED' AND e."startAt" >= NOW()
       ORDER BY random()
       LIMIT ${EVENT_POOL_SIZE}
@@ -80,11 +95,19 @@ async function getHeroPools(): Promise<{
     upcomingEventRows.length > 0
       ? upcomingEventRows
       : await prisma.$queryRaw<
-          { id: string; slug: string; title: string; thumbnailKey: string | null; storageKey: string }[]
+          {
+            id: string;
+            slug: string;
+            title: string;
+            listingName: string | null;
+            thumbnailKey: string | null;
+            storageKey: string;
+          }[]
         >`
-          SELECT e.id, e.slug, e.title, m."thumbnailKey", m."storageKey"
+          SELECT e.id, e.slug, e.title, ln."projectName" AS "listingName", m."thumbnailKey", m."storageKey"
           FROM "Event" e
           JOIN "Media" m ON m."eventId" = e.id AND m.position = 0
+          LEFT JOIN "Listing" ln ON ln.id = e."listingId"
           WHERE e.status = 'PUBLISHED'
           ORDER BY random()
           LIMIT ${EVENT_POOL_SIZE}
@@ -95,6 +118,7 @@ async function getHeroPools(): Promise<{
     src: `/api/media/${listing.thumbnailKey ?? listing.storageKey}`,
     alt: listing.projectName,
     label: listing.projectName,
+    sublabel: listing.city ?? undefined,
     href: `/projekt/${listing.slug}`,
     kind: "projekt",
   }));
@@ -114,6 +138,7 @@ async function getHeroPools(): Promise<{
     src: `/api/media/${event.thumbnailKey ?? event.storageKey}`,
     alt: event.title,
     label: event.title,
+    sublabel: event.listingName ?? undefined,
     href: `/event/${event.slug}`,
     kind: "termin",
   }));

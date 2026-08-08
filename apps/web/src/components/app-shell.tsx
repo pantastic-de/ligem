@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LayoutDashboard, ShieldCheck } from "lucide-react";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 export type AppShellSection =
   | "dashboard"
@@ -64,13 +65,20 @@ export function AppShell({
         aria-label="Verwaltung"
         className="flex gap-1 overflow-x-auto rounded-2xl bg-surface p-2 shadow-sm lg:sticky lg:top-6 lg:w-60 lg:shrink-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:p-3"
       >
-        <RailLink href="/dashboard" label="Dashboard" icon={LayoutDashboard} isActive={isPersonalActive} />
+        <RailLink
+          href="/dashboard"
+          label="Dashboard"
+          icon={LayoutDashboard}
+          isActive={isPersonalActive}
+          tone="projekt"
+        />
         {isAdmin ? (
           <RailLink
             href="/admin"
             label="Admin-Dashboard"
             icon={ShieldCheck}
             isActive={isAdminActive}
+            tone="verwaltung"
           />
         ) : null}
         <div className="mt-3 hidden items-center gap-2 rounded-xl bg-bg px-3 py-2 text-sm text-text-muted lg:flex">
@@ -93,18 +101,20 @@ function RailLink({
   label,
   icon: Icon,
   isActive,
+  tone,
 }: {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
   isActive: boolean;
+  tone: "projekt" | "verwaltung";
 }) {
   return (
     <Link
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={`flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold whitespace-nowrap transition-colors ${
-        isActive ? "bg-primary/10 text-primary" : "text-text-muted hover:bg-bg"
+        isActive ? ACTION_TONE_CLASSES[tone] : "text-text-muted hover:bg-bg"
       }`}
     >
       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />

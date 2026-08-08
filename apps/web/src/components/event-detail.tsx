@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -143,7 +144,9 @@ export function EventDetail({
               aria-label={`Vorheriger Termin: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-secondary">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.termin}`}
+              >
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="truncate">{prevItem.label}</span>
@@ -158,7 +161,9 @@ export function EventDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-secondary">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.termin}`}
+              >
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </span>
             </Link>

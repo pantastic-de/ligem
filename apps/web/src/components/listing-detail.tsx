@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
+  Pencil,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +27,7 @@ import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
 import { HighlightText } from "@/components/highlight-text";
 import { highlightHtml } from "@/lib/highlight";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -236,7 +239,9 @@ export function ListingDetail({
               aria-label={`Vorheriges Projekt: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-primary transition-colors hover:text-primary-hover"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+              >
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="truncate">{prevItem.label}</span>
@@ -251,7 +256,9 @@ export function ListingDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-primary transition-colors hover:text-primary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+              >
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </span>
             </Link>
@@ -286,20 +293,35 @@ export function ListingDetail({
         <div className="mb-6 flex flex-wrap gap-3">
           <Link
             href={`/projekte/${listing.id}/bearbeiten`}
-            className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 text-sm font-medium transition-colors hover:bg-surface"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-text/20 py-1 pl-1 pr-5 text-sm font-medium transition-colors hover:bg-surface"
           >
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+            </span>
             Projekt bearbeiten
           </Link>
           <Link
             href={`/projekte/${listing.id}/termine`}
-            className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 text-sm font-medium transition-colors hover:bg-surface"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-text/20 py-1 pl-1 pr-5 text-sm font-medium transition-colors hover:bg-surface"
           >
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.termin}`}
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
+            </span>
             Termine verwalten
           </Link>
           <Link
             href={`/projekte/${listing.id}/anfragen`}
-            className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 text-sm font-medium transition-colors hover:bg-surface"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-text/20 py-1 pl-1 pr-5 text-sm font-medium transition-colors hover:bg-surface"
           >
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.verwaltung}`}
+            >
+              <Mail className="h-4 w-4" aria-hidden="true" />
+            </span>
             Kontaktanfragen
           </Link>
         </div>
@@ -452,10 +474,14 @@ export function ListingDetail({
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <Link
-                  href={`/termine#termin-${event.id}`}
+                  href={`/event/${event.slug}`}
                   className="flex items-start gap-3 p-4 transition-colors hover:bg-secondary/5"
                 >
-                  <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-secondary" aria-hidden="true" />
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.termin}`}
+                  >
+                    <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                  </span>
                   <div className="min-w-0">
                     <div className="font-medium">
                       <HighlightText text={event.title} query={searchTerm} />

@@ -2,7 +2,8 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronDown, CircleUserRound } from "lucide-react";
+import { ChevronDown, CircleUserRound, Home as HomeIcon, ShieldCheck, LogOut } from "lucide-react";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 /**
  * The header's account-menu disclosure — split out of SiteHeader (a Server
@@ -47,9 +48,13 @@ export function AccountMenu({
   return (
     <div className="relative">
       <details ref={detailsRef}>
-        <summary className="flex cursor-pointer list-none flex-col items-center gap-0.5 select-none [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none flex-col items-center gap-1 select-none [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-0.5">
-            <CircleUserRound className="h-6 w-6" aria-hidden="true" />
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.verwaltung}`}
+            >
+              <CircleUserRound className="h-5 w-5" aria-hidden="true" />
+            </span>
             <ChevronDown className="h-3 w-3" aria-hidden="true" />
           </span>
           <span className="max-w-24 truncate text-xs font-medium">{displayName}</span>
@@ -58,22 +63,49 @@ export function AccountMenu({
           onClick={close}
           className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg"
         >
-          <Link href="/mein-konto" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+          <Link
+            href="/mein-konto"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.verwaltung}`}
+            >
+              <CircleUserRound className="h-4 w-4" aria-hidden="true" />
+            </span>
             Mein Konto
           </Link>
-          <Link href="/meine-projekte" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+          <Link
+            href="/meine-projekte"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
+            >
+              <HomeIcon className="h-4 w-4" aria-hidden="true" />
+            </span>
             Meine Projekte
           </Link>
           {admin ? (
-            <Link href="/admin" className="min-h-11 px-4 py-2.5 text-sm transition-colors hover:bg-bg">
+            <Link
+              href="/admin"
+              className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.verwaltung}`}
+              >
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              </span>
               Admin
             </Link>
           ) : null}
           <form action={signOutAction}>
             <button
               type="submit"
-              className="min-h-11 w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-bg"
+              className="flex min-h-11 w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-bg"
             >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-text/10 text-text-muted">
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+              </span>
               Abmelden
             </button>
           </form>

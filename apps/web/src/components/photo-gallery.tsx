@@ -274,23 +274,23 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
 
   return (
     <div className="mt-6">
-      <div className="grid grid-cols-1 gap-2 sm:h-80 sm:grid-cols-3 sm:grid-rows-1">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={() => setOpenIndex(0)}
-          className={`relative h-56 min-h-0 overflow-hidden rounded-xl sm:h-full ${stacked.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
+          className={`relative aspect-[4/3] overflow-hidden rounded-xl ${stacked.length > 0 ? "sm:col-span-2" : "sm:col-span-3"}`}
         >
           <GalleryTileMedia photo={hero} />
           {hero.isPanorama ? <PanoramaBadge /> : null}
         </button>
         {stacked.length > 0 ? (
-          <div className="flex min-h-0 flex-row gap-2 sm:h-full sm:flex-col">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:grid-rows-2">
             {stacked.map((photo, i) => (
               <button
                 key={photo.id}
                 type="button"
                 onClick={() => setOpenIndex(i + 1)}
-                className="relative h-28 min-h-0 flex-1 overflow-hidden rounded-xl sm:h-auto"
+                className="relative aspect-[4/3] overflow-hidden rounded-xl"
               >
                 <GalleryTileMedia photo={photo} />
                 {photo.isPanorama ? <PanoramaBadge /> : null}
@@ -310,7 +310,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
                 key={photo.id}
                 type="button"
                 onClick={() => setOpenIndex(index)}
-                className="relative h-20 overflow-hidden rounded-xl"
+                className="relative aspect-[4/3] overflow-hidden rounded-xl"
               >
                 <GalleryTileMedia photo={photo} />
                 {isLast ? (
