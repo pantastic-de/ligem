@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
@@ -71,7 +72,11 @@ export default async function ProjektBearbeitenPage({
   return (
     <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Projekt bearbeiten</h1>
-      <Link href={`/projekt/${listing.slug}`} className="mt-1 inline-block text-primary hover:underline">
+      <Link
+        href={`/projekt/${listing.slug}`}
+        className="mt-1 inline-flex items-center gap-1.5 text-primary hover:underline"
+      >
+        <EntityIconBadge tone="projekt" size="sm" />
         Projekt ansehen →
       </Link>
       <p className="mt-2 text-text-muted">

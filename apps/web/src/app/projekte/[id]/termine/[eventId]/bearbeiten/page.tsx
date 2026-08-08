@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { EventFormFields } from "@/components/event-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
@@ -75,7 +76,11 @@ export default async function TerminBearbeitenPage({
   return (
     <AppShell active="termine" isAdmin={admin} displayName={displayName}>
       <h1 className="text-3xl font-bold">Termin bearbeiten</h1>
-      <Link href={`/event/${event.slug}`} className="mt-1 inline-block text-primary hover:underline">
+      <Link
+        href={`/event/${event.slug}`}
+        className="mt-1 inline-flex items-center gap-1.5 text-primary hover:underline"
+      >
+        <EntityIconBadge tone="termin" size="sm" />
         Termin ansehen →
       </Link>
       <p className="mt-2 text-text-muted">für {listing.projectName}</p>

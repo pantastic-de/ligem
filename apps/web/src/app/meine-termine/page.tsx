@@ -6,6 +6,7 @@ import { Eye, MousePointerClick } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { deleteEvent } from "@/app/projekte/[id]/termine/actions";
 
 export const metadata: Metadata = {
@@ -92,7 +93,8 @@ export default async function MeineTerminePage() {
               >
                 <div>
                   <h2 className="flex flex-wrap items-center gap-2 font-semibold">
-                    <Link href={`/event/${event.slug}`} className="hover:underline">
+                    <Link href={`/event/${event.slug}`} className="inline-flex items-center gap-2 hover:underline">
+                      <EntityIconBadge tone="termin" size="md" />
                       {event.title}
                     </Link>
                     <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-medium text-secondary">
@@ -100,9 +102,13 @@ export default async function MeineTerminePage() {
                     </span>
                   </h2>
                   {event.listing ? (
-                    <p className="text-sm text-text-muted">
+                    <p className="flex items-center gap-1.5 text-sm text-text-muted">
                       für{" "}
-                      <Link href={`/projekt/${event.listing.slug}`} className="hover:underline">
+                      <Link
+                        href={`/projekt/${event.listing.slug}`}
+                        className="inline-flex items-center gap-1.5 hover:underline"
+                      >
+                        <EntityIconBadge tone="projekt" size="sm" />
                         {event.listing.projectName}
                       </Link>
                     </p>

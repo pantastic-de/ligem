@@ -10,6 +10,7 @@ import { ListingDetail, type ListingDetailData } from "@/components/listing-deta
 import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
 import { escapeHtml } from "@/lib/map-result-item";
 import { HighlightText } from "@/components/highlight-text";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { recordListingViews } from "@/lib/listing-views";
 import { turnstileEnabled } from "@/lib/turnstile";
 
@@ -736,7 +737,8 @@ export async function ProjektePageView({
                             />
                           ) : null}
                           <div className="min-w-0 flex-1 p-4 sm:p-6">
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="flex items-center gap-2 text-lg font-semibold">
+                              <EntityIconBadge tone="projekt" size="md" />
                               <HighlightText text={listing.projectName} query={suche} />
                             </h2>
                             {listing.motto ? (

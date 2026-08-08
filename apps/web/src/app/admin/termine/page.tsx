@@ -7,6 +7,7 @@ import type { ListingStatus } from "@/generated/prisma/client";
 import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import {
   approveEvent,
   archiveEvent,
@@ -196,7 +197,8 @@ export default async function AdminTerminePage({
                     />
                     <div>
                       <h2 className="text-lg font-semibold">
-                        <Link href={`/event/${event.slug}`} className="hover:underline">
+                        <Link href={`/event/${event.slug}`} className="inline-flex items-center gap-2 hover:underline">
+                          <EntityIconBadge tone="termin" size="md" />
                           {event.title}
                         </Link>
                         {event.listing?.isDemo ? (
@@ -211,7 +213,11 @@ export default async function AdminTerminePage({
                           <>
                             {" "}
                             · von{" "}
-                            <Link href={`/projekt/${event.listing.slug}`} className="hover:underline">
+                            <Link
+                              href={`/projekt/${event.listing.slug}`}
+                              className="inline-flex items-center gap-1.5 hover:underline"
+                            >
+                              <EntityIconBadge tone="projekt" size="sm" />
                               {event.listing.projectName}
                             </Link>
                           </>

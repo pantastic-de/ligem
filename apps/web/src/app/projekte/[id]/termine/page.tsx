@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { deleteEvent } from "./actions";
 
 export const metadata: Metadata = {
@@ -87,7 +88,11 @@ export default async function TerminePage({
         <div>
           <h1 className="text-3xl font-bold">Termine</h1>
           <p className="mt-1 text-text-muted">für {listing.projectName}</p>
-          <Link href={`/projekt/${listing.slug}`} className="mt-1 inline-block text-primary hover:underline">
+          <Link
+            href={`/projekt/${listing.slug}`}
+            className="mt-1 inline-flex items-center gap-1.5 text-primary hover:underline"
+          >
+            <EntityIconBadge tone="projekt" size="sm" />
             Projekt ansehen →
           </Link>
         </div>
@@ -114,7 +119,8 @@ export default async function TerminePage({
               >
                 <div>
                   <h2 className="flex flex-wrap items-center gap-2 font-semibold">
-                    <Link href={`/event/${event.slug}`} className="hover:underline">
+                    <Link href={`/event/${event.slug}`} className="inline-flex items-center gap-2 hover:underline">
+                      <EntityIconBadge tone="termin" size="md" />
                       {event.title}
                     </Link>
                     {event.recurrenceGroupId && (seriesSizes.get(event.recurrenceGroupId) ?? 0) > 1 ? (

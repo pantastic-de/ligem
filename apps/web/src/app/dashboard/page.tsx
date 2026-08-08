@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount } from "@/lib/open-requests";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -148,7 +149,10 @@ export default async function DashboardPage() {
                       href={`/projekt/${listing.slug}`}
                       className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 hover:bg-bg/70"
                     >
-                      <span className="truncate font-medium">{listing.projectName}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <EntityIconBadge tone="projekt" size="sm" />
+                        <span className="truncate font-medium">{listing.projectName}</span>
+                      </span>
                       <span className="shrink-0 text-xs text-text-muted">
                         {statusLabels[listing.status] ?? listing.status}
                       </span>
@@ -182,13 +186,16 @@ export default async function DashboardPage() {
                       href={`/event/${event.slug}`}
                       className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 hover:bg-bg/70"
                     >
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium">{event.title}</span>
-                        {event.listing ? (
-                          <span className="block truncate text-xs text-text-muted">
-                            {event.listing.projectName}
-                          </span>
-                        ) : null}
+                      <span className="flex min-w-0 items-start gap-2">
+                        <EntityIconBadge tone="termin" size="sm" className="mt-0.5" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{event.title}</span>
+                          {event.listing ? (
+                            <span className="block truncate text-xs text-text-muted">
+                              {event.listing.projectName}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                       <span className="shrink-0 text-xs text-text-muted">
                         {dateTimeFormat.format(event.startAt)}

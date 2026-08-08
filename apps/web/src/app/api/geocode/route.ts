@@ -9,16 +9,60 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const nominatimUrl = new URL("https://nominatim.openstreetmap.org/search");
-  nominatimUrl.searchParams.set("format", "jsonv2");
-  nominatimUrl.searchParams.set("addressdetails", "1");
-  nominatimUrl.searchParams.set("limit", "5");
-
   const q = searchParams.get("q");
   const postalcode = searchParams.get("postalcode");
   const country = searchParams.get("country");
   const city = searchParams.get("city");
   const street = searchParams.get("street");
+  const lat = searchParams.get("lat");
+  const lon = searchParams.get("lon");
+
+  // Reverse lookup (coordinates -> place name) — used to fill "Ort oder
+  // Region eingeben" with a real place name after "Meinen Standort
+  // verwenden" (browser geolocation) resolves to raw lat/lng, which on its
+  // own reads as a blank field despite a location actually being set.
+  // Returns a single object (not an array, unlike the forward-search branch
+  // below) since there's exactly one result for a coordinate pair.
+  if (lat && lon) {
+    const reverseUrl = new URL("https://nominatim.openstreetmap.org/reverse");
+    reverseUrl.searchParams.set("format", "jsonv2");
+    reverseUrl.searchParams.set("addressdetails", "1");
+    reverseUrl.searchParams.set("lat", lat);
+    reverseUrl.searchParams.set("lon", lon);
+
+    const response = await fetch(reverseUrl, {
+      headers: {
+        "User-Agent": "LiGem/1.0 (https://ligem.de; info@ligem.de)",
+        "Accept-Language": "de",
+      },
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(null, { status: 502 });
+    }
+
+    const entry = (await response.json()) as {
+      lat: string;
+      lon: string;
+      display_name: string;
+      address?: Record<string, string>;
+    };
+
+    return NextResponse.json({
+      lat: entry.lat,
+      lon: entry.lon,
+      displayName: entry.display_name,
+      country: entry.address?.country,
+      state: entry.address?.state,
+      postalCode: entry.address?.postcode,
+      city: entry.address?.city ?? entry.address?.town ?? entry.address?.village,
+    });
+  }
+
+  const nominatimUrl = new URL("https://nominatim.openstreetmap.org/search");
+  nominatimUrl.searchParams.set("format", "jsonv2");
+  nominatimUrl.searchParams.set("addressdetails", "1");
+  nominatimUrl.searchParams.set("limit", "5");
 
   if (q) {
     nominatimUrl.searchParams.set("q", q);

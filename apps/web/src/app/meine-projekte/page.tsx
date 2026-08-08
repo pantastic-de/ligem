@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 export const metadata: Metadata = {
   title: "Meine Projekte",
@@ -109,7 +110,8 @@ export default async function MeineProjektePage() {
                   href={`/projekt/${listing.slug}`}
                   className="flex items-center justify-between gap-4 rounded-t-2xl p-4 transition-colors hover:bg-bg sm:p-6"
                 >
-                  <span className="font-semibold">
+                  <span className="flex items-center gap-2 font-semibold">
+                    <EntityIconBadge tone="projekt" size="md" />
                     {listing.projectName}
                     {isCoManaged ? (
                       <span className="ml-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-normal align-middle">

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
 import { EventDetail, type EventDetailData } from "@/components/event-detail";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { colorForCategory } from "@/lib/category-color";
 import { haversineDistanceKm } from "@/lib/distance";
 import { recordEventViews } from "@/lib/event-views";
@@ -481,7 +482,10 @@ export async function TerminePageView({
                           ) : null}
                           <div className="min-w-0 flex-1 p-4 sm:p-6">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h2 className="text-lg font-semibold">{event.title}</h2>
+                              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                                <EntityIconBadge tone="termin" size="md" />
+                                {event.title}
+                              </h2>
                               {isOnline ? (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2 py-0.5 text-xs font-semibold text-secondary">
                                   <Globe className="h-3.5 w-3.5" aria-hidden="true" />

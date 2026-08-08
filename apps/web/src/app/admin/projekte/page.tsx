@@ -7,6 +7,7 @@ import type { ListingStatus } from "@/generated/prisma/client";
 import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import {
   approveListing,
   archiveListing,
@@ -212,7 +213,8 @@ export default async function AdminProjektePage({
                     />
                     <div>
                       <h2 className="text-lg font-semibold">
-                        <Link href={`/projekt/${listing.slug}`} className="hover:underline">
+                        <Link href={`/projekt/${listing.slug}`} className="inline-flex items-center gap-2 hover:underline">
+                          <EntityIconBadge tone="projekt" size="md" />
                           {listing.projectName}
                         </Link>
                         {listing.isDemo ? (

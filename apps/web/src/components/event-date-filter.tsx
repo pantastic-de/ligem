@@ -35,6 +35,7 @@ export function EventDateFilter({
   legend,
   placeholder = "Zeitraum wählen (alle anstehenden Termine)",
   emptyHint = "Alle anstehenden Termine, zum Eingrenzen einen Beginn-Tag anklicken.",
+  embedded = false,
 }: {
   defaultVon?: string;
   defaultBis?: string;
@@ -53,6 +54,19 @@ export function EventDateFilter({
   // Termine-flavored copy is overridable rather than hardcoded.
   placeholder?: string;
   emptyHint?: string;
+  // /projekte's "Suchzeitraum" usage already nests this component inside
+  // its own collapsible <details> fieldset (its own border + "Suchzeitraum"
+  // summary/chevron already provide both the frame and the expand/collapse
+  // control) — rendering this component's *own* bordered box/title/✕ on
+  // top of that produced a visibly doubled frame with a redundant "Suchzeitraum
+  // wählen" title inside it, and a ✕ that only collapsed the inner box while
+  // leaving the outer one open. `embedded` drops this component's own
+  // border/collapsed-summary-input/title/✕ entirely and just renders the
+  // calendar/legend/presets flush — the parent's own frame and its native
+  // <summary> disclosure become the only frame and the only "close"
+  // control. /termine's sidebar usage (not nested in anything) leaves this
+  // false and keeps the self-contained boxed behavior.
+  embedded?: boolean;
 }) {
   const [startDate, setStartDate] = useState(defaultVon ?? "");
   const [endDate, setEndDate] = useState(defaultBis ?? "");
@@ -138,27 +152,8 @@ export function EventDateFilter({
       : `ab ${shortDateFormat.format(new Date(startDate))}`
     : "";
 
-  return (
-    <div className="flex flex-col gap-3">
-      <input
-        type="text"
-        readOnly
-        value={rangeSummary}
-        onFocus={() => setExpanded(true)}
-        placeholder={placeholder}
-        className="min-h-11 w-full cursor-pointer rounded-xl border border-text/20 bg-bg px-3 text-sm"
-      />
-      {expanded ? (
-      <>
-      <div className="relative flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          aria-label="Zeitraum-Auswahl schließen"
-          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg"
-        >
-          ✕
-        </button>
+  const calendarContent = (
+    <>
         <div className="flex items-center justify-between pr-12">
           <button
             type="button"
@@ -267,22 +262,55 @@ export function EventDateFilter({
               : "Beginn gewählt, jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
             : emptyHint}
         </p>
-      </div>
 
-      <span className="font-medium">Zeitraum</span>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => applyPreset(7)} className={buttonClass}>
-          Nächste 7 Tage
+        <div className="border-t border-text/10 pt-3">
+          <span className="font-medium">Zeitraum</span>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" onClick={() => applyPreset(7)} className={buttonClass}>
+              Nächste 7 Tage
+            </button>
+            <button type="button" onClick={() => applyPreset(30)} className={buttonClass}>
+              Nächste 30 Tage
+            </button>
+            <button type="button" onClick={clearRange} className={buttonClass}>
+              Alle anstehenden
+            </button>
+          </div>
+        </div>
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      {embedded ? (
+        // Already nested inside a parent's own bordered/collapsible
+        // container (see the `embedded` prop doc above) — no own
+        // frame/title/✕ here, the parent's frame and <summary> disclosure
+        // are the only ones.
+        calendarContent
+      ) : !expanded ? (
+        <input
+          type="text"
+          readOnly
+          value={rangeSummary}
+          onFocus={() => setExpanded(true)}
+          placeholder={placeholder}
+          className="min-h-11 w-full cursor-pointer rounded-xl border border-text/20 bg-bg px-3 text-sm"
+        />
+      ) : (
+      <div className="relative flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          aria-label="Zeitraum-Auswahl schließen"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg"
+        >
+          ✕
         </button>
-        <button type="button" onClick={() => applyPreset(30)} className={buttonClass}>
-          Nächste 30 Tage
-        </button>
-        <button type="button" onClick={clearRange} className={buttonClass}>
-          Alle anstehenden
-        </button>
+        <span className="pr-8 font-medium">{placeholder}</span>
+        {calendarContent}
       </div>
-      </>
-      ) : null}
+      )}
 
       <input type="hidden" name="von" value={startDate} />
       <input type="hidden" name="bis" value={endDate} />

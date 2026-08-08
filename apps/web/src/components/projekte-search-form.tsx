@@ -95,6 +95,7 @@ export function ProjekteSearchForm({
         defaultLng={defaults.lng}
         defaultRadius={defaults.radius}
         resultItems={resultItems}
+        resultTone="projekt"
         selectedId={selectedId}
         onChange={submitNow}
       />
@@ -135,6 +136,7 @@ export function ProjekteSearchForm({
                 onChange={submitNow}
                 placeholder="Suchzeitraum wählen"
                 emptyHint="Kein bestimmter Suchzeitraum, zum Eingrenzen einen Beginn-Tag anklicken."
+                embedded
               />
             </div>
           </details>

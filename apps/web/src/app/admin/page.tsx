@@ -16,6 +16,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { approveListing, rejectListing } from "@/app/admin/projekte/actions";
 
 export const metadata: Metadata = {
@@ -200,7 +201,11 @@ export default async function AdminPage() {
                     className="flex flex-col gap-3 rounded-xl bg-bg p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
-                      <Link href={`/projekt/${listing.slug}`} className="font-semibold hover:underline">
+                      <Link
+                        href={`/projekt/${listing.slug}`}
+                        className="inline-flex items-center gap-1.5 font-semibold hover:underline"
+                      >
+                        <EntityIconBadge tone="projekt" size="sm" />
                         {listing.projectName}
                       </Link>
                       {listing.isDemo ? (

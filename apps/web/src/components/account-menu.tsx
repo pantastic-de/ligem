@@ -2,8 +2,9 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronDown, CircleUserRound, Home as HomeIcon, ShieldCheck, LogOut } from "lucide-react";
+import { ChevronDown, CircleUserRound, ShieldCheck, LogOut } from "lucide-react";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 /**
  * The header's account-menu disclosure — split out of SiteHeader (a Server
@@ -78,11 +79,7 @@ export function AccountMenu({
             href="/meine-projekte"
             className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
           >
-            <span
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.projekt}`}
-            >
-              <HomeIcon className="h-4 w-4" aria-hidden="true" />
-            </span>
+            <EntityIconBadge tone="projekt" size="nav" />
             Meine Projekte
           </Link>
           {admin ? (

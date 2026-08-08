@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { acceptContactRequest, declineContactRequest } from "./actions";
 
 export const metadata: Metadata = {
@@ -52,7 +53,11 @@ export default async function AnfragenPage({
 
   return (
     <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
-      <Link href={`/projekt/${listing.slug}`} className="text-sm font-medium text-primary hover:underline">
+      <Link
+        href={`/projekt/${listing.slug}`}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <EntityIconBadge tone="projekt" size="sm" />
         ← Zurück zum Projekt
       </Link>
       <h1 className="mt-2 text-3xl font-bold">Kontaktanfragen</h1>

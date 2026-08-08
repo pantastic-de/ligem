@@ -14,6 +14,7 @@ import {
   getListingViewsOverTime,
 } from "@/lib/view-stats";
 import { AppShell } from "@/components/app-shell";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
 
@@ -58,7 +59,11 @@ export default async function ProjektStatistikPage({
 
   return (
     <AppShell active="projekte" isAdmin={viewerIsAdmin} displayName={displayName}>
-      <Link href={`/projekt/${listing.slug}`} className="text-sm font-medium text-primary hover:underline">
+      <Link
+        href={`/projekt/${listing.slug}`}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <EntityIconBadge tone="projekt" size="sm" />
         ← Zurück zum Projekt
       </Link>
       <h1 className="mt-2 text-3xl font-bold">Statistik: {listing.projectName}</h1>

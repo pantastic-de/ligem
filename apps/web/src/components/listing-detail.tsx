@@ -25,7 +25,8 @@ import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
 import { HighlightText } from "@/components/highlight-text";
 import { highlightHtml } from "@/lib/highlight";
-import { ACTION_TONE_CLASSES, SOLID_ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -237,11 +238,7 @@ export function ListingDetail({
               aria-label={`Vorheriges Projekt: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-primary transition-colors hover:text-primary-hover"
             >
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
-              >
-                <Home className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <EntityIconBadge tone="projekt" size="lg" />
               <span className="truncate">{prevItem.label}</span>
             </Link>
           ) : (
@@ -254,11 +251,7 @@ export function ListingDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-primary transition-colors hover:text-primary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
-              >
-                <Home className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <EntityIconBadge tone="projekt" size="lg" />
             </Link>
           ) : (
             <span />
@@ -325,7 +318,8 @@ export function ListingDetail({
         </div>
       ) : null}
 
-      <h1 className="text-3xl font-bold">
+      <h1 className="flex items-center gap-3 text-3xl font-bold">
+        <EntityIconBadge tone="projekt" size="xl" />
         <HighlightText text={listing.projectName} query={searchTerm} />
       </h1>
       {listing.motto ? (
@@ -475,11 +469,7 @@ export function ListingDetail({
                   href={`/event/${event.slug}`}
                   className="flex items-start gap-3 p-4 transition-colors hover:bg-secondary/5"
                 >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.termin}`}
-                  >
-                    <CalendarDays className="h-5 w-5" aria-hidden="true" />
-                  </span>
+                  <EntityIconBadge tone="termin" size="xl" />
                   <div className="min-w-0">
                     <div className="font-medium">
                       <HighlightText text={event.title} query={searchTerm} />

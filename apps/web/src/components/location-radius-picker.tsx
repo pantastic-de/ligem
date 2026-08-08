@@ -55,11 +55,48 @@ function createSelectedPinIcon(L: any) {
   });
 }
 
+// The same "Home"/"CalendarDays" icon-on-a-solid-color-circle badge used
+// everywhere else in the app (see src/components/entity-icon-badge.tsx) —
+// reproduced here as raw SVG/HTML since Leaflet's divIcon renders outside
+// React and can't host a React component. Path data copied verbatim from
+// lucide-react's "house"/"calendar-days" icons (the ones Home/CalendarDays
+// alias to) so this reads as the exact same glyph, just sized for a map
+// marker rather than inline UI. Used for every "found Projekt"/"found
+// Termin" result marker, replacing the plain colored dot that used to mark
+// these spots.
+const ENTITY_MARKER_PATHS = {
+  projekt:
+    '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  termin:
+    '<path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M8 13h.01"/><path d="M12 13h.01"/><path d="M16 13h.01"/><path d="M8 17h.01"/><path d="M12 17h.01"/><path d="M16 17h.01"/>',
+} as const;
+
+// Matches SOLID_ACTION_TONE_CLASSES (bg-primary/90, bg-secondary/90).
+const ENTITY_MARKER_COLORS = { projekt: "#b14f24", termin: "#61703f" } as const;
+
+function entityMarkerHtml(tone: "projekt" | "termin"): string {
+  return `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:${ENTITY_MARKER_COLORS[tone]}E6;box-shadow:0 1px 4px rgba(0,0,0,0.4);color:#fff;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ENTITY_MARKER_PATHS[tone]}</svg>
+  </span>`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createEntityMarkerIcon(L: any, tone: "projekt" | "termin") {
+  return L.divIcon({
+    html: entityMarkerHtml(tone),
+    className: "",
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
+  });
+}
+
 export function LocationRadiusPicker({
   defaultLat,
   defaultLng,
   defaultRadius,
   resultItems,
+  resultTone = "projekt",
   selectedId,
   onChange,
 }: {
@@ -69,6 +106,11 @@ export function LocationRadiusPicker({
   // When provided, search results are rendered as clustered markers in this
   // same map instead of a separate ResultsMap below the form.
   resultItems?: MapResultItem[];
+  // Which entity type resultItems are — picks the Home/CalendarDays marker
+  // icon and its primary/secondary color (see createEntityMarkerIcon).
+  // Defaults to "projekt" since /projekte was this component's first user;
+  // /termine passes "termin" explicitly.
+  resultTone?: "projekt" | "termin";
   // Id (matching a resultItems entry) of the listing/event currently shown
   // in the detail pane, if any — rendered as its own distinct, larger pin
   // (see createSelectedPinIcon) directly on the map rather than inside the
@@ -212,11 +254,8 @@ export function LocationRadiusPicker({
         e.markers.forEach((m) => m.openTooltip());
       });
       resultItems.forEach((item) => {
-        const resultMarker = L.circleMarker([item.latitude, item.longitude], {
-          radius: 9,
-          color: "#b14f24",
-          fillColor: "#b14f24",
-          fillOpacity: 0.85,
+        const resultMarker = L.marker([item.latitude, item.longitude], {
+          icon: createEntityMarkerIcon(L, resultTone),
         });
         // The selected item already gets its own dedicated marker + label
         // directly on the map (see renderSelectedMarker) so it's never
@@ -248,7 +287,7 @@ export function LocationRadiusPicker({
         const popupHtml =
           item.popupHtml ??
           `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
-          <strong style="color:#b14f24;">${escapeHtml(item.label)}</strong>
+          <strong style="color:${ENTITY_MARKER_COLORS[resultTone]};">${escapeHtml(item.label)}</strong>
           ${item.type ? `<br><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;background:#eee2d3;font-size:0.8em;">${escapeHtml(item.type)}</span>` : ""}
         </a>`;
         resultMarker.bindPopup(popupHtml, { maxWidth: 260 });
@@ -470,8 +509,28 @@ export function LocationRadiusPicker({
     if (!navigator.geolocation) return;
     setBusy(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        moveTo(pos.coords.latitude, pos.coords.longitude);
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // Same "move map + default radius to 50km if still 'Alle' + collapse
+        // UI to the results" behavior as picking a place from the search
+        // box — a browser-geolocated origin deserves the same treatment as
+        // a searched one, not just a bare marker with no radius applied.
+        applyPlaceResult(latitude, longitude);
+        // Best-effort reverse geocode so "Ort oder Region eingeben" shows a
+        // real place name instead of staying blank despite a location
+        // actually being set — a raw lat/lng pair on the map otherwise
+        // gives no visible confirmation of what was found.
+        try {
+          const res = await fetch(`/api/geocode?lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data?.displayName) {
+            suppressNextSuggestionFetch.current = true;
+            setPlaceQuery(data.displayName);
+          }
+        } catch {
+          // Map/radius are already set regardless — the place name is a
+          // nice-to-have, not required for the search itself to work.
+        }
         setBusy(false);
       },
       () => {
@@ -736,7 +795,7 @@ export function LocationRadiusPicker({
               ? "hidden"
               : expanded
                 ? "fixed inset-0 z-[1999] overflow-hidden bg-surface sm:inset-8 sm:m-auto sm:max-h-[70vh] sm:max-w-4xl sm:rounded-2xl sm:border sm:border-text/20 sm:shadow-2xl"
-                : `relative w-full overflow-hidden rounded-xl ${resultItems ? "h-56" : "h-40"}`
+                : `relative w-full overflow-hidden rounded-xl ${resultItems ? "h-112" : "h-80"}`
           }
         >
           {/*

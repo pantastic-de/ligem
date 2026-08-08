@@ -100,6 +100,7 @@ export function TermineSearchForm({
         defaultLng={defaults.lng}
         defaultRadius={defaults.radius}
         resultItems={resultItems}
+        resultTone="termin"
         selectedId={selectedId}
         onChange={submitNow}
       />

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Globe, Home } from "lucide-react";
+import { Globe } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
@@ -9,7 +9,7 @@ import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
-import { SOLID_ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -144,11 +144,7 @@ export function EventDetail({
               aria-label={`Vorheriger Termin: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.termin}`}
-              >
-                <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <EntityIconBadge tone="termin" size="lg" />
               <span className="truncate">{prevItem.label}</span>
             </Link>
           ) : (
@@ -161,11 +157,7 @@ export function EventDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.termin}`}
-              >
-                <CalendarDays className="h-4 w-4" aria-hidden="true" />
-              </span>
+              <EntityIconBadge tone="termin" size="lg" />
             </Link>
           ) : (
             <span />
@@ -185,7 +177,10 @@ export function EventDetail({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-3xl font-bold">{event.title}</h1>
+        <h1 className="flex items-center gap-3 text-3xl font-bold">
+          <EntityIconBadge tone="termin" size="xl" />
+          {event.title}
+        </h1>
         {event.attributeOptions.some(({ option }) => option.name === "Online-Veranstaltung") ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-sm font-semibold text-secondary">
             <Globe className="h-4 w-4" aria-hidden="true" />
@@ -208,11 +203,7 @@ export function EventDetail({
             href={`/projekt/${event.listing.slug}`}
             className="inline-flex items-center gap-1.5 font-medium text-primary"
           >
-            <span
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${SOLID_ACTION_TONE_CLASSES.projekt}`}
-            >
-              <Home className="h-3 w-3" aria-hidden="true" />
-            </span>
+            <EntityIconBadge tone="projekt" size="sm" />
             {event.listing.projectName}
           </Link>
         </p>

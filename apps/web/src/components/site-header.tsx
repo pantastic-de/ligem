@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Home as HomeIcon, CalendarDays, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
+import { EntityIconBadge } from "@/components/entity-icon-badge";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -59,21 +60,13 @@ export async function SiteHeader() {
           </Suspense>
 
           <Link href="/projekte" className="group flex flex-col items-center gap-1">
-            <span
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors group-hover:bg-primary/25 ${ACTION_TONE_CLASSES.projekt}`}
-            >
-              <HomeIcon className="h-5 w-5" aria-hidden="true" />
-            </span>
+            <EntityIconBadge tone="projekt" size="xl" className="transition-transform group-hover:scale-105" />
             <span className="text-xs font-medium text-primary transition-colors group-hover:text-primary-hover">
               Projekte
             </span>
           </Link>
           <Link href="/termine" className="group flex flex-col items-center gap-1">
-            <span
-              className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors group-hover:bg-secondary/25 ${ACTION_TONE_CLASSES.termin}`}
-            >
-              <CalendarDays className="h-5 w-5" aria-hidden="true" />
-            </span>
+            <EntityIconBadge tone="termin" size="xl" className="transition-transform group-hover:scale-105" />
             <span className="text-xs font-medium text-secondary transition-colors group-hover:text-secondary-hover">
               Termine
             </span>
