@@ -470,9 +470,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Wave divider */}
-      <div aria-hidden="true" className="-mb-1 rotate-180">
-        <svg viewBox="0 0 1440 60" className="block w-full text-secondary/10" preserveAspectRatio="none">
+      {/* Wave divider. Wave and CTA section use the same *opaque* tint
+          (secondary at 10% mixed into the page background) rather than the
+          translucent bg-secondary/10: with a translucent color, the 1px
+          overlap below shows up as a darker seam, and without the overlap a
+          sub-pixel gap shows up as a light one. */}
+      <div aria-hidden="true" className="-mb-px">
+        <svg
+          viewBox="0 0 1440 60"
+          className="block w-full text-[color-mix(in_srgb,var(--color-secondary)_10%,var(--color-bg))]"
+          preserveAspectRatio="none"
+        >
           <path
             fill="currentColor"
             d="M0,32 C240,58 480,4 720,18 C960,32 1200,58 1440,28 L1440,60 L0,60 Z"
@@ -481,7 +489,7 @@ export default async function Home() {
       </div>
 
       {/* Abschluss-CTA */}
-      <section className="bg-secondary/10 px-4 py-16 sm:px-6 sm:py-20">
+      <section className="bg-[color-mix(in_srgb,var(--color-secondary)_10%,var(--color-bg))] px-4 py-16 sm:px-6 sm:py-20">
         <ScrollReveal className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-bold sm:text-3xl">
             Bereit, dabei zu sein?
