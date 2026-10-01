@@ -10,9 +10,19 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U c1u3 -d c1db3"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
+  # Valkey and Meilisearch are not used by the app code yet (no client, no
+  # REDIS_URL/MEILISEARCH_* reads). They sit behind the "extras" profile so
+  # they don't start by default; `docker compose --profile extras up` starts
+  # them once a feature actually needs them.
   valkey:
     image: valkey/valkey:8-alpine
+    profiles: ["extras"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
@@ -20,7 +30,10 @@ services:
       - valkey_data:/data
 
   meilisearch:
-    image: getmeili/meilisearch:latest
+    # Pinned: a major-version jump can't open an older data dir without a
+    # dump/import, so never upgrade this via a blind `latest` pull.
+    image: getmeili/meilisearch:v1.51.0
+    profiles: ["extras"]
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
@@ -31,6 +44,12 @@ services:
       - meili_data:/meili_data
 
   minio:
+    # WARNING: minio/minio is no longer pullable at all (Docker Hub and
+    # quay.io both deny access since MinIO ended community image releases in
+    # 2025). This only works where the image is already cached locally
+    # (last release: RELEASE.2025-09-07T16-13-09Z). A fresh install or a
+    # `docker image prune -a` breaks it. Needs replacing with a maintained
+    # S3-compatible store; storage.ts only needs a generic S3 endpoint.
     image: minio/minio:latest
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -92,10 +111,10 @@ services:
     ports:
       - "0.0.0.0:3000:3000"
     depends_on:
-      - postgres
-      - valkey
-      - meilisearch
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   postgres_data:

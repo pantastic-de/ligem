@@ -124,7 +124,7 @@ service. Start everything, **explicitly excluding `postgres`** so it's never
 started in production:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web minio
 ```
 
 `scripts/deploy.sh` already does this (see step 7).
@@ -220,7 +220,7 @@ Apache directives above are still worth having for anything else that reads
 
 ```bash
 git pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web valkey meilisearch minio
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web minio
 ```
 
 Migrations and the seed both run automatically as part of `web`'s own start

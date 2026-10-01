@@ -1,6 +1,10 @@
 node_modules/
 .next/
 .env
+.env *
+.env.*
+!.env.example
 scripts/deploy.env
 .turbo/
 .pnpm-store/
+.DS_Store

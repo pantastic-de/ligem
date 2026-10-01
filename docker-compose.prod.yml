@@ -49,3 +49,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Only reachable through the reverse proxy on the same host. `!override`
+    # replaces the dev file's 0.0.0.0 binding instead of merging with it
+    # (Compose merges list fields across -f files by default). Exposing the
+    # app directly would bypass TLS and let clients forge X-Forwarded-For,
+    # which getClientIp() trusts. Needs Docker Compose >= 2.24.
+    ports: !override
+      - "127.0.0.1:3000:3000"
