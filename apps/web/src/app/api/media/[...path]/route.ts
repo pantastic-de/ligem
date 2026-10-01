@@ -2,13 +2,12 @@ import { Readable } from "node:stream";
 
 import { NextResponse } from "next/server";
 
-import { getObjectStream, minioClient, MEDIA_BUCKET } from "@/lib/storage";
+import { contentTypeForKey, getObjectStream, statObject } from "@/lib/storage";
 import { isMediaKeyAccessible } from "@/lib/media-access";
 
-// MinIO is only reachable from inside the Docker network (bound to
-// 127.0.0.1 on the host), so browsers can't load images/videos directly
-// from it. This route streams the object through the Next.js server
-// instead. Range-request support (needed for <video> seeking on the up to
+// Media files live in the server's MEDIA_DIR volume (see src/lib/storage.ts),
+// never in a public web root, so every image/video goes through this route —
+// which is also where the access check below runs. Range-request support (needed for <video> seeking on the up to
 // 200MB video uploads) means this always streams rather than buffering the
 // whole object into memory first.
 export async function GET(
@@ -26,22 +25,23 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  let stat;
-  try {
-    stat = await minioClient.statObject(MEDIA_BUCKET, key);
-  } catch {
+  const stat = await statObject(key);
+  if (!stat) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const contentType = stat.metaData?.["content-type"] ?? "application/octet-stream";
+  const contentType = contentTypeForKey(key);
   const totalSize = stat.size;
   const rangeHeader = request.headers.get("range");
   const rangeMatch = rangeHeader ? /^bytes=(\d+)-(\d*)$/.exec(rangeHeader) : null;
 
   if (rangeMatch) {
     const start = Number(rangeMatch[1]);
-    const end = rangeMatch[2] ? Number(rangeMatch[2]) : totalSize - 1;
-    const stream = await getObjectStream(key, { start, end });
+    const end = Math.min(rangeMatch[2] ? Number(rangeMatch[2]) : totalSize - 1, totalSize - 1);
+    if (start > end) {
+      return new NextResponse(null, { status: 416, headers: { "Content-Range": `bytes */${totalSize}` } });
+    }
+    const stream = getObjectStream(key, { start, end });
     return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
       status: 206,
       headers: {
@@ -54,7 +54,7 @@ export async function GET(
     });
   }
 
-  const stream = await getObjectStream(key);
+  const stream = getObjectStream(key);
   return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
     headers: {
       "Content-Type": contentType,

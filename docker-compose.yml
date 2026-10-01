@@ -44,13 +44,16 @@ services:
       - meili_data:/meili_data
 
   minio:
-    # WARNING: minio/minio is no longer pullable at all (Docker Hub and
-    # quay.io both deny access since MinIO ended community image releases in
-    # 2025). This only works where the image is already cached locally
-    # (last release: RELEASE.2025-09-07T16-13-09Z). A fresh install or a
-    # `docker image prune -a` breaks it. Needs replacing with a maintained
-    # S3-compatible store; storage.ts only needs a generic S3 endpoint.
+    # LEGACY, only for the one-time file migration: uploads now live as plain
+    # files in the `media_data` volume (src/lib/storage.ts). This service
+    # stays behind the "legacy" profile so existing installs can still start
+    # it once and copy their files over with
+    # scripts/migrate-minio-to-local.ts (see DEPLOYMENT.md), after which it,
+    # its volume and the S3_* variables below can be removed. The
+    # minio/minio image is no longer published anywhere, so this only works
+    # where it is still cached.
     image: minio/minio:latest
+    profiles: ["legacy"]
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -77,9 +80,12 @@ services:
       REDIS_URL: redis://valkey:6379
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_KEY: ${MEILI_MASTER_KEY}
+      # Where uploaded photos/videos are stored (the media_data volume below).
+      MEDIA_DIR: /data/media
+      # Only read by scripts/migrate-minio-to-local.ts (legacy MinIO access).
       S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-}
       AUTH_SECRET: ${AUTH_SECRET}
       # Explicit override for the app's own public base URL (used to build
       # every sign-in/callback/CSRF-cookie URL) — Auth.js's trustHost-based
@@ -108,16 +114,19 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
     volumes:
       - .:/workspace
+      # A named volume, not a folder inside the bind-mounted project: uploads
+      # must survive `git reset --hard` deploys and shouldn't end up in the
+      # repo or in a synced folder (iCloud).
+      - media_data:/data/media
     ports:
       - "0.0.0.0:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_started
 
 volumes:
   postgres_data:
   valkey_data:
   meili_data:
   minio_data:
+  media_data:

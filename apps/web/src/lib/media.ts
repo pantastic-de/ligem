@@ -94,8 +94,8 @@ export async function processAndStoreImage(
   const storageKey = `${keyPrefix}/${id}-display.jpg`;
   const thumbnailKey = `${keyPrefix}/${id}-thumb.jpg`;
 
-  await putObject(storageKey, display, "image/jpeg");
-  await putObject(thumbnailKey, thumbnail, "image/jpeg");
+  await putObject(storageKey, display);
+  await putObject(thumbnailKey, thumbnail);
 
   return { storageKey, thumbnailKey };
 }
@@ -129,12 +129,12 @@ export async function storeVideo(
   const extension = VIDEO_EXTENSION_BY_TYPE[file.type] ?? "mp4";
   const id = randomUUID();
   const storageKey = `${keyPrefix}/${id}-video.${extension}`;
-  await putObject(storageKey, buffer, file.type || "video/mp4");
+  await putObject(storageKey, buffer);
 
   let thumbnailKey: string | null = null;
   if (thumbnail && thumbnail.size > 0 && thumbnail.size <= MAX_VIDEO_THUMBNAIL_SIZE) {
     thumbnailKey = `${keyPrefix}/${id}-video-thumb.jpg`;
-    await putObject(thumbnailKey, Buffer.from(await thumbnail.arrayBuffer()), "image/jpeg");
+    await putObject(thumbnailKey, Buffer.from(await thumbnail.arrayBuffer()));
   }
 
   return { storageKey, thumbnailKey };
@@ -157,7 +157,7 @@ export async function storeThumbnailOnly(buffer: Buffer, keyPrefix: string): Pro
       .jpeg({ quality: 75 })
       .toBuffer();
     const thumbnailKey = `${keyPrefix}/${randomUUID()}-video-thumb.jpg`;
-    await putObject(thumbnailKey, thumbnail, "image/jpeg");
+    await putObject(thumbnailKey, thumbnail);
     return thumbnailKey;
   } catch {
     return null;
@@ -182,7 +182,7 @@ export async function storeAvatar(file: File, userId: string): Promise<string | 
       .jpeg({ quality: 85 })
       .toBuffer();
     const key = `users/${userId}/${randomUUID()}-avatar.jpg`;
-    await putObject(key, resized, "image/jpeg");
+    await putObject(key, resized);
     return key;
   } catch {
     return null;

@@ -60,8 +60,8 @@ COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 # the same port) can lose the race and fail with "address already in use" if
 # the old container hasn't fully released its port yet. `|| true` because on
 # the very first deploy there's nothing running yet to stop.
-"${COMPOSE[@]}" stop web minio || true
-"${COMPOSE[@]}" up -d --no-deps --build web minio
+"${COMPOSE[@]}" stop web || true
+"${COMPOSE[@]}" up -d --no-deps --build web
 
 # Poll for the app actually answering, rather than declaring success as soon
 # as the container merely exists: `restart: unless-stopped` means a
