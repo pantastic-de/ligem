@@ -5,6 +5,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
 import { formatDistanceKm } from "@/lib/distance";
 import { formatEventAddress } from "@/lib/event-address";
+import { toEventIsoString } from "@/lib/event-time";
 import { PhotoGallery } from "@/components/photo-gallery";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -90,8 +91,8 @@ export function EventDetail({
     "@type": "Event",
     name: event.title,
     url: canonicalUrl,
-    startDate: event.startAt.toISOString(),
-    endDate: event.endAt?.toISOString(),
+    startDate: toEventIsoString(event.startAt),
+    endDate: event.endAt ? toEventIsoString(event.endAt) : undefined,
     description: event.description ? stripHtml(event.description, 300) : undefined,
     image: event.media[0] ? `${SITE_URL}/api/media/${event.media[0].storageKey}` : undefined,
     eventStatus: "https://schema.org/EventScheduled",
@@ -188,10 +189,7 @@ export function EventDetail({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="flex items-center gap-3 text-3xl font-bold">
-          <EntityIconBadge tone="termin" size="xl" />
-          {event.title}
-        </h1>
+        <h1 className="text-3xl font-bold">{event.title}</h1>
         {event.attributeOptions.some(({ option }) => option.name === "Online-Veranstaltung") ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-sm font-semibold text-secondary">
             <Globe className="h-4 w-4" aria-hidden="true" />
