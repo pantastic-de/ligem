@@ -16,6 +16,10 @@ function redirectBack(formData: FormData): never {
   // fetch since the URL has never been seen before.
   const params = new URLSearchParams({ status, _r: Date.now().toString() });
   if (suche) params.set("suche", suche);
+  for (const key of ["pruefung", "sortierung"]) {
+    const value = formData.get(key)?.toString();
+    if (value) params.set(key, value);
+  }
   redirect(`/admin/projekte?${params.toString()}`);
 }
 

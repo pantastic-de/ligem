@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminPage } from "@/lib/authz";
-import type { ListingStatus } from "@/generated/prisma/client";
+import type { ListingStatus, Prisma } from "@/generated/prisma/client";
 import { AppShell } from "@/components/app-shell";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
@@ -36,24 +36,67 @@ const statusTabs: { value: ListingStatus; label: string }[] = [
   { value: "ARCHIVED", label: "Archiviert" },
 ];
 
+// "Geprüft" = an admin has approved, rejected or archived it at some point
+// (moderatedById is set by every moderation action). Generated demo
+// listings are created as PUBLISHED without ever going through this page,
+// so they show up as "Ungeprüft" even in the Veröffentlicht tab.
+const pruefungOptions = [
+  { value: "", label: "Alle" },
+  { value: "geprueft", label: "Geprüft" },
+  { value: "ungeprueft", label: "Ungeprüft" },
+] as const;
+
+const sortOptions: { value: string; label: string; orderBy: Prisma.ListingOrderByWithRelationInput }[] = [
+  { value: "eingereicht-alt", label: "Eingereicht, älteste zuerst", orderBy: { createdAt: "asc" } },
+  { value: "eingereicht-neu", label: "Eingereicht, neueste zuerst", orderBy: { createdAt: "desc" } },
+  { value: "geaendert-neu", label: "Zuletzt geändert", orderBy: { updatedAt: "desc" } },
+  {
+    value: "veroeffentlicht-neu",
+    label: "Zuletzt veröffentlicht",
+    orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+  },
+];
+
 const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" });
 
 export default async function AdminProjektePage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; suche?: string }>;
+  searchParams: Promise<{ status?: string; suche?: string; pruefung?: string; sortierung?: string }>;
 }) {
   const session = await requireAdminPage();
   const displayName = session.user.name ?? session.user.email ?? "Konto";
-  const { status, suche } = await searchParams;
+  const { status, suche, pruefung, sortierung } = await searchParams;
   const activeStatus: ListingStatus = statusTabs.some((t) => t.value === status)
     ? (status as ListingStatus)
     : "PENDING_REVIEW";
   const searchTerm = suche?.trim() || "";
+  const activePruefung = pruefungOptions.some((o) => o.value === pruefung) ? (pruefung ?? "") : "";
+  const activeSort = sortOptions.find((o) => o.value === sortierung) ?? sortOptions[0];
+
+  // Every link/form on this page carries the current search, filter and
+  // sort along, so approving one project or switching tabs doesn't reset them.
+  const listHref = (nextStatus: ListingStatus) => {
+    const params = new URLSearchParams({ status: nextStatus });
+    if (searchTerm) params.set("suche", searchTerm);
+    if (activePruefung) params.set("pruefung", activePruefung);
+    if (activeSort !== sortOptions[0]) params.set("sortierung", activeSort.value);
+    return `/admin/projekte?${params.toString()}`;
+  };
+  const listStateInputs = (
+    <>
+      <input type="hidden" name="status" value={activeStatus} />
+      <input type="hidden" name="suche" value={searchTerm} />
+      <input type="hidden" name="pruefung" value={activePruefung} />
+      <input type="hidden" name="sortierung" value={activeSort.value} />
+    </>
+  );
 
   const listings = await prisma.listing.findMany({
     where: {
       status: activeStatus,
+      ...(activePruefung === "geprueft" ? { moderatedById: { not: null } } : {}),
+      ...(activePruefung === "ungeprueft" ? { moderatedById: null } : {}),
       // Lets an admin quickly jump to one specific project by name, motto,
       // city, or who submitted it, instead of scrolling/scanning the whole
       // (potentially long) status queue by eye — matches by any of these,
@@ -70,9 +113,10 @@ export default async function AdminProjektePage({
           }
         : {}),
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: [activeSort.orderBy, { createdAt: "asc" }],
     include: {
       createdBy: { select: { name: true, email: true } },
+      moderatedBy: { select: { name: true, email: true } },
       categories: { include: { category: true } },
       attributeOptions: {
         where: { option: { group: { slug: "projekt-typ" } } },
@@ -95,7 +139,7 @@ export default async function AdminProjektePage({
         {statusTabs.map((tab) => (
           <Link
             key={tab.value}
-            href={`/admin/projekte?status=${tab.value}${searchTerm ? `&suche=${encodeURIComponent(searchTerm)}` : ""}`}
+            href={listHref(tab.value)}
             prefetch={false}
             className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors ${
               activeStatus === tab.value
@@ -108,27 +152,58 @@ export default async function AdminProjektePage({
         ))}
       </nav>
 
-      <form action="/admin/projekte" className="mt-4 flex flex-wrap items-center gap-2">
+      <form action="/admin/projekte" className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="status" value={activeStatus} />
-        <input
-          type="search"
-          name="suche"
-          defaultValue={searchTerm}
-          placeholder="Projekt, Ort oder E-Mail der einreichenden Person suchen…"
-          className="min-h-11 w-full max-w-sm rounded-xl border border-text/20 bg-surface px-4 text-sm"
-        />
+        <label className="flex w-full max-w-sm flex-col gap-1 text-sm font-medium">
+          Suche
+          <input
+            type="search"
+            name="suche"
+            defaultValue={searchTerm}
+            placeholder="Projekt, Ort oder E-Mail…"
+            className="min-h-11 rounded-xl border border-text/20 bg-surface px-4 font-normal"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Prüfung
+          <select
+            name="pruefung"
+            defaultValue={activePruefung}
+            className="min-h-11 rounded-xl border border-text/20 bg-surface px-3 font-normal"
+          >
+            {pruefungOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Sortierung
+          <select
+            name="sortierung"
+            defaultValue={activeSort.value}
+            className="min-h-11 rounded-xl border border-text/20 bg-surface px-3 font-normal"
+          >
+            {sortOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           type="submit"
           className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
         >
-          Suchen
+          Anwenden
         </button>
-        {searchTerm ? (
+        {searchTerm || activePruefung || activeSort !== sortOptions[0] ? (
           <Link
             href={`/admin/projekte?status=${activeStatus}`}
-            className="text-sm text-text-muted hover:underline"
+            className="inline-flex min-h-11 items-center text-sm text-text-muted hover:underline"
           >
-            Suche zurücksetzen
+            Zurücksetzen
           </Link>
         ) : null}
       </form>
@@ -136,8 +211,10 @@ export default async function AdminProjektePage({
       {listings.length === 0 ? (
         <p className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
           {searchTerm
-            ? `Keine Projekte mit diesem Status für „${searchTerm}“ gefunden.`
-            : "Keine Projekte mit diesem Status."}
+            ? `Keine passenden Projekte für „${searchTerm}“ gefunden.`
+            : activePruefung
+              ? "Keine Projekte mit diesem Status und Prüfstand."
+              : "Keine Projekte mit diesem Status."}
         </p>
       ) : (
         <>
@@ -149,8 +226,7 @@ export default async function AdminProjektePage({
             id={BULK_FORM_ID}
             className="mt-8 flex flex-col gap-3 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
           >
-            <input type="hidden" name="status" value={activeStatus} />
-            <input type="hidden" name="suche" value={searchTerm} />
+            {listStateInputs}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">
@@ -229,6 +305,19 @@ export default async function AdminProjektePage({
                       <p className="mt-1 text-sm text-text-muted">
                         von {listing.createdBy.name ?? listing.createdBy.email} ·{" "}
                         eingereicht {dateFormat.format(listing.createdAt)}
+                        {listing.updatedAt.getTime() - listing.createdAt.getTime() > 60_000
+                          ? ` · geändert ${dateFormat.format(listing.updatedAt)}`
+                          : null}
+                        {listing.publishedAt ? ` · veröffentlicht ${dateFormat.format(listing.publishedAt)}` : null}
+                      </p>
+                      <p className="mt-1 text-sm">
+                        {listing.moderatedBy ? (
+                          <span className="text-success">
+                            Geprüft von {listing.moderatedBy.name ?? listing.moderatedBy.email}
+                          </span>
+                        ) : (
+                          <span className="text-text-muted">Noch nicht geprüft</span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -279,8 +368,7 @@ export default async function AdminProjektePage({
                   {activeStatus !== "PUBLISHED" ? (
                     <form action={approveListing}>
                       <input type="hidden" name="listingId" value={listing.id} />
-                      <input type="hidden" name="status" value={activeStatus} />
-                      <input type="hidden" name="suche" value={searchTerm} />
+                      {listStateInputs}
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full bg-success px-5 font-semibold text-white transition-colors hover:opacity-90"
@@ -293,8 +381,7 @@ export default async function AdminProjektePage({
                   {activeStatus !== "REJECTED" ? (
                     <form action={rejectListing} className="flex flex-wrap items-center gap-2">
                       <input type="hidden" name="listingId" value={listing.id} />
-                      <input type="hidden" name="status" value={activeStatus} />
-                      <input type="hidden" name="suche" value={searchTerm} />
+                      {listStateInputs}
                       <input
                         type="text"
                         name="moderationNote"
@@ -313,8 +400,7 @@ export default async function AdminProjektePage({
                   {activeStatus !== "ARCHIVED" ? (
                     <form action={archiveListing}>
                       <input type="hidden" name="listingId" value={listing.id} />
-                      <input type="hidden" name="status" value={activeStatus} />
-                      <input type="hidden" name="suche" value={searchTerm} />
+                      {listStateInputs}
                       <button
                         type="submit"
                         className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-4 text-sm font-medium transition-colors hover:bg-bg"
