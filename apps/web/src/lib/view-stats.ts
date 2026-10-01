@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { labelForReferrerHost } from "@/lib/referrer-label";
+import { rolledUpUntil, VIEW_RETENTION_DAYS } from "@/lib/view-retention";
 
 export type ViewSource = {
   kind: "bot" | "user" | "referrer" | "country" | "hostname" | "search" | "filter";
@@ -47,7 +48,8 @@ async function resolveViewerNames(viewerIds: string[]): Promise<Map<string, { na
  * stopped working once the view tables reached tens of millions of rows.
  * `table`/`idColumn` come from the two callers below, never from user
  * input, so splicing them in via Prisma.raw is safe. Days are UTC dates,
- * zero-filled so the chart never has gaps.
+ * zero-filled so the chart never has gaps. Reads raw rows only, which is
+ * complete as long as `days` stays within VIEW_RETENTION_DAYS.
  */
 async function viewsPerDay(
   table: "ListingView" | "EventView",
@@ -55,6 +57,7 @@ async function viewsPerDay(
   id: string | undefined,
   days: number,
 ): Promise<DailyViewCounts[]> {
+  if (days > VIEW_RETENTION_DAYS) throw new Error("Zeitraum länger als die Aufbewahrungsfrist");
   const since = new Date();
   since.setUTCHours(0, 0, 0, 0);
   since.setUTCDate(since.getUTCDate() - (days - 1));
@@ -82,6 +85,67 @@ async function viewsPerDay(
     else entry.detail += row.n;
   }
   return Array.from(byDate.values());
+}
+
+// ---------------------------------------------------------------------
+// All-time totals (raw rows expire, daily sums don't)
+// ---------------------------------------------------------------------
+
+/**
+ * Übersicht/Detail totals since the beginning, per id. Days already rolled
+ * up come from the *Daily table, the remaining recent days from the raw
+ * table, split at rolledUpUntil() so no day is counted twice. Use this, not
+ * a count over the raw table, for anything labelled "insgesamt": raw rows
+ * older than VIEW_RETENTION_DAYS are deleted.
+ */
+async function viewTotals(
+  scope: "listing" | "event",
+  ids: string[],
+): Promise<Record<string, ViewTypeCounts>> {
+  const result: Record<string, ViewTypeCounts> = {};
+  if (ids.length === 0) return result;
+  for (const id of ids) result[id] = { overview: 0, detail: 0 };
+  const add = (id: string, viewType: string, n: number) => {
+    const entry = result[id];
+    if (!entry) return;
+    if (viewType === "OVERVIEW") entry.overview += n;
+    else entry.detail += n;
+  };
+
+  if (scope === "listing") {
+    const until = await rolledUpUntil("ListingViewDaily");
+    const [daily, raw] = await Promise.all([
+      prisma.listingViewDaily.groupBy({ by: ["listingId", "viewType"], where: { listingId: { in: ids } }, _sum: { count: true } }),
+      prisma.listingView.groupBy({
+        by: ["listingId", "viewType"],
+        where: { listingId: { in: ids }, ...(until ? { viewedAt: { gte: until } } : {}) },
+        _count: true,
+      }),
+    ]);
+    for (const row of daily) add(row.listingId, row.viewType, row._sum.count ?? 0);
+    for (const row of raw) add(row.listingId, row.viewType, row._count);
+  } else {
+    const until = await rolledUpUntil("EventViewDaily");
+    const [daily, raw] = await Promise.all([
+      prisma.eventViewDaily.groupBy({ by: ["eventId", "viewType"], where: { eventId: { in: ids } }, _sum: { count: true } }),
+      prisma.eventView.groupBy({
+        by: ["eventId", "viewType"],
+        where: { eventId: { in: ids }, ...(until ? { viewedAt: { gte: until } } : {}) },
+        _count: true,
+      }),
+    ]);
+    for (const row of daily) add(row.eventId, row.viewType, row._sum.count ?? 0);
+    for (const row of raw) add(row.eventId, row.viewType, row._count);
+  }
+  return result;
+}
+
+export function getListingViewTotals(listingIds: string[]) {
+  return viewTotals("listing", listingIds);
+}
+
+export function getEventViewTotals(eventIds: string[]) {
+  return viewTotals("event", eventIds);
 }
 
 // ---------------------------------------------------------------------

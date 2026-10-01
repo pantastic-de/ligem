@@ -10,13 +10,14 @@ import {
   getListingGeoBreakdown,
   getListingSearchBreakdown,
   getListingViewSourceBreakdown,
-  getListingViewTypeCounts,
+  getListingViewTotals,
   getListingViewsOverTime,
 } from "@/lib/view-stats";
 import { AppShell } from "@/components/app-shell";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
+import { VIEW_RETENTION_DAYS } from "@/lib/view-retention";
 
 export const metadata: Metadata = {
   title: "Statistik",
@@ -50,7 +51,7 @@ export default async function ProjektStatistikPage({
   const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const [{ overview, detail }, breakdown, timeline, geo, searchBreakdown] = await Promise.all([
-    getListingViewTypeCounts({ listingId: listing.id }),
+    getListingViewTotals([listing.id]).then((t) => t[listing.id]),
     getListingViewSourceBreakdown({ listingId: listing.id }),
     getListingViewsOverTime({ listingId: listing.id }),
     getListingGeoBreakdown({ listingId: listing.id }),
@@ -71,6 +72,9 @@ export default async function ProjektStatistikPage({
         Wie oft dieses Projekt in der Übersicht aufgetaucht ist und wie oft die
         Detailansicht geöffnet wurde, inklusive einer Auswertung, woher die
         Zugriffe kamen.
+      </p>
+      <p className="mt-2 text-sm text-text-muted">
+        {`Die beiden Zahlen gelten seit Beginn. Die Auswertungen darunter (Herkunft, Länder, Hostnamen${", Suchbegriffe, Filter"}) beziehen sich auf die letzten ${VIEW_RETENTION_DAYS} Tage: Ältere Einzeldaten löschen wir aus Datenschutzgründen und behalten nur die anonymen Tagessummen.`}
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">

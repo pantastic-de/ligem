@@ -9,6 +9,7 @@ import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount } from "@/lib/open-requests";
 import { AppShell } from "@/components/app-shell";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
+import { getEventViewTotals, getListingViewTotals } from "@/lib/view-stats";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -60,13 +61,15 @@ export default async function DashboardPage() {
   ]);
 
   const listingIds = listings.map((l) => l.id);
+  const eventIdsOfListings =
+    listingIds.length > 0
+      ? (await prisma.event.findMany({ where: { listingId: { in: listingIds } }, select: { id: true } })).map((e) => e.id)
+      : [];
+  const sumTotals = (totals: Record<string, { overview: number; detail: number }>) =>
+    Object.values(totals).reduce((sum, t) => sum + t.overview + t.detail, 0);
   const [listingViewTotal, eventViewTotal] = await Promise.all([
-    listingIds.length > 0
-      ? prisma.listingView.count({ where: { listingId: { in: listingIds } } })
-      : Promise.resolve(0),
-    listingIds.length > 0
-      ? prisma.eventView.count({ where: { event: { listingId: { in: listingIds } } } })
-      : Promise.resolve(0),
+    getListingViewTotals(listingIds).then(sumTotals),
+    getEventViewTotals(eventIdsOfListings).then(sumTotals),
   ]);
 
   const kpis = [

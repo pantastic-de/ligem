@@ -10,12 +10,13 @@ import {
   getEventFilterBreakdown,
   getEventGeoBreakdown,
   getEventViewSourceBreakdown,
-  getEventViewTypeCounts,
+  getEventViewTotals,
   getEventViewsOverTime,
 } from "@/lib/view-stats";
 import { AppShell } from "@/components/app-shell";
 import { ViewSourceBreakdown } from "@/components/view-source-breakdown";
 import { ViewTimelineChart } from "@/components/view-timeline-chart";
+import { VIEW_RETENTION_DAYS } from "@/lib/view-retention";
 
 export const metadata: Metadata = {
   title: "Statistik",
@@ -49,7 +50,7 @@ export default async function TerminStatistikPage({
   const displayName = session.user.name ?? session.user.email ?? "Konto";
 
   const [{ overview, detail }, breakdown, timeline, geo, filters] = await Promise.all([
-    getEventViewTypeCounts({ eventId: event.id }),
+    getEventViewTotals([event.id]).then((t) => t[event.id]),
     getEventViewSourceBreakdown({ eventId: event.id }),
     getEventViewsOverTime({ eventId: event.id }),
     getEventGeoBreakdown({ eventId: event.id }),
@@ -69,6 +70,9 @@ export default async function TerminStatistikPage({
         Wie oft dieser Termin im Kalender aufgetaucht ist und wie oft die
         Detailansicht geöffnet wurde, inklusive einer Auswertung, woher die
         Zugriffe kamen.
+      </p>
+      <p className="mt-2 text-sm text-text-muted">
+        {`Die beiden Zahlen gelten seit Beginn. Die Auswertungen darunter (Herkunft, Länder, Hostnamen${", Filter"}) beziehen sich auf die letzten ${VIEW_RETENTION_DAYS} Tage: Ältere Einzeldaten löschen wir aus Datenschutzgründen und behalten nur die anonymen Tagessummen.`}
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">

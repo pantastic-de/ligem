@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { VIEW_RETENTION_DAYS } from "@/lib/view-retention";
 
 export const metadata: Metadata = { title: "Datenschutzerklärung - LiGem" };
 
@@ -70,7 +71,12 @@ export default function DatenschutzPage() {
             beiden abgeleiteten, weniger aussagekräftigen Werte. Eingeloggte
             Nutzer:innen werden ihrem Konto zugeordnet, damit Projekt-/
             Termin-Betreiber:innen die Zugriffszahlen zu ihren eigenen
-            Einträgen einsehen können.
+            Einträgen einsehen können. Diese Einzeldaten löschen wir nach{" "}
+            {VIEW_RETENTION_DAYS} Tagen automatisch. Danach bleibt nur noch
+            die anonyme Anzahl der Aufrufe pro Tag und Seite, ohne Hostname,
+            Land, Referrer und ohne Bezug zu einem Konto. Wenn Suchmaschinen
+            oder andere Programme unsere Trefferlisten durchsuchen, speichern
+            wir das gar nicht erst.
           </li>
           <li>
             <strong>Meldungen (Missbrauch):</strong> ggf. die IP-Adresse, um
@@ -110,9 +116,31 @@ export default function DatenschutzPage() {
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">5. Speicherdauer</h2>
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-text-muted">
+          <li>
+            <strong>Konto, Projekte, Termine, Fotos und Videos:</strong>{" "}
+            solange dein Konto bzw. dein Eintrag besteht. Löschst du ein
+            Projekt, entfernen wir es vollständig, zusammen mit seinen
+            Terminen, Fotos, Videos, Kontaktanfragen und Zugriffszahlen.
+          </li>
+          <li>
+            <strong>Kontaktanfragen und Terminanmeldungen:</strong> solange
+            das betreffende Projekt bzw. der Termin besteht.
+          </li>
+          <li>
+            <strong>Zugriffsstatistik:</strong> Einzeldaten mit Hostname,
+            Land, Referrer und Kontozuordnung höchstens {VIEW_RETENTION_DAYS}{" "}
+            Tage. Danach bleibt nur die anonyme Zahl der Aufrufe pro Tag, die
+            sich keiner Person zuordnen lässt.
+          </li>
+          <li>
+            <strong>Bestätigungs- und Passwort-Links:</strong> 24 Stunden bzw.
+            eine Stunde gültig. Abgelaufene Links löschen wir automatisch.
+          </li>
+        </ul>
         <p className="mt-2 text-text-muted">
-          Daten werden gespeichert, solange dein Konto bzw. dein Eintrag
-          besteht. Auf Wunsch löschen wir dein Konto und die zugehörigen
+          Die Löschung der abgelaufenen Daten läuft einmal täglich
+          automatisch. Auf Wunsch löschen wir dein Konto und die zugehörigen
           Daten, soweit dem keine gesetzlichen Aufbewahrungspflichten
           entgegenstehen.
         </p>

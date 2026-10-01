@@ -9,6 +9,7 @@ import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { deleteEvent } from "./actions";
+import { getEventViewTotals } from "@/lib/view-stats";
 
 export const metadata: Metadata = {
   title: "Termine verwalten",
@@ -66,21 +67,7 @@ export default async function TerminePage({
   // rather than one query per row, mirrors /meine-projekte's listing
   // equivalent.
   const eventIds = events.map((e) => e.id);
-  const viewCounts =
-    eventIds.length > 0
-      ? await prisma.eventView.groupBy({
-          by: ["eventId", "viewType"],
-          where: { eventId: { in: eventIds } },
-          _count: true,
-        })
-      : [];
-  const countsByEvent: Record<string, { overview: number; detail: number }> = {};
-  for (const row of viewCounts) {
-    const entry = countsByEvent[row.eventId] ?? { overview: 0, detail: 0 };
-    if (row.viewType === "OVERVIEW") entry.overview = row._count;
-    else entry.detail = row._count;
-    countsByEvent[row.eventId] = entry;
-  }
+  const countsByEvent = await getEventViewTotals(eventIds);
 
   return (
     <AppShell active="termine" isAdmin={admin} displayName={displayName}>

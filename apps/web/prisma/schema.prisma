@@ -347,6 +347,46 @@ model PageView {
   @@index([viewedAt])
 }
 
+// Daily totals of the three view tables above, kept permanently. The raw
+// rows (with referrer, hostname, country, viewer) are only kept for
+// VIEW_RETENTION_DAYS (src/lib/view-retention.ts); before they are deleted,
+// the daily maintenance job sums them up here, so all-time totals and
+// long-term charts survive while the personal details expire. A day is
+// rolled up once it is complete; queries take whole days from these tables
+// and only the days after the latest rolled-up one from the raw tables.
+model ListingViewDaily {
+  day       DateTime        @db.Date
+  listingId String
+  listing   Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  viewType  ListingViewType
+  isBot     Boolean
+  count     Int
+
+  @@id([day, listingId, viewType, isBot])
+  @@index([listingId])
+}
+
+model EventViewDaily {
+  day      DateTime      @db.Date
+  eventId  String
+  event    Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  viewType EventViewType
+  isBot    Boolean
+  count    Int
+
+  @@id([day, eventId, viewType, isBot])
+  @@index([eventId])
+}
+
+model PageViewDaily {
+  day   DateTime @db.Date
+  path  String
+  isBot Boolean
+  count Int
+
+  @@id([day, path, isBot])
+}
+
 // A Wohnprojekt/WG listing. Only projectName + owner are required. Structural
 // fields needed for search/map/browsing (location, group size, cost,
 // availability) are real columns; open-ended categorical filters (Projekt Typ,
@@ -459,6 +499,7 @@ model Listing {
   appointments      Appointment[]
   managers          ListingManager[]
   views             ListingView[]
+  dailyViews        ListingViewDaily[]
 
   @@index([status])
   @@index([organizationId])
@@ -645,6 +686,7 @@ model Event {
   media            Media[]
   reports          Report[]               @relation("ReportOnEvent")
   views            EventView[]
+  dailyViews       EventViewDaily[]
 
   @@index([startAt])
   @@index([status])
