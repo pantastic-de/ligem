@@ -8,6 +8,7 @@ import { setListingLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
 import { generateListingSlug } from "@/lib/entity-slug";
+import { notifyListingSubmitted } from "@/lib/listing-notifications";
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   if (!value) return null;
@@ -110,6 +111,8 @@ export async function createListing(formData: FormData): Promise<void> {
     parseOptionalFloat(formData.get("latitude")),
     parseOptionalFloat(formData.get("longitude")),
   );
+
+  await notifyListingSubmitted(listing.id);
 
   redirect(`/projekt/${slug}?eingereicht=1`);
 }

@@ -70,6 +70,12 @@ export default function HilfeProjektEintragenPage() {
           &bdquo;Projekt bearbeiten&ldquo;. Nach dem Speichern wird der
           Eintrag erneut geprüft, bevor Änderungen öffentlich sichtbar sind.
         </p>
+        <p className="mt-2 text-text-muted">
+          Ganz unten auf der Bearbeiten-Seite kannst du dein Projekt auch
+          endgültig löschen. Dabei werden seine Termine, Fotos, Videos und
+          Kontaktanfragen mitgelöscht. Das geht nur als Ersteller:in, nicht als
+          Mitverwalter:in, und lässt sich nicht rückgängig machen.
+        </p>
       </section>
 
       <section className="mt-8">

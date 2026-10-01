@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { canManageListing } from "@/lib/authz";
+import { canManageListing, isAdmin } from "@/lib/authz";
+import { deleteListingsCompletely } from "@/lib/delete-content";
+import { prepareListingDeletedNotices } from "@/lib/listing-notifications";
 import { setListingLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
@@ -124,4 +126,44 @@ export async function updateListing(formData: FormData): Promise<void> {
   );
 
   redirect(`/projekt/${listing.slug}?aktualisiert=1`);
+}
+
+/**
+ * Deletes the whole project for good, including its events and every stored
+ * photo/video (see deleteListingsCompletely). Deliberately stricter than
+ * editing: only the original creator or an ADMIN, never a co-manager, who
+ * only holds content-edit rights on someone else's project.
+ */
+export async function deleteOwnListing(formData: FormData): Promise<void> {
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden");
+  }
+
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { createdById: true, projectName: true },
+  });
+  if (!listing) {
+    notFound();
+  }
+  const isOwner = listing.createdById === session.user.id;
+  if (!isOwner && !(await isAdmin(session.user.id))) {
+    notFound();
+  }
+
+  // An admin removing someone else's project tells its managers; an owner
+  // deleting their own project doesn't need a mail about it.
+  const sendNotices = isOwner ? () => {} : await prepareListingDeletedNotices([listingId]);
+  await deleteListingsCompletely([listingId]);
+  sendNotices();
+
+  redirect(
+    isOwner
+      ? `/meine-projekte?geloescht=${encodeURIComponent(listing.projectName)}`
+      : "/admin/projekte?status=PUBLISHED",
+  );
 }

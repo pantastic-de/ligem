@@ -22,7 +22,12 @@ const statusLabels: Record<string, string> = {
   ARCHIVED: "Archiviert",
 };
 
-export default async function MeineProjektePage() {
+export default async function MeineProjektePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ geloescht?: string }>;
+}) {
+  const { geloescht } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
@@ -93,6 +98,12 @@ export default async function MeineProjektePage() {
           </Link>
         </div>
       </div>
+
+      {geloescht ? (
+        <p role="status" className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          „{geloescht}“ wurde gelöscht.
+        </p>
+      ) : null}
 
       {listings.length === 0 ? (
         <p className="mt-10 rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">

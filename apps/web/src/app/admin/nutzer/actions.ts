@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminAction } from "@/lib/authz";
+import { deleteEventsCompletely, deleteListingsCompletely } from "@/lib/delete-content";
+import { prepareListingDeletedNotices } from "@/lib/listing-notifications";
 import type { UserRole } from "@/generated/prisma/client";
 
 const ALL_ROLES: UserRole[] = ["SUCHENDE", "ANBIETER", "MODERATOR", "ADMIN"];
@@ -164,12 +166,10 @@ export async function bulkDeleteUserContent(formData: FormData): Promise<void> {
     redirectToUserContentResult(formData, { error: "keine-auswahl" });
   }
 
-  if (eventIds.length > 0) {
-    await prisma.event.deleteMany({ where: { id: { in: eventIds } } });
-  }
-  if (listingIds.length > 0) {
-    await prisma.listing.deleteMany({ where: { id: { in: listingIds } } });
-  }
+  const sendNotices = await prepareListingDeletedNotices(listingIds);
+  await deleteEventsCompletely(eventIds);
+  await deleteListingsCompletely(listingIds);
+  sendNotices();
 
   redirectToUserContentResult(formData, { ok: "geloescht" });
 }

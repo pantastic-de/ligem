@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminAction } from "@/lib/authz";
+import { deleteEventsCompletely } from "@/lib/delete-content";
 
 function redirectBack(formData: FormData): never {
   const status = formData.get("status")?.toString() || "PUBLISHED";
@@ -80,7 +81,7 @@ export async function bulkDeleteEvents(formData: FormData): Promise<void> {
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 
-  await prisma.event.deleteMany({ where: { id: { in: ids } } });
+  await deleteEventsCompletely(ids);
 
   redirectBack(formData);
 }

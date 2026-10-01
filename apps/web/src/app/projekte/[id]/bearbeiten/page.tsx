@@ -11,7 +11,8 @@ import { ListingFormFields } from "@/components/listing-form-fields";
 import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery";
 import { VideoUploadForm } from "@/components/video-upload-form";
 import { ImageUploadForm } from "@/components/image-upload-form";
-import { updateListing } from "./actions";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
+import { deleteOwnListing, updateListing } from "./actions";
 import { addListingVideoLink, deleteListingMedia, reorderListingMedia } from "../media-actions";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default async function ProjektBearbeitenPage({
         categories: true,
         attributeOptions: true,
         media: { orderBy: { position: "asc" } },
+        _count: { select: { events: true } },
       },
     }),
     prisma.listingCategory.findMany({ orderBy: { name: "asc" } }),
@@ -68,6 +70,10 @@ export default async function ProjektBearbeitenPage({
   }
   const displayName = session.user.name ?? session.user.email ?? "Konto";
   const admin = await isAdmin(session.user.id);
+  // Co-managers may edit, but deleting the whole project is reserved for
+  // its creator and admins (enforced again in deleteOwnListing).
+  const canDelete = admin || listing.createdById === session.user.id;
+  const eventCount = listing._count.events;
 
   return (
     <AppShell active="projekte" isAdmin={admin} displayName={displayName}>
@@ -229,6 +235,32 @@ export default async function ProjektBearbeitenPage({
           Speichern
         </button>
       </form>
+
+      {canDelete ? (
+        <section className="mt-16 rounded-2xl border border-error/30 p-4 sm:p-6">
+          <h2 className="text-xl font-semibold text-error">Projekt löschen</h2>
+          <p className="mt-2 text-text-muted">
+            Löscht das Projekt endgültig
+            {eventCount > 0
+              ? `, zusammen mit ${eventCount === 1 ? "seinem Termin" : `seinen ${eventCount} Terminen`}`
+              : ""}
+            , allen Fotos, Videos, Kontaktanfragen und der Zugriffsstatistik. Das lässt sich
+            nicht rückgängig machen. Wenn das Projekt nur vorübergehend nicht sichtbar sein
+            soll, ist Löschen nicht nötig.
+          </p>
+          <form action={deleteOwnListing} className="mt-4">
+            <input type="hidden" name="listingId" value={listing.id} />
+            <ConfirmSubmitButton
+              confirmText={`„${listing.projectName}“ wirklich endgültig löschen?${
+                eventCount > 0 ? ` Auch ${eventCount === 1 ? "der Termin wird" : `alle ${eventCount} Termine werden`} gelöscht.` : ""
+              }`}
+              className="inline-flex min-h-12 items-center rounded-full bg-error px-6 font-semibold text-white transition-colors hover:opacity-90"
+            >
+              Projekt endgültig löschen
+            </ConfirmSubmitButton>
+          </form>
+        </section>
+      ) : null}
     </AppShell>
   );
 }

@@ -14,6 +14,7 @@ import {
   bulkArchiveListings,
   bulkDeleteListings,
   bulkRejectListings,
+  deleteListing,
   rejectListing,
 } from "./actions";
 
@@ -56,6 +57,12 @@ const sortOptions: { value: string; label: string; orderBy: Prisma.ListingOrderB
     orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
   },
 ];
+
+function deleteConfirmText(projectName: string, eventCount: number): string {
+  const events =
+    eventCount === 0 ? "" : eventCount === 1 ? " samt 1 Termin" : ` samt ${eventCount} Terminen`;
+  return `„${projectName}“${events}, allen Fotos, Videos und Kontaktanfragen endgültig löschen? Das lässt sich nicht rückgängig machen.`;
+}
 
 const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" });
 
@@ -117,6 +124,7 @@ export default async function AdminProjektePage({
     include: {
       createdBy: { select: { name: true, email: true } },
       moderatedBy: { select: { name: true, email: true } },
+      _count: { select: { events: true } },
       categories: { include: { category: true } },
       attributeOptions: {
         where: { option: { group: { slug: "projekt-typ" } } },
@@ -263,7 +271,7 @@ export default async function AdminProjektePage({
               </button>
               <ConfirmSubmitButton
                 formAction={bulkDeleteListings}
-                confirmText="Ausgewählte Projekte wirklich unwiderruflich löschen?"
+                confirmText="Ausgewählte Projekte samt ihren Terminen, Fotos, Videos und Kontaktanfragen unwiderruflich löschen?"
                 className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
               >
                 Ausgewählte löschen
@@ -409,6 +417,17 @@ export default async function AdminProjektePage({
                       </button>
                     </form>
                   ) : null}
+
+                  <form action={deleteListing}>
+                    <input type="hidden" name="listingId" value={listing.id} />
+                    {listStateInputs}
+                    <ConfirmSubmitButton
+                      confirmText={deleteConfirmText(listing.projectName, listing._count.events)}
+                      className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
+                    >
+                      Löschen
+                    </ConfirmSubmitButton>
+                  </form>
                 </div>
               </li>
             );

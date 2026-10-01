@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { canManageListing } from "@/lib/authz";
 import { normalizeHomepageUrl } from "@/lib/normalize-url";
 import { generateListingSlug } from "@/lib/entity-slug";
+import { notifyListingSubmitted } from "@/lib/listing-notifications";
 import { runHomepageExtraction, applyHomepageImportResult, type HomepageImportResult } from "@/lib/homepage-import";
 import {
   createImportJob,
@@ -66,6 +67,9 @@ export async function startHomepageImport(input: {
       },
     });
     listingId = listing.id;
+    // Starting a KI-Import from the create page is what creates the project,
+    // so this is its submission, same as the plain create form's.
+    await notifyListingSubmitted(listing.id);
   } else {
     const existing = await prisma.listing.findUnique({
       where: { id: listingId },

@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminAction } from "@/lib/authz";
+import { deleteListingsCompletely } from "@/lib/delete-content";
+import { notifyListingApproved, prepareListingDeletedNotices } from "@/lib/listing-notifications";
 
 function redirectBack(formData: FormData): never {
   const status = formData.get("status")?.toString() || "PENDING_REVIEW";
@@ -28,6 +30,7 @@ export async function approveListing(formData: FormData): Promise<void> {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
+  const before = await prisma.listing.findUnique({ where: { id: listingId }, select: { publishedAt: true } });
   await prisma.listing.update({
     where: { id: listingId },
     data: {
@@ -37,6 +40,7 @@ export async function approveListing(formData: FormData): Promise<void> {
       moderationNote: null,
     },
   });
+  await notifyListingApproved(listingId, !before?.publishedAt);
 
   redirectBack(formData);
 }
@@ -111,7 +115,21 @@ export async function bulkDeleteListings(formData: FormData): Promise<void> {
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 
-  await prisma.listing.deleteMany({ where: { id: { in: ids } } });
+  const sendNotices = await prepareListingDeletedNotices(ids);
+  await deleteListingsCompletely(ids);
+  sendNotices();
+
+  redirectBack(formData);
+}
+
+export async function deleteListing(formData: FormData): Promise<void> {
+  await requireAdminAction();
+  const listingId = formData.get("listingId")?.toString();
+  if (!listingId) return;
+
+  const sendNotices = await prepareListingDeletedNotices([listingId]);
+  await deleteListingsCompletely([listingId]);
+  sendNotices();
 
   redirectBack(formData);
 }
