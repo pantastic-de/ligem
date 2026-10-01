@@ -1,4 +1,8 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 
 // Optional at the infra level, matching every other feature-gating env var
 // in this app (ANTHROPIC_API_KEY, GOOGLE_CLIENT_ID/SECRET, ...): local dev
@@ -11,17 +15,40 @@ const smtpUser = process.env.SMTP_USER;
 const smtpPassword = process.env.SMTP_PASSWORD;
 const smtpFrom = process.env.SMTP_FROM;
 
-const transport =
-  smtpHost && smtpUser && smtpPassword
-    ? nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        // 465 is the implicit-TLS port; every other common port (587, 25)
-        // starts plaintext and upgrades via STARTTLS instead.
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPassword },
-      })
-    : null;
+const smtpConfigured = Boolean(smtpHost && smtpUser && smtpPassword);
+let transportPromise: Promise<Transporter> | null = null;
+
+/**
+ * nodemailer resolves SMTP_HOST with direct DNS queries and only falls back
+ * to the OS resolver, so it ignores /etc/hosts — including the entries
+ * docker-compose.prod.yml's `extra_hosts` writes there. On the production
+ * server, DNS hands back 127.0.1.1 (the host's own-hostname entry) for the
+ * mail server's name, which inside the container is the container itself.
+ * Resolving via dns.lookup (the OS resolver, /etc/hosts first) and
+ * connecting to that address with `servername` set keeps the extra_hosts
+ * mapping working while STARTTLS still checks the certificate against the
+ * real hostname. Resolved once per process.
+ */
+function getTransport(): Promise<Transporter> {
+  transportPromise ??= (async () => {
+    const host = smtpHost as string;
+    const address = isIP(host) ? host : (await lookup(host)).address;
+    return nodemailer.createTransport({
+      host: address,
+      port: smtpPort,
+      // 465 is the implicit-TLS port; every other common port (587, 25)
+      // starts plaintext and upgrades via STARTTLS instead.
+      secure: smtpPort === 465,
+      tls: isIP(host) ? undefined : { servername: host },
+      auth: { user: smtpUser, pass: smtpPassword },
+    });
+  })().catch((err) => {
+    // Don't cache a failed lookup; the next send retries it.
+    transportPromise = null;
+    throw err;
+  });
+  return transportPromise;
+}
 
 /**
  * Best-effort email send — never throws into its caller. Every call site in
@@ -30,11 +57,12 @@ const transport =
  * attempt can't hold up or break the page/action that triggered it.
  */
 export async function sendMail(options: { to: string; subject: string; text: string }): Promise<void> {
-  if (!transport) {
+  if (!smtpConfigured) {
     console.warn(`E-Mail nicht gesendet (kein SMTP konfiguriert): "${options.subject}" an ${options.to}`);
     return;
   }
   try {
+    const transport = await getTransport();
     await transport.sendMail({
       from: smtpFrom || smtpUser,
       to: options.to,
