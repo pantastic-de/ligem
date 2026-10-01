@@ -42,6 +42,12 @@ export default async function AnmeldenPage({
         </p>
       ) : null}
 
+      {ok === "passwort-neu" ? (
+        <p role="status" className="mt-6 rounded-xl bg-success/10 px-4 py-3 text-success">
+          Dein neues Passwort ist gespeichert. Du kannst dich jetzt damit anmelden.
+        </p>
+      ) : null}
+
       {error ? (
         <p
           role="alert"
@@ -66,9 +72,14 @@ export default async function AnmeldenPage({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="password" className="font-medium">
-            Passwort
-          </label>
+          <div className="flex items-baseline justify-between gap-4">
+            <label htmlFor="password" className="font-medium">
+              Passwort
+            </label>
+            <Link href="/passwort-vergessen" className="text-sm text-primary hover:underline">
+              Passwort vergessen?
+            </Link>
+          </div>
           <PasswordField id="password" name="password" autoComplete="current-password" />
         </div>
         <button

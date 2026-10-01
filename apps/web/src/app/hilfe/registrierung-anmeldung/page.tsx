@@ -34,6 +34,13 @@ export default function HilfeRegistrierungPage() {
           von uns Google-Login eingerichtet wurde, erscheint zusätzlich ein
           &bdquo;Mit Google anmelden&ldquo;-Button.
         </p>
+        <p className="mt-2 text-text-muted">
+          Passwort vergessen? Klick auf der Anmeldeseite auf{" "}
+          <Link href="/passwort-vergessen" className="text-primary">Passwort vergessen?</Link>{" "}
+          und gib deine E-Mail-Adresse ein. Du bekommst einen Link, über den du
+          ein neues Passwort festlegen kannst. Er ist eine Stunde lang gültig und
+          funktioniert nur einmal.
+        </p>
       </section>
 
       <section className="mt-8">
