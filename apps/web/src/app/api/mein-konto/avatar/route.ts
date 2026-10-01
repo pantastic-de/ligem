@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   // Fetch the previous avatar before overwriting so a self-uploaded one (as
   // opposed to a Google-provided avatar URL, which isn't ours to delete) can
-  // be cleaned up from MinIO afterwards.
+  // be cleaned up from storage afterwards.
   const existing = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { image: true },

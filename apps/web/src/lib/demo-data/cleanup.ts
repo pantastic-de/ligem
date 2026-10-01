@@ -13,7 +13,7 @@ const demoUserFilter = { email: { endsWith: `@${DEMO_EMAIL_DOMAIN}` } } as const
  * Listings are therefore deleted explicitly first, in that order; the rows
  * that hang off *them* (Media, category/attribute-option assignments,
  * contact requests, ...) do cascade per schema.prisma, except for the
- * actual MinIO objects behind Media rows, which aren't a database relation
+ * actual stored files behind Media rows, which aren't a database relation
  * at all and are removed manually below before the rows disappear.
  */
 export async function deleteAllDemoData(): Promise<{ deletedUsers: number }> {

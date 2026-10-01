@@ -37,7 +37,7 @@ model User {
   // Profile picture — reused as-is from the Auth.js/PrismaAdapter default
   // shape (auto-populated from the provider's profile for Google sign-in).
   // For local uploads (see /mein-konto), this holds an `/api/media/<key>`
-  // proxy path exactly like every other MinIO-backed image in this app,
+  // proxy path exactly like every other self-hosted image in this app,
   // not a raw storage key — so it can be used directly as an <img src>
   // regardless of whether it came from Google or from an upload.
   image         String?
@@ -552,10 +552,10 @@ model Media {
   eventId       String?
   event         Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   type          MediaType
-  // MinIO/S3 object key (display-sized image or uploaded video) — except
+  // storage key (a file path under MEDIA_DIR) (display-sized image or uploaded video) — except
   // when isVideoLink is true, in which case this holds the embeddable
   // player URL (YouTube/Vimeo rewritten to their /embed/ form, any other
-  // provider's URL as-is) instead of a MinIO key; there's no MinIO object
+  // provider's URL as-is) instead of a storage key; there's no stored file
   // behind that row at all, so it's never passed through /api/media.
   storageKey    String
   thumbnailKey  String? // downscaled at upload time (or fetched from the provider's oEmbed for a video link); position 0's thumbnail is used as the listing's/event's list-view thumbnail
@@ -571,7 +571,7 @@ model Media {
   // tile/badge treatment), this flag only changes what storageKey means
   // (see above) and how the lightbox plays it back (<iframe> instead of a
   // local <video>). deleteListingMedia/deleteEventMedia must not call
-  // deleteObject() on storageKey for these rows, since it isn't a MinIO key.
+  // deleteObject() on storageKey for these rows, since it isn't a storage key.
   isVideoLink   Boolean   @default(false)
   uploadedById  String
   uploadedBy    User      @relation("MediaUploadedBy", fields: [uploadedById], references: [id])

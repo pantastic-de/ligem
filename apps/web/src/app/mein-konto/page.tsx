@@ -119,7 +119,7 @@ export default async function MeinKontoPage({
         <h2 className="text-lg font-semibold">Profilbild</h2>
         <div className="mt-4 flex flex-wrap items-center gap-4">
           {user.image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- may be an external Google avatar URL, not always a proxied MinIO object
+            // eslint-disable-next-line @next/next/no-img-element -- may be an external Google avatar URL, not always a proxied media file
             <img
               src={user.image}
               alt=""

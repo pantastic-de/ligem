@@ -20,7 +20,7 @@ import {
 } from "@/lib/demo-data/progress-store";
 
 // Logs the real error server-side (so it's still diagnosable) but never
-// forwards its raw message to the browser — a Prisma/driver/MinIO error's
+// forwards its raw message to the browser — a Prisma/driver/storage error's
 // text isn't guaranteed to be free of internal details (query fragments,
 // connection info), and there's no reason an admin-only progress bar/error
 // banner needs the exact wording rather than a generic one.

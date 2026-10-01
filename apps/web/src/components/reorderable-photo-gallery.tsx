@@ -75,7 +75,7 @@ export function ReorderablePhotoGallery({
                 <span className="text-xs font-medium">{item.isVideoLink ? "Video-Link" : "Video"}</span>
               </div>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object, not a static/optimizable asset
+              // eslint-disable-next-line @next/next/no-img-element -- proxied media file, not a static/optimizable asset
               <img
                 src={`/api/media/${item.thumbnailKey ?? item.storageKey}`}
                 alt={item.caption ?? ""}

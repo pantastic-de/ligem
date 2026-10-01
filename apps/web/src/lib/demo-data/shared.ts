@@ -303,7 +303,7 @@ export function randomPhone(): string {
  * Fetches a random real photo from Lorem Picsum (a free placeholder-image
  * service built for exactly this kind of use — not scraped from anywhere,
  * safe and legal for dev/test data) and stores it via the app's normal
- * media pipeline (display + thumbnail JPEGs in MinIO).
+ * media pipeline (display + thumbnail JPEGs on disk).
  *
  * `usedPhotoIds`, when passed, dedupes against Picsum's own photo id: a
  * request to the seed-less `/1200/800` endpoint 302-redirects to

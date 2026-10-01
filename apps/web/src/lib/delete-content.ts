@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteObject } from "@/lib/storage";
 
 /**
- * Removes the MinIO objects behind these Media rows. The rows themselves
+ * Removes the stored files behind these Media rows. The rows themselves
  * cascade away with their Listing/Event, but the stored files are not a
  * database relation and would otherwise stay behind as orphans. A video
  * link's `storageKey` is an external embed URL, not an object of ours, so

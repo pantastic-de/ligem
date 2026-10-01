@@ -473,7 +473,7 @@ export async function TerminePageView({
                           className={`flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg ${isPast ? "opacity-60" : ""}`}
                         >
                           {thumbnail ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+                            // eslint-disable-next-line @next/next/no-img-element -- proxied media file
                             <img
                               src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
                               alt=""

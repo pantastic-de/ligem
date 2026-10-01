@@ -35,7 +35,7 @@ async function requireListingAccess(listingId: string) {
  * resulting Media row still has type "VIDEO" (same gallery tile/badge
  * treatment as an uploaded video), flagged via isVideoLink so the lightbox
  * knows to render an <iframe> instead of a local <video>, and so
- * deleteListingMedia below knows storageKey isn't a MinIO key to delete.
+ * deleteListingMedia below knows storageKey isn't a stored file to delete.
  */
 export async function addListingVideoLink(formData: FormData): Promise<void> {
   const listingId = formData.get("listingId")?.toString();
@@ -81,7 +81,7 @@ export async function deleteListingMedia(formData: FormData): Promise<void> {
 
   const media = await prisma.media.findUnique({ where: { id: mediaId } });
   if (media && media.listingId === listingId) {
-    // A video-link row's storageKey is an external URL, not a MinIO key —
+    // A video-link row's storageKey is an external URL, not a storage key —
     // deleting it there would be a meaningless (though harmless) call.
     if (!media.isVideoLink) {
       await deleteObject(media.storageKey);

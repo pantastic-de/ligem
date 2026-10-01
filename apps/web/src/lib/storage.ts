@@ -8,9 +8,9 @@ import { randomUUID } from "node:crypto";
 // docker-compose.yml) — rather than in an S3/MinIO bucket. This app runs as
 // a single server, so a separate object-storage service added nothing but
 // one more container (and the MinIO image is no longer published). Keys
-// keep the same shape as before (`listings/<id>/<uuid>-display.jpg`, ...),
-// so stored Media rows needed no change; scripts/migrate-minio-to-local.ts
-// copied the existing objects over once.
+// keep the same shape as the former MinIO object keys
+// (`listings/<id>/<uuid>-display.jpg`, ...), so Media rows needed no change
+// when existing files were copied over (October 2026).
 const MEDIA_ROOT = path.resolve(process.env.MEDIA_DIR ?? "/data/media");
 
 // The file's type comes from its extension: every key this app writes ends

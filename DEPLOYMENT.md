@@ -69,8 +69,6 @@ Create a root `.env` (this file is gitignored — never commit it):
 ```bash
 DATABASE_URL=postgresql://ligem:<strong password>@host.docker.internal:5432/ligem
 POSTGRES_PASSWORD=<unused in production, but keep set to something — see note below>
-MINIO_ROOT_USER=<choose a username>
-MINIO_ROOT_PASSWORD=<generate a strong password>
 AUTH_SECRET=<generate with: openssl rand -base64 32>
 AUTH_URL=https://your-domain.tld
 GOOGLE_CLIENT_ID=
@@ -263,36 +261,6 @@ success — see the comment header in that file for why that check matters.)
   ```
   (`ligem_` is the Compose project prefix, i.e. the checkout folder's name;
   `docker volume ls` shows the exact volume name.)
-
-## 9. One-time move from MinIO to the media volume
-
-Older installs stored uploads in a MinIO container. MinIO is gone from the
-normal stack (its image is no longer published), but the service is still
-defined behind the `legacy` profile so existing files can be copied over
-once. On a server that still has the old `minio_data` volume:
-
-```bash
-git pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --build web
-# wait until the app answers (logs show "Ready"), then:
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile legacy up -d --no-deps minio
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web \
-  sh -c "cd /workspace/apps/web && pnpm exec tsx scripts/migrate-minio-to-local.ts"
-```
-
-The script prints `Fertig: N kopiert, M schon vorhanden, 0 fehlgeschlagen.`
-It is safe to run again (already copied files are skipped). Between the
-deploy and the end of the copy, photos on the site are briefly missing.
-Check a few project pages, then stop MinIO for good:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile legacy stop minio
-```
-
-Keep the `minio_data` volume until you're sure nothing is missing; after
-that `docker volume rm <prefix>_minio_data` frees the space. The
-`MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` entries in `.env` are only needed
-for this migration.
 
 ## Automated deploy
 

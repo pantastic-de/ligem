@@ -63,7 +63,7 @@ export async function isPanoramaAspectRatio(file: File): Promise<boolean> {
 
 /**
  * Resizes an uploaded image into a display version (max 1600px wide) and a
- * thumbnail (max 400px wide), uploads both to MinIO under `keyPrefix`, and
+ * thumbnail (max 400px wide), stores both under `keyPrefix`, and
  * returns their object keys. Returns null if the file isn't a readable image
  * (skip it rather than fail the whole upload).
  */
@@ -144,7 +144,7 @@ export async function storeVideo(
  * Resizes and stores a standalone thumbnail image with no accompanying
  * "original" — used for a video-link's fetched provider thumbnail (see
  * fetchVideoLinkThumbnail in src/lib/video-link.ts), where the actual video
- * itself never touches MinIO at all (its storageKey is the external
+ * itself never touches the media storage at all (its storageKey is the external
  * embeddable URL, not an object key). Returns null on anything unreadable
  * rather than throwing, since a missing thumbnail just falls back to the
  * gallery's placeholder tile.

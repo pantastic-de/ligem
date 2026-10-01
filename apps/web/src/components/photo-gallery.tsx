@@ -64,7 +64,7 @@ function GalleryTileMedia({ photo }: { photo: GalleryPhoto }) {
     if (!photo.thumbnailKey) return <VideoTile />;
     return (
       <>
-        {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- proxied media file */}
         <img
           src={`/api/media/${photo.thumbnailKey}`}
           alt={photo.caption ?? ""}
@@ -75,7 +75,7 @@ function GalleryTileMedia({ photo }: { photo: GalleryPhoto }) {
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+    // eslint-disable-next-line @next/next/no-img-element -- proxied media file
     <img
       src={`/api/media/${photo.storageKey}`}
       alt={photo.caption ?? ""}
@@ -101,7 +101,7 @@ function LightboxSlidePreview({ photo }: { photo: GalleryPhoto }) {
     }
     return (
       <div className="relative flex h-full w-full items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+        {/* eslint-disable-next-line @next/next/no-img-element -- proxied media file */}
         <img
           src={`/api/media/${photo.thumbnailKey}`}
           alt=""
@@ -113,7 +113,7 @@ function LightboxSlidePreview({ photo }: { photo: GalleryPhoto }) {
   }
   return (
     <div className="relative flex h-full w-full items-center justify-center">
-      {/* eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- proxied media file */}
       <img
         src={`/api/media/${photo.storageKey}`}
         alt=""
@@ -482,7 +482,7 @@ export function PhotoGallery({ photos }: { photos: GalleryPhoto[] }) {
               />
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+            // eslint-disable-next-line @next/next/no-img-element -- proxied media file
             <img
               src={`/api/media/${photos[openIndex].storageKey}`}
               alt={photos[openIndex].caption ?? ""}

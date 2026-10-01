@@ -729,7 +729,7 @@ export async function ProjektePageView({
                           className="flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg"
                         >
                           {thumbnail ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- proxied MinIO object
+                            // eslint-disable-next-line @next/next/no-img-element -- proxied media file
                             <img
                               src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
                               alt=""
