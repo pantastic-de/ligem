@@ -31,6 +31,9 @@ export async function recordEventViews(
   if (eventIds.length === 0) return;
   const [session, hdrs] = await Promise.all([auth(), headers()]);
   const { isBot, botName } = detectBot(hdrs.get("user-agent"));
+  // Same as recordListingViews: crawler impressions in result lists aren't
+  // stored, crawler detail views are.
+  if (isBot && viewType === "OVERVIEW") return;
   const referrerHost = referrerHostOf(hdrs.get("referer"));
   const viewerId = session?.user?.id ?? null;
   const clientIp = getClientIp(hdrs);

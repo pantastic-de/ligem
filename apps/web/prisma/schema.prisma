@@ -274,6 +274,8 @@ model ListingView {
   filtersSummary String?
 
   @@index([listingId, viewType])
+  @@index([viewedAt])
+  @@index([listingId, viewedAt])
 }
 
 // Mirrors ListingViewType exactly, for the same statistics feature applied
@@ -313,6 +315,8 @@ model EventView {
   filtersSummary String?
 
   @@index([eventId, viewType])
+  @@index([viewedAt])
+  @@index([eventId, viewedAt])
 }
 
 // Generic site-wide page-view tracker (src/middleware.ts) — every route
@@ -340,6 +344,7 @@ model PageView {
   country      String?
 
   @@index([path])
+  @@index([viewedAt])
 }
 
 // A Wohnprojekt/WG listing. Only projectName + owner are required. Structural

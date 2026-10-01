@@ -26,9 +26,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function topListings() {
+// Everything on this page covers the last STATS_DAYS days only. The view
+// tables hold tens of millions of rows; aggregating all of them on every
+// page load took minutes and timed out behind the reverse proxy. Each
+// project's/event's own statistics page still shows its all-time numbers.
+const STATS_DAYS = 30;
+
+function statsSince(): Date {
+  const since = new Date();
+  since.setUTCHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - (STATS_DAYS - 1));
+  return since;
+}
+
+async function topListings(since: Date) {
   const groups = await prisma.listingView.groupBy({
     by: ["listingId"],
+    where: { viewedAt: { gte: since } },
     _count: true,
     orderBy: { _count: { listingId: "desc" } },
     take: 10,
@@ -43,9 +57,10 @@ async function topListings() {
     .filter((row): row is { item: { id: string; projectName: string }; count: number } => Boolean(row.item));
 }
 
-async function topEvents() {
+async function topEvents(since: Date) {
   const groups = await prisma.eventView.groupBy({
     by: ["eventId"],
+    where: { viewedAt: { gte: since } },
     _count: true,
     orderBy: { _count: { eventId: "desc" } },
     take: 10,
@@ -103,6 +118,8 @@ function TopContentList({
 export default async function AdminStatistikPage() {
   const session = await requireAdminPage();
   const displayName = session.user.name ?? session.user.email ?? "Konto";
+  const since = statsSince();
+  const recent = { viewedAt: { gte: since } };
 
   const [
     listingCounts,
@@ -119,19 +136,19 @@ export default async function AdminStatistikPage() {
     eventTop,
     pageStats,
   ] = await Promise.all([
-    getListingViewTypeCounts({}),
-    getListingViewSourceBreakdown({}),
-    getListingViewsOverTime({}),
-    getListingGeoBreakdown({}),
-    getListingSearchBreakdown({}),
-    topListings(),
-    getEventViewTypeCounts({}),
-    getEventViewSourceBreakdown({}),
-    getEventViewsOverTime({}),
-    getEventGeoBreakdown({}),
-    getEventFilterBreakdown({}),
-    topEvents(),
-    getPageViewStats({}),
+    getListingViewTypeCounts(recent),
+    getListingViewSourceBreakdown(recent),
+    getListingViewsOverTime({}, STATS_DAYS),
+    getListingGeoBreakdown(recent),
+    getListingSearchBreakdown(recent),
+    topListings(since),
+    getEventViewTypeCounts(recent),
+    getEventViewSourceBreakdown(recent),
+    getEventViewsOverTime({}, STATS_DAYS),
+    getEventGeoBreakdown(recent),
+    getEventFilterBreakdown(recent),
+    topEvents(since),
+    getPageViewStats(recent),
   ]);
 
   const listingTotal = listingCounts.overview + listingCounts.detail;
@@ -142,7 +159,8 @@ export default async function AdminStatistikPage() {
     <AppShell active="admin-statistik" isAdmin displayName={displayName}>
       <h1 className="text-3xl font-bold">Statistik</h1>
       <p className="mt-2 text-text-muted">
-        Zugriffe auf die gesamte Seite. Projekte und Termine werden darunter
+        {`Zugriffe auf die gesamte Seite in den letzten ${STATS_DAYS} Tagen.`}{" "}
+        Projekte und Termine werden darunter
         zusätzlich im Detail ausgewertet; für ein einzelnes Projekt/einen
         einzelnen Termin siehe dessen eigene Statistikseite (verlinkt in
         „Meine Projekte&quot;/„Termine verwalten&quot; bzw. über die Listen
@@ -152,7 +170,7 @@ export default async function AdminStatistikPage() {
       <div className="mt-8 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 text-text-muted">
           <Layers className="h-4 w-4" aria-hidden="true" />
-          <span className="text-sm font-medium">Zugriffe auf alle Seiten (gesamt)</span>
+          <span className="text-sm font-medium">Zugriffe auf alle Seiten (letzte {STATS_DAYS} Tage)</span>
         </div>
         <div className="mt-2 text-3xl font-bold">{grandTotal}</div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-text-muted">
@@ -203,7 +221,7 @@ export default async function AdminStatistikPage() {
         <h3 className="flex items-center gap-2 text-lg font-semibold">Woher kamen die Zugriffe?</h3>
         <p className="mt-1 text-sm text-text-muted">
           <Bot className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
-          {listingBreakdown.botTotal} von {listingBreakdown.total} Zugriffen insgesamt kamen von
+          {listingBreakdown.botTotal} von {listingBreakdown.total} Zugriffen kamen von
           bekannten Suchmaschinen/Web-Agenten.
         </p>
         <div className="mt-4">
@@ -293,7 +311,7 @@ export default async function AdminStatistikPage() {
         <h3 className="flex items-center gap-2 text-lg font-semibold">Woher kamen die Zugriffe?</h3>
         <p className="mt-1 text-sm text-text-muted">
           <Bot className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
-          {eventBreakdown.botTotal} von {eventBreakdown.total} Zugriffen insgesamt kamen von
+          {eventBreakdown.botTotal} von {eventBreakdown.total} Zugriffen kamen von
           bekannten Suchmaschinen/Web-Agenten.
         </p>
         <div className="mt-4">
@@ -338,7 +356,7 @@ export default async function AdminStatistikPage() {
       <div className="mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <div className="flex items-center gap-2 text-text-muted">
           <Eye className="h-4 w-4" aria-hidden="true" />
-          <span className="text-sm font-medium">Zugriffe (gesamt)</span>
+          <span className="text-sm font-medium">Zugriffe (letzte {STATS_DAYS} Tage)</span>
         </div>
         <div className="mt-2 text-3xl font-bold">{pageStats.total}</div>
       </div>
@@ -371,7 +389,7 @@ export default async function AdminStatistikPage() {
         <h3 className="flex items-center gap-2 text-lg font-semibold">Woher kamen die Zugriffe?</h3>
         <p className="mt-1 text-sm text-text-muted">
           <Bot className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
-          {pageStats.botTotal} von {pageStats.total} Zugriffen insgesamt kamen von bekannten
+          {pageStats.botTotal} von {pageStats.total} Zugriffen kamen von bekannten
           Suchmaschinen/Web-Agenten.
         </p>
         <div className="mt-4">

@@ -15,7 +15,7 @@ production database.
 - A domain name pointed at the server's IP address (for TLS/HTTPS via a
   reverse proxy — see below).
 - Ports 80 and 443 open (for the reverse proxy). The app itself listens on
-  3000 internally; the dev-only Postgres/Valkey/Meilisearch are bound to
+  3000 internally; the dev-only Postgres is bound to
   `127.0.0.1` only in `docker-compose.yml` and are not meant to be exposed
   directly to the internet.
 
@@ -69,7 +69,6 @@ Create a root `.env` (this file is gitignored — never commit it):
 ```bash
 DATABASE_URL=postgresql://ligem:<strong password>@host.docker.internal:5432/ligem
 POSTGRES_PASSWORD=<unused in production, but keep set to something — see note below>
-MEILI_MASTER_KEY=<generate a strong key>
 MINIO_ROOT_USER=<choose a username>
 MINIO_ROOT_PASSWORD=<generate a strong password>
 AUTH_SECRET=<generate with: openssl rand -base64 32>

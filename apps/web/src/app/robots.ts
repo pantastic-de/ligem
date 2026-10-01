@@ -9,6 +9,12 @@ import { SITE_URL } from "@/lib/site";
 // private/owner-only action pages (admin area, auth-gated dashboards, edit/
 // management forms) that have no public content value and would otherwise
 // waste crawl budget or leak internal URLs into search results.
+//
+// The search pages themselves stay crawlable, but not their query-string
+// variants: every filter/sort/map combination is a new URL, and crawlers
+// were fetching them by the million (canonical already points at the bare
+// page). Projects and events remain reachable through the sitemap and their
+// own /projekt/<slug>, /event/<slug> addresses.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
@@ -22,6 +28,10 @@ export default function robots(): MetadataRoute.Robots {
         "/projekte/*/bearbeiten",
         "/projekte/*/termine",
         "/termine/neu",
+        "/projekte?",
+        "/termine?",
+        "/projekt/*?",
+        "/event/*?",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,

@@ -16,33 +16,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Valkey and Meilisearch are not used by the app code yet (no client, no
-  # REDIS_URL/MEILISEARCH_* reads). They sit behind the "extras" profile so
-  # they don't start by default; `docker compose --profile extras up` starts
-  # them once a feature actually needs them.
-  valkey:
-    image: valkey/valkey:8-alpine
-    profiles: ["extras"]
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - valkey_data:/data
-
-  meilisearch:
-    # Pinned: a major-version jump can't open an older data dir without a
-    # dump/import, so never upgrade this via a blind `latest` pull.
-    image: getmeili/meilisearch:v1.51.0
-    profiles: ["extras"]
-    restart: unless-stopped
-    environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-      MEILI_ENV: development
-    ports:
-      - "127.0.0.1:7700:7700"
-    volumes:
-      - meili_data:/meili_data
-
   minio:
     # LEGACY, only for the one-time file migration: uploads now live as plain
     # files in the `media_data` volume (src/lib/storage.ts). This service
@@ -77,9 +50,6 @@ services:
     command: sh -c "corepack enable && pnpm install && pnpm exec prisma migrate deploy && pnpm exec prisma db seed && pnpm dev"
     environment:
       DATABASE_URL: postgresql://c1u3:${POSTGRES_PASSWORD}@postgres:5432/c1db3
-      REDIS_URL: redis://valkey:6379
-      MEILISEARCH_HOST: http://meilisearch:7700
-      MEILISEARCH_KEY: ${MEILI_MASTER_KEY}
       # Where uploaded photos/videos are stored (the media_data volume below).
       MEDIA_DIR: /data/media
       # Only read by scripts/migrate-minio-to-local.ts (legacy MinIO access).
@@ -126,7 +96,5 @@ services:
 
 volumes:
   postgres_data:
-  valkey_data:
-  meili_data:
   minio_data:
   media_data:

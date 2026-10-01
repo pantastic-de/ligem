@@ -50,6 +50,11 @@ export async function recordListingViews(
   if (listingIds.length === 0) return;
   const [session, hdrs] = await Promise.all([auth(), headers()]);
   const { isBot, botName } = detectBot(hdrs.get("user-agent"));
+  // A crawler paging through result lists with endless filter combinations
+  // wrote one OVERVIEW row per card per request: ~92% of all rows in
+  // production (24M in two months), none of them meaningful as "someone saw
+  // this project". Crawlers opening a project's detail are still recorded.
+  if (isBot && viewType === "OVERVIEW") return;
   const referrerHost = referrerHostOf(hdrs.get("referer"));
   const viewerId = session?.user?.id ?? null;
   const searchTerm = searchContext?.searchTerm ?? null;

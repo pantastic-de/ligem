@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { labelForReferrerHost } from "@/lib/referrer-label";
 
 export type ViewSource = {
@@ -41,26 +41,45 @@ async function resolveViewerNames(viewerIds: string[]): Promise<Map<string, { na
   return new Map(viewers.map((v) => [v.id, v]));
 }
 
-function bucketByDayAndType(
-  rows: { viewedAt: Date; viewType: "OVERVIEW" | "DETAIL" }[],
+/**
+ * Per-day Übersicht/Detail counts for the last `days` days, summed in the
+ * database. Loading every row and counting in JS (the earlier approach)
+ * stopped working once the view tables reached tens of millions of rows.
+ * `table`/`idColumn` come from the two callers below, never from user
+ * input, so splicing them in via Prisma.raw is safe. Days are UTC dates,
+ * zero-filled so the chart never has gaps.
+ */
+async function viewsPerDay(
+  table: "ListingView" | "EventView",
+  idColumn: "listingId" | "eventId",
+  id: string | undefined,
   days: number,
-): DailyViewCounts[] {
+): Promise<DailyViewCounts[]> {
   const since = new Date();
-  since.setHours(0, 0, 0, 0);
-  since.setDate(since.getDate() - (days - 1));
+  since.setUTCHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - (days - 1));
+
+  const rows = await prisma.$queryRaw<{ day: string; type: string; n: number }[]>`
+    SELECT to_char(date_trunc('day', "viewedAt"), 'YYYY-MM-DD') AS day,
+           "viewType"::text AS type,
+           count(*)::int AS n
+    FROM ${Prisma.raw(`"${table}"`)}
+    WHERE "viewedAt" >= ${since}
+    ${id ? Prisma.sql`AND ${Prisma.raw(`"${idColumn}"`)} = ${id}` : Prisma.empty}
+    GROUP BY 1, 2`;
+
   const byDate = new Map<string, DailyViewCounts>();
   for (let i = 0; i < days; i++) {
     const d = new Date(since);
-    d.setDate(d.getDate() + i);
+    d.setUTCDate(d.getUTCDate() + i);
     const key = d.toISOString().slice(0, 10);
     byDate.set(key, { date: key, overview: 0, detail: 0 });
   }
   for (const row of rows) {
-    const key = row.viewedAt.toISOString().slice(0, 10);
-    const entry = byDate.get(key);
+    const entry = byDate.get(row.day);
     if (!entry) continue;
-    if (row.viewType === "OVERVIEW") entry.overview += 1;
-    else entry.detail += 1;
+    if (row.type === "OVERVIEW") entry.overview += row.n;
+    else entry.detail += row.n;
   }
   return Array.from(byDate.values());
 }
@@ -78,17 +97,10 @@ export async function getListingViewTypeCounts(where: Prisma.ListingViewWhereInp
 }
 
 export async function getListingViewsOverTime(
-  where: Prisma.ListingViewWhereInput,
+  where: { listingId?: string },
   days = 30,
 ): Promise<DailyViewCounts[]> {
-  const since = new Date();
-  since.setHours(0, 0, 0, 0);
-  since.setDate(since.getDate() - (days - 1));
-  const rows = await prisma.listingView.findMany({
-    where: { ...where, viewedAt: { gte: since } },
-    select: { viewedAt: true, viewType: true },
-  });
-  return bucketByDayAndType(rows, days);
+  return viewsPerDay("ListingView", "listingId", where.listingId, days);
 }
 
 /** The "woher kamen die Zugriffe" breakdown: bots by name, registered
@@ -190,15 +202,8 @@ export async function getEventViewTypeCounts(where: Prisma.EventViewWhereInput):
   return { overview, detail };
 }
 
-export async function getEventViewsOverTime(where: Prisma.EventViewWhereInput, days = 30): Promise<DailyViewCounts[]> {
-  const since = new Date();
-  since.setHours(0, 0, 0, 0);
-  since.setDate(since.getDate() - (days - 1));
-  const rows = await prisma.eventView.findMany({
-    where: { ...where, viewedAt: { gte: since } },
-    select: { viewedAt: true, viewType: true },
-  });
-  return bucketByDayAndType(rows, days);
+export async function getEventViewsOverTime(where: { eventId?: string }, days = 30): Promise<DailyViewCounts[]> {
+  return viewsPerDay("EventView", "eventId", where.eventId, days);
 }
 
 export async function getEventViewSourceBreakdown(where: Prisma.EventViewWhereInput): Promise<SourceBreakdown> {
