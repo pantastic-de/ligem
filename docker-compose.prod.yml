@@ -52,10 +52,13 @@ services:
       # The mail server (SMTP_HOST) runs on this same host. Inside the
       # container its name would otherwise resolve to 127.0.1.1 (Debian's
       # own-hostname entry), i.e. the container itself, and every send fails
-      # with ECONNREFUSED. Mapping the name to the Docker host keeps it as the
-      # connection name, so STARTTLS still validates the certificate against
-      # it. Must match SMTP_HOST in .env; remove if SMTP moves off this host.
-      - "www.pantastic.de:host-gateway"
+      # with ECONNREFUSED. Mapping the name to the server's public IP keeps it
+      # as the connection name, so STARTTLS still validates the certificate
+      # against it. The public IP rather than host-gateway, since Postfix
+      # there is reachable from the container that way without opening it up
+      # on the Docker bridge. Must match SMTP_HOST in .env; update if the
+      # server's IP changes, remove if SMTP moves off this host.
+      - "www.pantastic.de:80.86.187.121"
     # Only reachable through the reverse proxy on the same host. `!override`
     # replaces the dev file's 0.0.0.0 binding instead of merging with it
     # (Compose merges list fields across -f files by default). Exposing the
