@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Globe } from "lucide-react";
+import { Globe, MapPin } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
 import { formatDistanceKm } from "@/lib/distance";
+import { formatEventAddress } from "@/lib/event-address";
 import { PhotoGallery } from "@/components/photo-gallery";
 import { JsonLd } from "@/components/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -74,6 +75,16 @@ export function EventDetail({
   // First 360°-flagged photo, if any — see listing-detail.tsx for why this
   // gets a separate ambient auto-rotating preview above the regular gallery.
   const panoramaPhoto = event.media.find((m) => m.isPanorama);
+  // Organizer line: "Veranstaltet von <Projekt> · <Zusätzliche Ortsangabe>"
+  // (e.g. "Gemeinschaftshaus"); below it the postal address, plus the
+  // distance only with an active radius search. Without a project, the
+  // location hint leads instead.
+  const addressLine = [formatEventAddress(event), distanceKm != null ? formatDistanceKm(distanceKm) : null]
+    .filter(Boolean)
+    .join(" · ");
+  const locationLines = [event.listing ? null : event.addressText, addressLine].filter(
+    (line): line is string => Boolean(line),
+  );
   const eventJsonLd = {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -188,26 +199,53 @@ export function EventDetail({
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-text-muted">{dateTimeFormat.format(event.startAt)}</p>
-      {event.addressText || distanceKm != null ? (
-        <p className="mt-1 text-text-muted">
-          {[event.addressText, distanceKm != null ? formatDistanceKm(distanceKm) : null]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-      ) : null}
-      {event.listing ? (
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-text-muted">
-          Veranstaltet von{" "}
-          <Link
-            href={`/projekt/${event.listing.slug}`}
-            className="inline-flex items-center gap-1.5 font-medium text-primary"
+      <div className="mt-3 flex flex-col gap-2 text-text-muted">
+        <p className="flex items-center gap-2">
+          {/* The calendar badge doubles as the iCal download (see
+              src/app/event/[slug]/ical/route.ts): one click adds the event
+              to Outlook, Apple or Google Calendar. */}
+          <a
+            href={`/event/${event.slug}/ical`}
+            download
+            title="In den eigenen Kalender übernehmen (iCal)"
+            aria-label="Termin in den eigenen Kalender übernehmen (iCal-Datei)"
+            className="rounded-full transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <EntityIconBadge tone="projekt" size="sm" />
-            {event.listing.projectName}
-          </Link>
+            <EntityIconBadge tone="termin" size="md" />
+          </a>
+          <span>{dateTimeFormat.format(event.startAt)} Uhr</span>
         </p>
-      ) : null}
+        {event.listing || locationLines.length > 0 ? (
+          <p className="flex items-start gap-2">
+            {event.listing ? (
+              <EntityIconBadge tone="projekt" size="md" className="mt-0.5" />
+            ) : (
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+              </span>
+            )}
+            <span className="flex flex-col">
+              {event.listing ? (
+                <span>
+                  Veranstaltet von{" "}
+                  <Link href={`/projekt/${event.listing.slug}`} className="font-medium text-primary hover:underline">
+                    {event.listing.projectName}
+                  </Link>
+                  {event.addressText ? (
+                    <>
+                      {" "}
+                      <span className="whitespace-nowrap">· {event.addressText}</span>
+                    </>
+                  ) : null}
+                </span>
+              ) : null}
+              {locationLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+            </span>
+          </p>
+        ) : null}
+      </div>
 
       {panoramaPhoto ? (
         <div className="mt-6 overflow-hidden rounded-2xl">
