@@ -86,6 +86,19 @@ MICROSOFT_CLIENT_SECRET=
 must be `host.docker.internal` (not `localhost` — from inside the `web`
 container, `localhost` refers to the container itself, not the server).
 
+**Mail server on the same host** (e.g. ISPConfig's Postfix): the same
+`localhost` problem applies to `SMTP_HOST`, and so does the server's own
+hostname — inside the container it resolves to `127.0.1.1` (Debian's
+own-hostname entry), i.e. the container itself, failing every send with
+`ECONNREFUSED 127.0.1.1:587`. Keep `SMTP_HOST` set to the mail server's real
+name (so STARTTLS can validate its certificate) and map that name to the
+Docker host in `docker-compose.prod.yml`'s `extra_hosts`
+(`"<SMTP_HOST>:host-gateway"`, currently `www.pantastic.de`). Postfix must
+then accept connections on the Docker bridge (`inet_interfaces = all`, and
+port 587 open for `172.16.0.0/12` if a firewall is active). To test from the
+container: `docker compose -f docker-compose.yml -f docker-compose.prod.yml
+exec web node -e "require('nodemailer').createTransport({host:process.env.SMTP_HOST,port:+process.env.SMTP_PORT||587,auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASSWORD}}).verify().then(()=>console.log('OK'),e=>console.error(e.message))"`.
+
 `AUTH_URL` **must** be set to the real public `https://` URL in production —
 `auth.ts`'s `trustHost: true` alone (deriving the app's own URL from the
 `Host`/`X-Forwarded-Host` request headers) proved too unreliable behind a

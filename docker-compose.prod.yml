@@ -49,6 +49,13 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # The mail server (SMTP_HOST) runs on this same host. Inside the
+      # container its name would otherwise resolve to 127.0.1.1 (Debian's
+      # own-hostname entry), i.e. the container itself, and every send fails
+      # with ECONNREFUSED. Mapping the name to the Docker host keeps it as the
+      # connection name, so STARTTLS still validates the certificate against
+      # it. Must match SMTP_HOST in .env; remove if SMTP moves off this host.
+      - "www.pantastic.de:host-gateway"
     # Only reachable through the reverse proxy on the same host. `!override`
     # replaces the dev file's 0.0.0.0 binding instead of merging with it
     # (Compose merges list fields across -f files by default). Exposing the
