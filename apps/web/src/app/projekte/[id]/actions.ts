@@ -10,6 +10,7 @@ import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site";
 import { getClientIp } from "@/lib/ip-lookup";
 import { turnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
+import { withQueryParam } from "@/lib/return-url";
 
 // The contact form is rendered both on the standalone /projekt/[slug] page
 // and inline in /projekte's results column (both via the shared
@@ -78,17 +79,18 @@ async function notifyContactRequest(
 
 export async function submitContactRequest(formData: FormData): Promise<void> {
   const listingId = formData.get("listingId")?.toString();
-  const senderName = formData.get("senderName")?.toString().trim();
-  const senderEmail = formData.get("senderEmail")?.toString().trim();
-  const message = formData.get("message")?.toString().trim();
+  // Hard caps: the form is public, so nothing stops a script from posting
+  // megabytes into these fields otherwise.
+  const senderName = formData.get("senderName")?.toString().trim().slice(0, 200);
+  const senderEmail = formData.get("senderEmail")?.toString().trim().slice(0, 320);
+  const message = formData.get("message")?.toString().trim().slice(0, 5000);
   const returnTo = sanitizeReturnTo(
     formData.get("returnTo")?.toString(),
     `/projekte/${listingId ?? ""}`,
   );
-  const separator = returnTo.includes("?") ? "&" : "?";
 
   if (!listingId || !senderName || !senderEmail || !message) {
-    redirect(`${returnTo}${separator}error=1`);
+    redirect(withQueryParam(returnTo, "error", "1"));
   }
 
   const session = await auth();
@@ -108,8 +110,15 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
     const token = formData.get("cf-turnstile-response")?.toString() ?? null;
     const ok = await verifyTurnstileToken(token, getClientIp(hdrs));
     if (!ok) {
-      redirect(`${returnTo}${separator}error=captcha`);
+      redirect(withQueryParam(returnTo, "error", "captcha"));
     }
+  }
+
+  // Only published projects accept messages (the id comes from a hidden
+  // field and could name any listing).
+  const target = await prisma.listing.findUnique({ where: { id: listingId }, select: { status: true } });
+  if (target?.status !== "PUBLISHED") {
+    redirect(withQueryParam(returnTo, "error", "1"));
   }
 
   await prisma.contactRequest.create({
@@ -123,5 +132,5 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
   });
   await notifyContactRequest(listingId, senderName, senderEmail, message);
 
-  redirect(`${returnTo}${separator}kontakt=1`);
+  redirect(withQueryParam(returnTo, "kontakt", "1"));
 }

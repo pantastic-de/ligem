@@ -12,6 +12,7 @@ const errorMessages: Record<string, string> = {
   email: "Bitte gib eine gültige E-Mail-Adresse ein.",
   password: "Das Passwort muss mindestens 8 Zeichen lang sein.",
   exists: "Für diese E-Mail-Adresse existiert bereits ein Konto.",
+  "zu-viele": "Von diesem Anschluss kamen gerade sehr viele Registrierungen. Bitte versuch es in einer Stunde noch einmal.",
 };
 
 export default async function RegistrierenPage({

@@ -13,6 +13,7 @@ import { HighlightText } from "@/components/highlight-text";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { recordListingViews } from "@/lib/listing-views";
 import { turnstileEnabled } from "@/lib/turnstile";
+import { findIdsWithinRadius } from "@/lib/geo";
 
 export type ProjekteSearchParams = Record<string, string | string[] | undefined>;
 
@@ -277,19 +278,12 @@ export async function ProjektePageView({
   let radiusSearchActive = false;
   let nearbyIds: string[] | null = null;
 
-  if (originSet && radiusKm != null && !Number.isNaN(radiusKm)) {
-    radiusSearchActive = true;
-    const nearby = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM "Listing"
-      WHERE location IS NOT NULL
-        AND ST_DWithin(
-          location::geography,
-          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-          ${radiusKm * 1000}
-        )
-    `;
-    nearbyIds = nearby.map((row) => row.id);
-    where.id = { in: nearbyIds };
+  if (originSet && lat != null && lng != null && radiusKm != null) {
+    nearbyIds = await findIdsWithinRadius("Listing", lat, lng, radiusKm);
+    if (nearbyIds) {
+      radiusSearchActive = true;
+      where.id = { in: nearbyIds };
+    }
   }
 
   const sortParam = typeof params.sortierung === "string" ? params.sortierung : "";

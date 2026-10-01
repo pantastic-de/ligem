@@ -56,7 +56,8 @@ export function EventDetail({
   returnTo: string;
   backHref?: string;
   angemeldetSuccess?: boolean;
-  registrationError?: boolean;
+  // The ?error= value of the registration form ("zu-viele" = rate limit).
+  registrationError?: string;
   // Distance from the viewer's current search origin, if one is set (see
   // /termine/page.tsx) — only ever known in the context of an active
   // Umkreissuche, never on a bare visit to the standalone page.
@@ -184,7 +185,9 @@ export function EventDetail({
       ) : null}
       {registrationError ? (
         <p className="mb-6 rounded-xl bg-error/10 px-4 py-3 text-error">
-          Bitte Name und E-Mail-Adresse angeben.
+          {registrationError === "zu-viele"
+            ? "Von diesem Anschluss kamen gerade sehr viele Anmeldungen. Bitte versuch es in einer Stunde noch einmal."
+            : "Bitte Name und eine gültige E-Mail-Adresse angeben."}
         </p>
       ) : null}
 
@@ -343,6 +346,7 @@ export function EventDetail({
                 name="participantCount"
                 type="number"
                 min={1}
+                max={50}
                 defaultValue={1}
                 className="min-h-12 w-32 rounded-xl border border-text/20 bg-bg px-4 text-text"
               />

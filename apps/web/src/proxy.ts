@@ -7,6 +7,7 @@ import type { NextRequest } from "next/server";
 // explicitly setting `export const runtime = "nodejs"` for this file is
 // actually rejected ("Route segment config is not allowed in Proxy file").
 import { auth } from "@/lib/auth";
+import { INTERNAL_TOKEN_HEADER, internalRequestToken } from "@/lib/internal-token";
 
 // Every route except Next.js/static internals, API routes (media/geocode/
 // auth callbacks aren't "page views", and /api/auth/* specifically must
@@ -100,7 +101,10 @@ export async function proxy(request: NextRequest) {
     if (value) forwardHeaders[name] = value;
   }
 
-  after(() => {
+  after(async () => {
+    const token = await internalRequestToken();
+    if (!token) return;
+    forwardHeaders[INTERNAL_TOKEN_HEADER] = token;
     // Deliberately NOT `new URL("/api/internal/page-view", request.url)` —
     // request.url now correctly reflects the app's real public origin (see
     // AUTH_URL in docker-compose.yml), but this fetch is a same-process,
@@ -114,7 +118,7 @@ export async function proxy(request: NextRequest) {
     // listener directly avoids both the TLS mismatch and a real round-trip
     // out to the internet and back through the reverse proxy for a call
     // that's purely internal.
-    fetch(`http://localhost:3000/api/internal/page-view`, {
+    await fetch(`http://localhost:3000/api/internal/page-view`, {
       method: "POST",
       headers: forwardHeaders,
       body: JSON.stringify({ path }),

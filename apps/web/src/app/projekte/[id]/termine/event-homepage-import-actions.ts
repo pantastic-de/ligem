@@ -7,6 +7,7 @@ import { normalizeHomepageUrl } from "@/lib/normalize-url";
 import { fetchPublicText } from "@/lib/safe-fetch";
 import { extractReadableText } from "@/lib/homepage-scrape";
 import { sanitizeRichText } from "@/lib/sanitize-html";
+import { registerAttempt } from "@/lib/rate-limit";
 
 /**
  * Scoped-down sibling of src/lib/homepage-import.ts (the Listing KI-Import):
@@ -24,6 +25,10 @@ export async function importEventDescription(
   const session = await auth();
   if (!session?.user?.id) {
     return { ok: false, error: "Bitte zuerst anmelden." };
+  }
+  // Paid LLM call: same per-user cap as the listing KI-Import.
+  if (!registerAttempt(`ki-import-termin:${session.user.id}`, 20, 60 * 60_000)) {
+    return { ok: false, error: "Du hast in der letzten Stunde schon sehr viele KI-Importe gestartet. Bitte versuch es später noch einmal." };
   }
 
   const url = normalizeHomepageUrl(rawUrl);

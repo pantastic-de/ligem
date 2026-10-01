@@ -1,9 +1,12 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { detectBot } from "@/lib/bot-detect";
 import { getClientIp, lookupIpInfo } from "@/lib/ip-lookup";
+import { INTERNAL_TOKEN_HEADER, internalRequestToken } from "@/lib/internal-token";
 
 function referrerHostOf(referrer: string | null): string | null {
   if (!referrer) return null;
@@ -25,6 +28,13 @@ function referrerHostOf(referrer: string | null): string | null {
  * that already calls recordListingViews/recordEventViews.
  */
 export async function POST(request: NextRequest) {
+  // Only the app's own proxy may record page views (see internal-token.ts).
+  const expected = await internalRequestToken();
+  const given = request.headers.get(INTERNAL_TOKEN_HEADER) ?? "";
+  if (!expected || given.length !== expected.length || !timingSafeEqual(Buffer.from(given), Buffer.from(expected))) {
+    return NextResponse.json({ ok: false }, { status: 403 });
+  }
+
   const body = (await request.json().catch(() => null)) as { path?: unknown } | null;
   const path = typeof body?.path === "string" ? body.path : null;
   if (!path || !path.startsWith("/") || path.length > 500) {

@@ -19,8 +19,14 @@ import {
   scheduleImportJobCleanup,
   type HomepageImportJob,
 } from "@/lib/homepage-import-progress";
+import { registerAttempt } from "@/lib/rate-limit";
 
 const COOLDOWN_MS = 60_000;
+// Each import is a paid LLM call. The per-listing cooldown above doesn't
+// cover the create page, where every start makes a fresh draft listing, so
+// there is also a cap per user.
+const MAX_IMPORTS_PER_USER = 10;
+const IMPORT_WINDOW_MS = 60 * 60_000;
 
 /**
  * Starts the "KI-Import" extraction (see homepage-import.ts) — kicks the
@@ -43,6 +49,9 @@ export async function startHomepageImport(input: {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/anmelden");
+  }
+  if (!registerAttempt(`ki-import:${session.user.id}`, MAX_IMPORTS_PER_USER, IMPORT_WINDOW_MS)) {
+    return { ok: false, error: "zu-viele" };
   }
 
   const normalizedUrl = normalizeHomepageUrl(input.homepageUrl);

@@ -9,6 +9,7 @@ import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { colorForCategory } from "@/lib/category-color";
 import { haversineDistanceKm } from "@/lib/distance";
 import { recordEventViews } from "@/lib/event-views";
+import { findIdsWithinRadius } from "@/lib/geo";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
@@ -166,18 +167,11 @@ export async function TerminePageView({
   // back in.
   let geoOrOnlineFilter: Prisma.EventWhereInput | null = null;
 
-  if (lat != null && lng != null && radiusKm != null && !Number.isNaN(lat + lng + radiusKm)) {
+  if (lat != null && lng != null && radiusKm != null) {
+    nearbyIds = await findIdsWithinRadius("Event", lat, lng, radiusKm);
+  }
+  if (nearbyIds) {
     radiusSearchActive = true;
-    const nearby = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM "Event"
-      WHERE location IS NOT NULL
-        AND ST_DWithin(
-          location::geography,
-          ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-          ${radiusKm * 1000}
-        )
-    `;
-    nearbyIds = nearby.map((row) => row.id);
     geoOrOnlineFilter = {
       OR: [
         { id: { in: nearbyIds } },
@@ -423,7 +417,7 @@ export async function TerminePageView({
                 returnTo={buildTermineHref(params, { slug: selectedEvent.slug })}
                 backHref={buildTermineHref(params, { slug: undefined, angemeldet: undefined })}
                 angemeldetSuccess={Boolean(params.angemeldet)}
-                registrationError={Boolean(params.error)}
+                registrationError={typeof params.error === "string" ? params.error : undefined}
                 distanceKm={
                   lat != null && lng != null && selectedEvent.latitude != null && selectedEvent.longitude != null
                     ? haversineDistanceKm(lat, lng, selectedEvent.latitude, selectedEvent.longitude)

@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 
+import { getClientIp } from "@/lib/ip-lookup";
+import { registerAttempt } from "@/lib/rate-limit";
+
 // Thin server-side proxy to OpenStreetMap's Nominatim geocoder. Kept
 // server-side so we can set a proper identifying User-Agent (required by
 // Nominatim's usage policy) and so the client never talks to a third-party
 // host directly. Supports either a free-text query (`q`, used for "search a
 // place" pickers) or structured params (used for full-address geocoding and
 // for postal-code -> country/state lookups).
+// Nominatim's usage policy allows roughly one request per second for the
+// whole app and blocks the server's IP when that's exceeded, which would
+// break place search for everyone. The autocomplete is debounced, so a real
+// visitor stays far below this per-IP cap; a script hammering the route
+// gets 429 instead of getting the server banned.
+const MAX_LOOKUPS_PER_IP = 30;
+const LOOKUP_WINDOW_MS = 60_000;
+
 export async function GET(request: Request) {
+  const ip = getClientIp(request.headers);
+  if (!registerAttempt(`geocode:${ip ?? "unbekannt"}`, MAX_LOOKUPS_PER_IP, LOOKUP_WINDOW_MS)) {
+    return NextResponse.json({ error: "Zu viele Anfragen" }, { status: 429 });
+  }
   const { searchParams } = new URL(request.url);
 
   const q = searchParams.get("q");

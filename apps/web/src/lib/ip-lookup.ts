@@ -2,19 +2,20 @@ import { promises as dns } from "node:dns";
 import geoip from "geoip-lite";
 
 /**
- * The client's IP, from the reverse proxy's X-Forwarded-For header (the
- * first entry, i.e. the original client — later entries are added by any
- * further hop) with an X-Real-IP fallback. Requires the reverse proxy to
- * actually set one of these (see DEPLOYMENT.md's Apache section — mod_proxy
- * does this by default, but a from-scratch config could omit it); returns
- * null in local dev without a proxy in front of the app, or if neither
- * header is present for any other reason. Never throws.
+ * The client's IP as seen by our reverse proxy: the LAST X-Forwarded-For
+ * entry (with an X-Real-IP fallback). The header is a list a client can
+ * pre-fill with anything; Apache appends the address it actually received
+ * the connection from, so only the last entry is trustworthy. Taking the
+ * first one (as an earlier version did) let any client pick its own IP and
+ * walk around every per-IP rate limit. Assumes exactly one trusted proxy in
+ * front of the app (see DEPLOYMENT.md); returns null without one (local
+ * dev). Never throws.
  */
 export function getClientIp(hdrs: Headers): string | null {
   const forwardedFor = hdrs.get("x-forwarded-for");
   if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) return first;
+    const last = forwardedFor.split(",").pop()?.trim();
+    if (last) return last;
   }
   return hdrs.get("x-real-ip");
 }

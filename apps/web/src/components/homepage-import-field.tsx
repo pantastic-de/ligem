@@ -20,6 +20,7 @@ const startErrorMessages: Record<string, string> = {
   "nicht-gefunden": "Projekt nicht gefunden.",
   "keine-berechtigung": "Keine Berechtigung für dieses Projekt.",
   warte: "Bitte nach dem letzten KI-Import kurz warten, bevor du es erneut versuchst.",
+  "zu-viele": "Du hast in der letzten Stunde schon sehr viele KI-Importe gestartet. Bitte versuch es später noch einmal.",
 };
 
 const jobErrorMessages: Record<string, string> = {

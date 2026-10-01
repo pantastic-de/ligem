@@ -504,6 +504,7 @@ model Listing {
   @@index([status])
   @@index([organizationId])
   @@index([isDemo])
+  @@index([location], type: Gist)
 }
 
 // --- Generic filter-attribute system (Projekt Typ, Projekt Status,
@@ -691,6 +692,7 @@ model Event {
   @@index([startAt])
   @@index([status])
   @@index([recurrenceGroupId])
+  @@index([location], type: Gist)
 }
 
 // A message to the organizer, or a headcount signup ("X Teilnehmer
