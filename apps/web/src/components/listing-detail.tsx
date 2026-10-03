@@ -242,7 +242,7 @@ export function ListingDetail({
               aria-label={`Vorheriges Projekt: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-primary transition-colors hover:text-primary-hover"
             >
-              <EntityIconBadge tone="projekt" size="lg" />
+              <EntityIconBadge tone="projekt" size="lg" arrow="left" />
               <span className="truncate">{prevItem.label}</span>
             </Link>
           ) : (
@@ -255,7 +255,7 @@ export function ListingDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-primary transition-colors hover:text-primary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <EntityIconBadge tone="projekt" size="lg" />
+              <EntityIconBadge tone="projekt" size="lg" arrow="right" />
             </Link>
           ) : (
             <span />

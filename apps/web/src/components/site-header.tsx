@@ -48,7 +48,10 @@ export async function SiteHeader() {
             className="h-10 w-auto sm:h-12 md:h-14"
           />
         </Link>
-        <nav className="flex flex-1 flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium sm:flex-none sm:justify-center sm:gap-x-5 sm:gap-y-2">
+        {/* On phones the nav spans the full width: the search field (w-full)
+            gets its own row, flush with the page edge, and the icons wrap
+            centered below it. From sm up everything shares one row. */}
+        <nav className="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-3 text-sm font-medium sm:w-auto sm:flex-none sm:gap-x-5 sm:gap-y-2">
           {/*
             Placed first in the nav row (before "Projekte"/"Kalender") so it
             shares their line whenever there's room, wrapping along with the

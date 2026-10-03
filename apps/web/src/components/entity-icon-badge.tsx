@@ -18,20 +18,33 @@ const SIZE_CLASSES = {
   xl: { badge: "h-9 w-9", icon: "h-5 w-5" },
 } as const;
 
+// Arrow variants for prev/next navigation: same color and icon, but the
+// badge itself points the way (a tag shape cut with clip-path), so it reads
+// as "zum vorherigen/nächsten" rather than as a plain round button. Wider
+// than the circle so the icon keeps its room next to the tip.
+const ARROW_CLASSES = {
+  left: "h-8 w-12 pl-3 [clip-path:polygon(0_50%,38%_0,100%_0,100%_100%,38%_100%)]",
+  right: "h-8 w-12 pr-3 [clip-path:polygon(0_0,62%_0,100%_50%,62%_100%,0_100%)]",
+} as const;
+
 export function EntityIconBadge({
   tone,
   size = "sm",
+  arrow,
   className,
 }: {
   tone: "projekt" | "termin";
   size?: keyof typeof SIZE_CLASSES;
+  // Draws the badge as an arrow pointing left or right instead of a circle.
+  arrow?: keyof typeof ARROW_CLASSES;
   className?: string;
 }) {
   const Icon = ENTITY_ICONS[tone];
   const { badge, icon } = SIZE_CLASSES[size];
+  const shape = arrow ? ARROW_CLASSES[arrow] : `rounded-full ${badge}`;
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full ${badge} ${SOLID_ACTION_TONE_CLASSES[tone]} ${className ?? ""}`}
+      className={`inline-flex shrink-0 items-center justify-center ${shape} ${SOLID_ACTION_TONE_CLASSES[tone]} ${className ?? ""}`}
     >
       <Icon className={icon} aria-hidden="true" />
     </span>

@@ -161,7 +161,7 @@ export function EventDetail({
               aria-label={`Vorheriger Termin: ${prevItem.label}`}
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
-              <EntityIconBadge tone="termin" size="lg" />
+              <EntityIconBadge tone="termin" size="lg" arrow="left" />
               <span className="truncate">{prevItem.label}</span>
             </Link>
           ) : (
@@ -174,7 +174,7 @@ export function EventDetail({
               className="inline-flex min-h-11 min-w-0 max-w-[48%] items-center gap-2 rounded-full px-2 text-right font-medium text-secondary transition-colors hover:text-secondary-hover"
             >
               <span className="truncate">{nextItem.label}</span>
-              <EntityIconBadge tone="termin" size="lg" />
+              <EntityIconBadge tone="termin" size="lg" arrow="right" />
             </Link>
           ) : (
             <span />
