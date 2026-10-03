@@ -125,9 +125,9 @@ cd "$DEPLOY_PATH"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 
 previous_commit="$(git rev-parse HEAD 2>/dev/null || true)"
-git fetch --quiet origin
-git checkout --quiet "$DEPLOY_BRANCH"
-git reset --quiet --hard "origin/$DEPLOY_BRANCH"
+git fetch --quiet origin </dev/null
+git checkout --quiet "$DEPLOY_BRANCH" </dev/null
+git reset --quiet --hard "origin/$DEPLOY_BRANCH" </dev/null
 current_commit="$(git rev-parse HEAD)"
 
 if [ "$current_commit" != "$TARGET_COMMIT" ]; then
@@ -181,8 +181,13 @@ fi
 # the same port) can lose the race and fail with "address already in use" if
 # the old container hasn't fully released its port yet. `|| true` because on
 # the very first deploy there's nothing running yet to stop.
-"${COMPOSE[@]}" stop web || true
-"${COMPOSE[@]}" up -d --no-deps --build web
+#
+# Every command here gets </dev/null: this whole block reaches the server
+# as bash's stdin (ssh … bash -s <<REMOTE), and docker compose reads stdin,
+# which swallowed the rest of the script — the readiness check and final
+# report silently never ran.
+"${COMPOSE[@]}" stop web </dev/null || true
+"${COMPOSE[@]}" up -d --no-deps --build web </dev/null
 
 # Poll for the app actually answering, rather than declaring success as soon
 # as the container merely exists: `restart: unless-stopped` means a
@@ -194,7 +199,7 @@ echo "Warte, bis die App antwortet (Installation, Build und Migrationen laufen, 
 ready=""
 deadline=$((SECONDS + READY_TIMEOUT))
 while [ "$SECONDS" -lt "$deadline" ]; do
-  if curl -sf -o /dev/null http://localhost:3000; then
+  if curl -sf -o /dev/null http://localhost:3000 </dev/null; then
     ready=1
     break
   fi
@@ -203,13 +208,13 @@ done
 
 if [ -z "$ready" ]; then
   echo "Die App hat nach ${READY_TIMEOUT}s nicht geantwortet. Letzte Log-Zeilen:" >&2
-  "${COMPOSE[@]}" logs --tail=60 web >&2 || true
+  "${COMPOSE[@]}" logs --tail=60 web </dev/null >&2 || true
   exit 1
 fi
 
 # Double-check that nothing is pending (e.g. a migration that failed and
 # was retried by a restart in between).
-if ! "${COMPOSE[@]}" exec -T web sh -c "pnpm exec prisma migrate status" > /tmp/ligem-migrate-status.txt 2>&1; then
+if ! "${COMPOSE[@]}" exec -T web sh -c "pnpm exec prisma migrate status" </dev/null > /tmp/ligem-migrate-status.txt 2>&1; then
   echo "Die App läuft, aber prisma migrate status meldet ein Problem:" >&2
   cat /tmp/ligem-migrate-status.txt >&2
   exit 1
