@@ -292,6 +292,15 @@ export default function DatenschutzPage() {
           einer Datenschutz-Aufsichtsbehörde zu beschweren. Wende dich dazu an
           info@ligem.de.
         </p>
+        <p className="mt-2 text-text-muted">
+          Vieles davon kannst du auch selbst erledigen: Unter „Mein Konto“
+          forderst du eine Zusammenstellung deiner gespeicherten Daten an (sie
+          kommt nach Prüfung durch uns per E-Mail), und dort kannst du dein
+          Konto auch löschen; vorher legst du fest, ob deine Projekte an eine
+          andere Person übergehen oder gelöscht werden. Welche E-Mails du von
+          uns bekommst, änderst oder bestellst du über den Link unten in jeder
+          E-Mail ab, auch ohne Anmeldung.
+        </p>
       </section>
     </div>
   );

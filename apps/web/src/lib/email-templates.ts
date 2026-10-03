@@ -15,8 +15,14 @@ export type EmailPlaceholder = {
   html?: boolean;
 };
 
+// Which notification setting a mail falls under (see /benachrichtigungen).
+// "konto" mails (address confirmation, password reset, data export,
+// account deleted) always go out; the others can be switched off.
+export type EmailCategory = "konto" | "kontaktanfragen" | "projekte" | "favoriten" | "admin" | "fusszeile";
+
 export type EmailTemplateDefinition = {
   key: string;
+  category: EmailCategory;
   label: string;
   // When the mail goes out, for the admin overview.
   trigger: string;
@@ -60,6 +66,7 @@ function readable(body: string): string {
 const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   {
     key: "email-bestaetigen",
+    category: "konto",
     label: "E-Mail-Adresse bestätigen",
     trigger: "Nach der Registrierung, nach einer Änderung der E-Mail-Adresse und auf Wunsch unter „Mein Konto“.",
     recipients: "Die neue Nutzerin bzw. der neue Nutzer",
@@ -74,6 +81,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "passwort-zuruecksetzen",
+    category: "konto",
     label: "Passwort zurücksetzen",
     trigger: "Wenn jemand unter „Passwort vergessen?“ seine Adresse eingibt.",
     recipients: "Die Inhaberin bzw. der Inhaber des Kontos",
@@ -89,6 +97,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "kontaktanfrage",
+    category: "kontaktanfragen",
     label: "Neue Kontaktanfrage",
     trigger: "Wenn jemand über das Kontaktformular eines Projekts schreibt.",
     recipients: "Projekt-Verwalter:innen, die unter „Mein Konto“ die Weiterleitung eingeschaltet haben. Eine Antwort geht direkt an die anfragende Person.",
@@ -110,6 +119,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-eingereicht",
+    category: "projekte",
     label: "Projekt eingereicht (Eingangsbestätigung)",
     trigger: "Nach dem Eintragen eines neuen Projekts.",
     recipients: "Wer das Projekt eingetragen hat",
@@ -124,6 +134,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-eingereicht-admin",
+    category: "admin",
     label: "Neues Projekt zur Prüfung (an Admins)",
     trigger: "Nach dem Eintragen eines neuen Projekts.",
     recipients: "Alle Admins (außer der Person, die es eingetragen hat)",
@@ -140,6 +151,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-online",
+    category: "projekte",
     label: "Projekt freigegeben (erstmals online)",
     trigger: "Wenn ein Admin ein neues Projekt freigibt.",
     recipients: "Ersteller:in und alle Mitverwalter:innen",
@@ -154,6 +166,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-aenderungen-freigegeben",
+    category: "projekte",
     label: "Änderungen am Projekt freigegeben",
     trigger: "Wenn ein Admin Änderungen an einem bereits veröffentlichten Projekt freigibt.",
     recipients: "Ersteller:in und alle Mitverwalter:innen",
@@ -166,6 +179,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-entfernt-moderation",
+    category: "projekte",
     label: "Projekt von der Moderation gelöscht",
     trigger: "Wenn ein Admin ein Projekt löscht.",
     recipients: "Ersteller:in und alle Mitverwalter:innen",
@@ -180,6 +194,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "projekt-geloescht-inhaber",
+    category: "projekte",
     label: "Projekt von der Inhaberin bzw. dem Inhaber gelöscht",
     trigger: "Wenn die Person, die ein Projekt eingetragen hat, es selbst löscht.",
     recipients: "Ersteller:in (als Bestätigung) und alle Mitverwalter:innen",
@@ -199,6 +214,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "favoriten-sofort",
+    category: "favoriten",
     label: "Favoriten: Neuigkeit (sofort)",
     trigger: "Direkt nach einer Neuigkeit bei einem Favoriten mit der Einstellung „Sofort“.",
     recipients: "Alle, die das Projekt bzw. den Termin gemerkt haben",
@@ -213,6 +229,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
   },
   {
     key: "favoriten-zusammenfassung",
+    category: "favoriten",
     label: "Favoriten: wöchentliche/monatliche Zusammenfassung",
     trigger: "Einmal pro Woche bzw. Monat, wenn es bei Favoriten mit dieser Einstellung Neues gab.",
     recipients: "Alle, die Favoriten mit „Wöchentlich“ oder „Monatlich“ haben",
@@ -224,6 +241,115 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
       "{{neuigkeiten}}" +
       '<p>Alle Favoriten und wie oft wir dir schreiben, kannst du hier ändern:<br><a href="{{favoriten_link}}">Meine Favoriten</a></p>' +
       SIGNATURE,
+  },
+  {
+    key: "projekt-uebertragen",
+    category: "projekte",
+    label: "Projekt an dich übertragen",
+    trigger: "Wenn jemand beim Löschen des eigenen Kontos ein Projekt an eine andere Person übergibt.",
+    recipients: "Die neue Inhaberin bzw. der neue Inhaber",
+    placeholders: [
+      P.projekt,
+      { name: "uebertragen_von", description: "Name der Person, die das Projekt übergeben hat", example: "Jonas Weber" },
+      P.link("Link zum Bearbeiten des Projekts", "https://ligem.de/projekte/abc/bearbeiten"),
+    ],
+    subject: "„{{projekt}}“ gehört jetzt dir",
+    body:
+      "<p>Hallo,</p>" +
+      "<p>{{uebertragen_von}} hat das eigene LiGem-Konto gelöscht und dir dabei das Projekt „{{projekt}}“ übergeben. " +
+      "Du bist jetzt Inhaberin bzw. Inhaber, mit allen Terminen, Fotos und Kontaktanfragen.</p>" +
+      '<p>Hier kannst du das Projekt ansehen und bearbeiten:<br><a href="{{link}}">Projekt bearbeiten</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "konto-geloescht",
+    category: "konto",
+    label: "Konto gelöscht (Bestätigung)",
+    trigger: "Direkt nachdem jemand das eigene Konto gelöscht hat.",
+    recipients: "Die Person, die ihr Konto gelöscht hat",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "zusammenfassung", description: "Was mit Projekten, Terminen und Favoriten passiert ist", example: "„Löwenzahnsiedlung“: an Jonas Weber übertragen\n„Haus am See“: gelöscht\n3 Favoriten gelöscht" },
+    ],
+    subject: "Dein LiGem-Konto ist gelöscht",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>dein Konto bei LiGem ist gelöscht. Das ist mit deinen Inhalten passiert:</p>" +
+      "<blockquote>{{zusammenfassung}}</blockquote>" +
+      "<p>Danke, dass du dabei warst. Du bist jederzeit wieder willkommen.</p>" +
+      SIGNATURE,
+  },
+  {
+    key: "datenauskunft-angefragt",
+    category: "admin",
+    label: "Datenauskunft angefragt (an Admins)",
+    trigger: "Wenn jemand unter „Mein Konto“ eine Zusammenstellung der eigenen Daten anfordert.",
+    recipients: "Alle Admins",
+    placeholders: [
+      { name: "nutzer", description: "Name und E-Mail der anfragenden Person", example: "Mira Sommer (mira@example.org)" },
+      P.link("Link zur Freigabe der Datenauskunft", "https://ligem.de/admin/datenauskunft"),
+    ],
+    subject: "Datenauskunft angefragt: {{nutzer}}",
+    body:
+      "<p>Hallo,</p>" +
+      "<p>{{nutzer}} möchte eine Zusammenstellung der bei LiGem gespeicherten Daten. " +
+      'Bitte prüfen und freigeben, dann geht sie per E-Mail raus:<br><a href="{{link}}">Zur Datenauskunft</a></p>',
+  },
+  {
+    key: "datenauskunft-versand",
+    category: "konto",
+    label: "Datenauskunft (Versand an die Person)",
+    trigger: "Wenn ein Admin eine angefragte Datenauskunft freigibt. Die Daten hängen als Datei an.",
+    recipients: "Die Person, die ihre Daten angefordert hat",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "uebersicht", description: "Kurze Übersicht der gespeicherten Daten (wird automatisch erzeugt)", example: "Konto seit 12.03.2026\n2 Projekte, 5 Termine, 4 Favoriten", html: false },
+    ],
+    subject: "Deine bei LiGem gespeicherten Daten",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>hier ist die Zusammenstellung der Daten, die LiGem über dich gespeichert hat. Kurz zusammengefasst:</p>" +
+      "<blockquote>{{uebersicht}}</blockquote>" +
+      "<p>Alle Einzelheiten stehen in der angehängten Datei (JSON-Format, lässt sich mit jedem Texteditor öffnen). " +
+      "Wenn du Fragen hast oder etwas berichtigt oder gelöscht haben möchtest, antworte einfach auf diese E-Mail.</p>" +
+      SIGNATURE,
+  },
+  {
+    key: "datenauskunft-abgelehnt",
+    category: "konto",
+    label: "Datenauskunft abgelehnt",
+    trigger: "Wenn ein Admin eine angefragte Datenauskunft ablehnt.",
+    recipients: "Die Person, die ihre Daten angefordert hat",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "grund", description: "Begründung des Admins", example: "Wir konnten die Anfrage keinem Konto eindeutig zuordnen." },
+    ],
+    subject: "Deine Anfrage zur Datenauskunft",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>deine Anfrage nach einer Zusammenstellung deiner Daten konnten wir so leider nicht erfüllen:</p>" +
+      "<blockquote>{{grund}}</blockquote>" +
+      "<p>Antworte gern auf diese E-Mail, dann klären wir das zusammen.</p>" +
+      SIGNATURE,
+  },
+  {
+    key: "fusszeile",
+    category: "fusszeile",
+    label: "Fußzeile aller E-Mails (Abbestellen)",
+    trigger: "Steht unter jeder E-Mail. Der Link führt ohne Anmeldung zu den persönlichen E-Mail-Einstellungen.",
+    recipients: "Alle",
+    placeholders: [
+      {
+        name: "einstellungen_link",
+        description: "Persönlicher Link zu den E-Mail-Einstellungen (ohne Anmeldung)",
+        example: "https://ligem.de/benachrichtigungen?t=…",
+      },
+    ],
+    subject: "(Fußzeile, kein eigener Betreff)",
+    body:
+      "<p>Du bekommst diese E-Mail, weil du ein Konto bei LiGem hast. Welche E-Mails du von uns bekommst und wie oft, " +
+      "kannst du jederzeit ändern oder alle abbestellen, auch ohne Anmeldung:<br>" +
+      '<a href="{{einstellungen_link}}">E-Mail-Einstellungen ändern oder abbestellen</a></p>',
   },
 ];
 
@@ -260,7 +386,7 @@ export function fillSubject(subject: string, values: Record<string, string>): st
 }
 
 /** Wraps a body in the shared mail layout (inline styles, since many mail programs ignore <style>). */
-export function wrapEmailHtml(bodyHtml: string, siteUrl = "https://ligem.de"): string {
+export function wrapEmailHtml(bodyHtml: string, siteUrl = "https://ligem.de", footerHtml = ""): string {
   const host = siteUrl.replace(/^https?:\/\//, "");
   return `<!doctype html>
 <html lang="de">
@@ -282,6 +408,7 @@ export function wrapEmailHtml(bodyHtml: string, siteUrl = "https://ligem.de"): s
   <div style="background:#ffffff;border-radius:16px;padding:24px;">
 ${bodyHtml}
   </div>
+  ${footerHtml ? `<div style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#7a6650;">${footerHtml}</div>` : ""}
   <p style="margin:16px 0 0;font-size:13px;color:#7a6650;">LiGem · Leben in Gemeinschaft · <a href="${siteUrl}" style="color:#b7511f;">${host}</a></p>
 </div>
 </body>

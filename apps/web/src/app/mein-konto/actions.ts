@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
+import { notifyDataExportRequested } from "@/lib/data-export";
 
 export async function updateProfile(formData: FormData): Promise<void> {
   const session = await auth();
@@ -15,7 +16,6 @@ export async function updateProfile(formData: FormData): Promise<void> {
 
   const name = formData.get("name")?.toString().trim();
   const email = formData.get("email")?.toString().trim().toLowerCase();
-  const notifyContactRequestsByEmail = formData.get("notifyContactRequestsByEmail") === "1";
   if (!email) {
     redirect("/mein-konto?error=email-fehlt");
   }
@@ -32,7 +32,6 @@ export async function updateProfile(formData: FormData): Promise<void> {
       data: {
         name: name || null,
         email,
-        notifyContactRequestsByEmail,
         // A changed address hasn't been confirmed as belonging to this
         // person yet — keeping the old `emailVerified` around would let
         // anyone claim an arbitrary address as "verified" just by typing it
@@ -188,4 +187,25 @@ export async function removeListingManager(formData: FormData): Promise<void> {
   await prisma.listingManager.deleteMany({ where: { listingId, userId } });
 
   redirect("/mein-konto?ok=mitverwalter-entfernt");
+}
+
+/**
+ * "Meine Daten anfordern" (DSGVO Art. 15). Creates a request for the admins
+ * (mail + header indicator); the export itself goes out once an admin
+ * approves it on /admin/datenauskunft. One open request at a time.
+ */
+export async function requestDataExport(): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden?weiter=%2Fmein-konto");
+  }
+  const open = await prisma.dataExportRequest.findFirst({
+    where: { userId: session.user.id, status: "PENDING" },
+    select: { id: true },
+  });
+  if (!open) {
+    await prisma.dataExportRequest.create({ data: { userId: session.user.id } });
+    await notifyDataExportRequested(session.user.id);
+  }
+  redirect("/mein-konto?ok=daten-angefragt#meine-daten");
 }

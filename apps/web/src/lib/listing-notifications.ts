@@ -123,8 +123,16 @@ export async function notifyListingApproved(listingId: string, firstPublication:
 export async function prepareListingDeletedNotices(
   listingIds: string[],
   deletedByOwner?: string,
+  // Someone who shouldn't get this mail (e.g. a user deleting their whole
+  // account gets one summary mail instead).
+  excludeEmail?: string,
 ): Promise<() => void> {
   const recipients = await getListingRecipients(listingIds);
+  if (excludeEmail) {
+    for (const listing of recipients.values()) {
+      listing.emails = listing.emails.filter((e) => e.toLowerCase() !== excludeEmail.toLowerCase());
+    }
+  }
   return () => {
     const mails = [...recipients.values()].flatMap((listing) =>
       listing.emails.map(

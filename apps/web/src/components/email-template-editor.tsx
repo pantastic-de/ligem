@@ -38,11 +38,14 @@ export function EmailTemplateEditor({
   initialSubject,
   initialBody,
   customized,
+  footerBody,
 }: {
   templateKey: string;
   initialSubject: string;
   initialBody: string;
   customized: boolean;
+  // Current standard footer, shown under the preview (not for the footer itself).
+  footerBody: string;
 }) {
   const definition = getTemplateDefinition(templateKey)!;
   const [subject, setSubject] = useState(initialSubject);
@@ -53,8 +56,13 @@ export function EmailTemplateEditor({
   const lastFocus = useRef<"subject" | "body">("body");
 
   const examples = useMemo(() => exampleValues(definition), [definition]);
+  const isFooter = definition.category === "fusszeile";
   const filledBody = fillBody(body, definition, examples);
   const previewSubject = fillSubject(subject, examples);
+  const footerDefinition = getTemplateDefinition("fusszeile")!;
+  const previewHtml = isFooter
+    ? wrapEmailHtml("<p>… Text der jeweiligen E-Mail …</p>", undefined, filledBody)
+    : wrapEmailHtml(filledBody, undefined, fillBody(footerBody, footerDefinition, exampleValues(footerDefinition)));
 
   function insert(before: string, after = "") {
     const field = lastFocus.current === "subject" ? subjectRef.current : bodyRef.current;
@@ -77,7 +85,7 @@ export function EmailTemplateEditor({
       <input type="hidden" name="key" value={templateKey} />
 
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
+        <div className={`flex flex-col gap-1.5 ${isFooter ? "hidden" : ""}`}>
           <label htmlFor="subject" className="font-medium">
             Betreff
           </label>
@@ -196,15 +204,17 @@ export function EmailTemplateEditor({
             ))}
           </div>
         </div>
-        <p className="rounded-xl bg-surface px-4 py-3 text-sm">
-          <span className="text-text-muted">Betreff:</span> <strong>{previewSubject}</strong>
-        </p>
+        {isFooter ? null : (
+          <p className="rounded-xl bg-surface px-4 py-3 text-sm">
+            <span className="text-text-muted">Betreff:</span> <strong>{previewSubject}</strong>
+          </p>
+        )}
         {view === "html" ? (
           <iframe
             title="Vorschau der E-Mail"
             // No scripts, no same-origin: the preview only renders markup.
             sandbox=""
-            srcDoc={wrapEmailHtml(filledBody)}
+            srcDoc={previewHtml}
             className="h-[640px] w-full rounded-xl border border-text/10 bg-white"
           />
         ) : (

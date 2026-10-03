@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Heart, Hourglass, LogIn } from "lucide-react";
+import { FileText, Heart, Hourglass, LogIn } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
 import { getPendingReviewIndicator } from "@/lib/pending-review";
 import { FAVORITES_PAGE, getFavoriteNewsCount } from "@/lib/favorites";
+import { getPendingDataExportCount } from "@/lib/data-export";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
@@ -19,6 +20,7 @@ export async function SiteHeader() {
     session?.user?.id && openRequestsCount > 0 ? await getLatestOpenRequestHref(session.user.id) : null;
   const pendingReview = session?.user?.id ? await getPendingReviewIndicator(session.user.id, admin) : null;
   const favoriteNewsCount = session?.user?.id ? await getFavoriteNewsCount(session.user.id) : 0;
+  const dataExportCount = admin ? await getPendingDataExportCount() : 0;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
 
   async function handleSignOut() {
@@ -91,6 +93,25 @@ export async function SiteHeader() {
                 </span>
               </span>
               <span className="text-xs font-medium leading-tight text-error">{pendingReview.label}</span>
+            </Link>
+          ) : null}
+
+          {dataExportCount > 0 ? (
+            // Admins: requested data exports waiting for approval.
+            <Link
+              href="/admin/datenauskunft"
+              title="Angefragte Datenauskünfte prüfen"
+              className="group flex max-w-40 flex-col items-center gap-1 text-center"
+            >
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-error/15 text-error transition-colors group-hover:bg-error/25">
+                <FileText className="h-5 w-5" aria-hidden="true" />
+                <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white">
+                  {dataExportCount}
+                </span>
+              </span>
+              <span className="text-xs font-medium leading-tight text-error">
+                {dataExportCount === 1 ? "1 Datenauskunft offen" : `${dataExportCount} Datenauskünfte offen`}
+              </span>
             </Link>
           ) : null}
 

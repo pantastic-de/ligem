@@ -24,6 +24,8 @@ export default function robots(): MetadataRoute.Robots {
         "/admin",
         "/api/",
         "/meine-projekte",
+        "/mein-konto",
+        "/benachrichtigungen",
         "/projekte/neu",
         "/projekte/*/bearbeiten",
         "/projekte/*/termine",

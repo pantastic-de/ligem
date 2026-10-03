@@ -32,7 +32,10 @@ export default async function EmailTemplateEditPage({
   const { key } = await params;
   const { ok, error, an } = await searchParams;
   if (!getTemplateDefinition(key)) notFound();
-  const template = await getEmailTemplate(key as EmailTemplateKey);
+  const [template, footer] = await Promise.all([
+    getEmailTemplate(key as EmailTemplateKey),
+    getEmailTemplate("fusszeile"),
+  ]);
   const { definition } = template;
   const displayName = session.user.name ?? session.user.email ?? "Admin";
 
@@ -75,6 +78,7 @@ export default async function EmailTemplateEditPage({
         initialSubject={template.subject}
         initialBody={template.body}
         customized={template.customized}
+        footerBody={footer.body}
       />
     </AppShell>
   );

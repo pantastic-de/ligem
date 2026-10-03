@@ -86,6 +86,8 @@ export async function sendMail(options: {
   html?: string;
   // Where a reply should go (e.g. the person who sent a contact request).
   replyTo?: string;
+  headers?: Record<string, string>;
+  attachments?: { filename: string; content: string; contentType?: string }[];
 }): Promise<void> {
   if (!smtpConfigured) {
     console.warn(`E-Mail nicht gesendet (kein SMTP konfiguriert): "${options.subject}" an ${options.to}`);
@@ -103,6 +105,8 @@ export async function sendMail(options: {
       subject: options.subject,
       text: options.text,
       html: options.html,
+      headers: options.headers,
+      attachments: options.attachments,
     });
   } catch (err) {
     console.error("Fehler beim E-Mail-Versand", err);

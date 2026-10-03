@@ -14,6 +14,7 @@ import {
   resendVerificationEmail,
   updatePassword,
   updateProfile,
+  requestDataExport,
 } from "./actions";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ const okMessages: Record<string, string> = {
   "mitverwalter-entfernt": "Mitverwalter:in entfernt.",
   "bestaetigung-gesendet": "Bestätigungs-E-Mail wurde erneut gesendet.",
   "bereits-bestaetigt": "Deine E-Mail-Adresse ist bereits bestätigt.",
+  "daten-angefragt": "Deine Anfrage ist eingegangen. Sobald ein Admin sie freigegeben hat, bekommst du die Daten per E-Mail.",
 };
 
 export default async function MeinKontoPage({
@@ -79,6 +81,12 @@ export default async function MeinKontoPage({
   // Component — never carries the hash at all.
   const { passwordHash, ...user } = userWithHash;
   const hasPassword = Boolean(passwordHash);
+
+  const latestExport = await prisma.dataExportRequest.findFirst({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    select: { status: true, createdAt: true, decidedAt: true },
+  });
 
   const managedListings = await prisma.listing.findMany({
     where: { managers: { some: { userId: session.user.id } } },
@@ -192,17 +200,6 @@ export default async function MeinKontoPage({
               ? ` Letzter Login: ${dateTimeFormat.format(user.lastLoginAt)}.`
               : ""}
           </p>
-          <label className="flex min-h-11 items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="notifyContactRequestsByEmail"
-              value="1"
-              defaultChecked={user.notifyContactRequestsByEmail}
-              className="h-5 w-5"
-            />
-            Bei neuen Kontaktanfragen für meine Projekte per E-Mail
-            benachrichtigen
-          </label>
           <button
             type="submit"
             className="min-h-12 self-start rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
@@ -334,6 +331,66 @@ export default async function MeinKontoPage({
           </ul>
         </section>
       ) : null}
+
+      <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">E-Mail-Benachrichtigungen</h2>
+        <p className="mt-2 text-sm text-text-muted">
+          Welche E-Mails du von LiGem bekommst (Projekte, Kontaktanfragen, Favoriten) und wie oft. Dieselbe Seite
+          erreichst du auch über den Link unten in jeder E-Mail, ohne Anmeldung.
+        </p>
+        <Link
+          href="/benachrichtigungen"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 font-semibold transition-colors hover:bg-bg"
+        >
+          Benachrichtigungen einstellen
+        </Link>
+      </section>
+
+      <section id="meine-daten" className="mt-6 scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Meine gespeicherten Daten</h2>
+        <p className="mt-2 text-sm text-text-muted">
+          Du kannst eine Zusammenstellung aller Daten anfordern, die LiGem über dich gespeichert hat: Konto,
+          Projekte, Termine, Favoriten, Kontaktanfragen und Anmeldungen. Ein Admin prüft die Anfrage, dann
+          schicken wir sie dir per E-Mail an {user.email}.
+        </p>
+        {latestExport?.status === "PENDING" ? (
+          <p className="mt-4 rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+            Angefragt am {dateTimeFormat.format(latestExport.createdAt)}. Die Freigabe durch einen Admin steht noch aus.
+          </p>
+        ) : (
+          <>
+            {latestExport ? (
+              <p className="mt-3 text-sm text-text-muted">
+                Letzte Anfrage vom {dateFormat.format(latestExport.createdAt)}:{" "}
+                {latestExport.status === "SENT" ? "verschickt" : "abgelehnt"}
+                {latestExport.decidedAt ? ` am ${dateFormat.format(latestExport.decidedAt)}` : ""}.
+              </p>
+            ) : null}
+            <form action={requestDataExport} className="mt-4">
+              <button
+                type="submit"
+                className="inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 font-semibold transition-colors hover:bg-bg"
+              >
+                Meine Daten anfordern
+              </button>
+            </form>
+          </>
+        )}
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-error/30 bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-error">Konto löschen</h2>
+        <p className="mt-2 text-sm text-text-muted">
+          Damit meldest du dich dauerhaft von LiGem ab. Vorher legst du fest, was mit deinen Projekten und Terminen
+          passiert: an eine andere Person übertragen oder löschen. Favoriten und Einstellungen werden gelöscht.
+        </p>
+        <Link
+          href="/mein-konto/konto-loeschen"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full border border-error/40 px-5 font-semibold text-error transition-colors hover:bg-error/10"
+        >
+          Konto löschen …
+        </Link>
+      </section>
     </AppShell>
   );
 }

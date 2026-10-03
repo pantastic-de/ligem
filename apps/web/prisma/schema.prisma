@@ -53,6 +53,12 @@ model User {
   // contact request only ever shows up inside the app itself (the
   // Kontaktanfragen page) with no notification at all.
   notifyContactRequestsByEmail Boolean @default(false)
+  // Mails about the user's own projects (eingereicht, freigegeben, gelöscht,
+  // übertragen). Switchable on /benachrichtigungen, also without login via
+  // the personal link in every mail (see src/lib/notification-token.ts).
+  notifyListingStatusByEmail   Boolean @default(true)
+  // Admin-only mails (new project to review, data export requested).
+  notifyAdminByEmail           Boolean @default(true)
 
   roles UserRoleAssignment[]
 
@@ -85,6 +91,8 @@ model User {
   favoriteEvents      FavoriteEvent[]
   favoriteUpdatesMade FavoriteUpdate[]  @relation("FavoriteUpdateActor")
   emailTemplatesEdited EmailTemplate[]  @relation("EmailTemplateUpdatedBy")
+  dataExportRequests   DataExportRequest[] @relation("DataExportRequestUser")
+  dataExportsDecided   DataExportRequest[] @relation("DataExportRequestDecidedBy")
 }
 
 // Grants a second (or third, ...) user edit rights on a Listing they didn't
@@ -439,7 +447,7 @@ model Listing {
   organization   Organization? @relation(fields: [organizationId], references: [id])
 
   moderatedById String?
-  moderatedBy   User?   @relation("ListingModeratedBy", fields: [moderatedById], references: [id])
+  moderatedBy   User?   @relation("ListingModeratedBy", fields: [moderatedById], references: [id], onDelete: SetNull)
   moderationNote String?
 
   // Structured free-text fields explicitly called for in the requirements
@@ -711,7 +719,7 @@ model EventRegistration {
   eventId          String
   event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   userId           String?
-  user             User?    @relation("EventRegistrationSender", fields: [userId], references: [id])
+  user             User?    @relation("EventRegistrationSender", fields: [userId], references: [id], onDelete: SetNull)
   name             String
   email            String
   participantCount Int      @default(1)
@@ -756,7 +764,7 @@ model ContactRequest {
   listingId   String
   listing     Listing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
   senderUserId String?
-  senderUser   User?                @relation("ContactRequestSender", fields: [senderUserId], references: [id])
+  senderUser   User?                @relation("ContactRequestSender", fields: [senderUserId], references: [id], onDelete: SetNull)
   senderName  String
   senderEmail String
   message     String
@@ -782,9 +790,9 @@ model Appointment {
   listingId         String
   listing           Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
   hostUserId        String
-  hostUser          User              @relation("AppointmentHost", fields: [hostUserId], references: [id])
+  hostUser          User              @relation("AppointmentHost", fields: [hostUserId], references: [id], onDelete: Cascade)
   requestedByUserId String?
-  requestedByUser   User?             @relation("AppointmentRequestedBy", fields: [requestedByUserId], references: [id])
+  requestedByUser   User?             @relation("AppointmentRequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
   requesterName     String?
   requesterEmail    String?
   proposedAt        DateTime
@@ -817,13 +825,13 @@ model Report {
   eventId        String?
   event          Event?           @relation("ReportOnEvent", fields: [eventId], references: [id])
   reporterId     String?
-  reporter       User?            @relation("ReportReporter", fields: [reporterId], references: [id])
+  reporter       User?            @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
   reporterIp     String? // fallback for guest reports / fake-listing IP blocking
   reason         String
   message        String?
   status         ReportStatus     @default(OPEN)
   reviewedById   String?
-  reviewedBy     User?            @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
+  reviewedBy     User?            @relation("ReportReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   reviewedAt     DateTime?
   createdAt      DateTime         @default(now())
 }
@@ -904,4 +912,28 @@ model EmailTemplate {
   updatedAt   DateTime @updatedAt
   updatedById String?
   updatedBy   User?    @relation("EmailTemplateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+enum DataExportStatus {
+  PENDING // waiting for an admin
+  SENT // approved, export mailed to the user
+  REJECTED
+}
+
+// "Meine Daten anfordern" (DSGVO Art. 15) on /mein-konto. An admin approves
+// on /admin/datenauskunft, which mails the export (src/lib/data-export.ts)
+// to the user's address.
+model DataExportRequest {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation("DataExportRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  status       DataExportStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  decidedAt    DateTime?
+  decidedById  String?
+  decidedBy    User?            @relation("DataExportRequestDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  rejectReason String?
+
+  @@index([status])
+  @@index([userId])
 }

@@ -309,6 +309,13 @@ export default async function AdminPage() {
             <h2 className="font-semibold">E-Mail-Texte</h2>
             <p className="mt-1 text-sm text-text-muted">Alle E-Mails ansehen, Texte anpassen und Testmails senden.</p>
           </Link>
+          <Link
+            href="/admin/datenauskunft"
+            className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
+          >
+            <h2 className="font-semibold">Datenauskunft</h2>
+            <p className="mt-1 text-sm text-text-muted">Angefragte Zusammenstellungen gespeicherter Daten prüfen und senden.</p>
+          </Link>
         </div>
       </div>
     </AppShell>

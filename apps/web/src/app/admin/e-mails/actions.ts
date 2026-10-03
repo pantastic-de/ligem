@@ -8,7 +8,7 @@ import { requireAdminAction } from "@/lib/authz";
 import { sendMail } from "@/lib/mailer";
 import { sanitizeEmailHtml } from "@/lib/sanitize-html";
 import { exampleValues, getTemplateDefinition, type EmailTemplateKey } from "@/lib/email-templates";
-import { renderEmail } from "@/lib/email-template-store";
+import { getEmailTemplate, renderEmail } from "@/lib/email-template-store";
 
 function readForm(formData: FormData) {
   const key = formData.get("key")?.toString() ?? "";
@@ -17,7 +17,8 @@ function readForm(formData: FormData) {
   const subject = (formData.get("subject")?.toString() ?? "").replace(/\s+/g, " ").trim().slice(0, 300);
   // Browsers submit textarea line breaks as \r\n.
   const body = sanitizeEmailHtml((formData.get("body")?.toString() ?? "").replace(/\r\n?/g, "\n").slice(0, 50_000));
-  return { key: key as EmailTemplateKey, definition, subject, body };
+  // The footer has no subject of its own.
+  return { key: key as EmailTemplateKey, definition, subject: definition.category === "fusszeile" ? definition.subject : subject, body };
 }
 
 export async function saveEmailTemplate(formData: FormData): Promise<void> {
@@ -58,7 +59,11 @@ export async function sendTestEmail(formData: FormData): Promise<void> {
   if (!admin || /\.(invalid|local)$/i.test(admin.email)) {
     redirect(`/admin/e-mails/${key}?error=keine-adresse`);
   }
-  const mail = renderEmail(key, subject || definition.subject, body || definition.body, exampleValues(definition));
+  const footer = await getEmailTemplate("fusszeile");
+  const isFooter = definition.category === "fusszeile";
+  const mail = isFooter
+    ? renderEmail("fusszeile", "Test der Fußzeile", "<p>So sieht die Fußzeile unter jeder E-Mail aus.</p>", {}, { body: body || definition.body })
+    : renderEmail(key, subject || definition.subject, body || definition.body, exampleValues(definition), { body: footer.body });
   await sendMail({ to: admin.email, ...mail, subject: `[Test] ${mail.subject}` });
   redirect(`/admin/e-mails/${key}?ok=test&an=${encodeURIComponent(admin.email)}`);
 }
