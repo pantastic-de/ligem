@@ -265,10 +265,21 @@ success — see the comment header in that file for why that check matters.)
 ## Automated deploy
 
 `scripts/deploy.sh` wraps step 7 above over SSH, for redeploying after a
-`git push`. See the comment header in that file for required environment
-variables (`scripts/deploy.env` is a gitignored template you can `source`
+`git push`. Host, user and path default to the production server and can be
+overridden via environment variables (see the comment header in that file;
+`scripts/deploy.env` is a gitignored template you can `source`
 before running it) — it is never run automatically by Claude, since that
 means connecting to and modifying a real production server.
+
+Before connecting, it refuses to deploy while anything is uncommitted
+(untracked files included, except `.claude/`) or committed but not pushed,
+since the server only ever gets what is on `origin`. On the server it checks
+that exactly the expected commit is checked out, lists the new commits and
+new migrations, warns about `.env` pitfalls (missing `DATABASE_URL`/
+`AUTH_SECRET`, `SMTP_FROM` without an address), waits up to
+`DEPLOY_READY_TIMEOUT` seconds (default 600) for the app to answer (printing
+the last log lines if it doesn't) and finally confirms with
+`prisma migrate status` that no migration is pending.
 
 **Note on `git reset --hard`:** the script does this to guarantee the server
 matches `origin` exactly. That means any *uncommitted* local edits to tracked
