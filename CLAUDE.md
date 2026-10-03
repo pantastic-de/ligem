@@ -499,4 +499,11 @@ pnpm exec prisma generate   # regenerate the client into src/generated/prisma (a
 ```
 Note: `apps/web/.env` holds a host-reachable `DATABASE_URL` (`localhost:5432`) for any tooling invoked from outside Docker; inside the `web` container, `docker-compose.yml`'s `environment:` block (hostname `postgres`) takes precedence over `.env` — both point at the same `c1u3`/`c1db3` database.
 
-There is no test setup yet.
+## Story tests ("Geschichten", Playwright)
+
+The only automated tests are end-to-end **story tests**: `docs/stories/NN-*.md` describes a flow from a user's point of view plus a contract (start state, steps with expectations, end state, out of scope); `apps/web/e2e/NN-*.spec.ts` is the same flow "frozen" as a Playwright test clicking through the real UI, one `test.step` per contract row. Currently 01 (find a project via the header search and contact it, owner accepts via the account-menu badge), 02 (heart while logged out → login hint → `?weiter=` back to the search → favorite → frequency → remove), 03 (pending project: owner's hourglass, 404 for the public, admin approves from the hourglass link, page goes public).
+
+- **Run on the host, not in the container** (the container has no browser): `cd apps/web && npx playwright test` (`--headed` to watch, `npx playwright show-report` for the HTML report, first time `npx playwright install chromium`). Needs the dev stack running on localhost:3000; reads `DATABASE_URL` from `apps/web/.env`.
+- **Test data** (`e2e/support/testdaten.ts`): `global-setup.ts` deletes leftovers and creates three users (`e2e-suchende`, `e2e-betreiberin`, `e2e-admin`, all `@e2e.ligem.invalid`, password `e2e-Passwort-123`) and two projects (`e2e-sonnenhof` published, `e2e-wiesenweg` pending) directly via `pg`; `global-teardown.ts` removes everything with the `e2e-` prefix (`E2E_KEEP=1` keeps it). `workers: 1`, since the stories share the database.
+- **No real mail**: `.invalid` recipients are dropped by `sendTemplateMail`, and no story submits a new project (that would mail every real admin). Keep it that way when adding stories.
+- After an optimistic UI update (the heart), wait for the button to be enabled again before reloading, or the reload races the server action.

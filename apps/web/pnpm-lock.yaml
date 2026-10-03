@@ -65,10 +65,10 @@ importers:
         version: 1.28.0(react@19.2.4)
       next:
         specifier: 16.2.12
-        version: 16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.63.0)(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-auth:
         specifier: 5.0.0-beta.32
-        version: 5.0.0-beta.32(next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@9.0.3)(react@19.2.4)
+        version: 5.0.0-beta.32(next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.63.0)(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@9.0.3)(react@19.2.4)
       nodemailer:
         specifier: ^9.0.3
         version: 9.0.3
@@ -88,6 +88,9 @@ importers:
         specifier: ^8.10.0
         version: 8.10.0
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.3
@@ -816,6 +819,11 @@ packages:
 
   '@photo-sphere-viewer/core@5.15.0':
     resolution: {integrity: sha512-Mf72l3R8iBf+Im5duv7IVkX3uiKU1BT6bzzXmdE43KahQgNftt9pYKqTzN1YjaYLAzWDBCFZj/bEK1dIZXk9Gg==}
+
+  '@playwright/test@1.63.0':
+    resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   '@prisma/adapter-pg@7.9.0':
     resolution: {integrity: sha512-kPYuFvNTlqnaFf2UpXBBG3ycTT3PL76uSZtLFBEwDytjMMUW8ZHrsb9cSNIarzdPW5EXWmBOeOq9/MVjMtbWkA==}
@@ -2818,6 +2826,16 @@ packages:
   pkg-types@2.3.1:
     resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
 
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
     engines: {node: '>= 0.4'}
@@ -3917,6 +3935,10 @@ snapshots:
   '@photo-sphere-viewer/core@5.15.0':
     dependencies:
       three: 0.185.1
+
+  '@playwright/test@1.63.0':
+    dependencies:
+      playwright: 1.63.0
 
   '@prisma/adapter-pg@7.9.0':
     dependencies:
@@ -5958,15 +5980,15 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  next-auth@5.0.0-beta.32(next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@9.0.3)(react@19.2.4):
+  next-auth@5.0.0-beta.32(next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.63.0)(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(nodemailer@9.0.3)(react@19.2.4):
     dependencies:
       '@auth/core': 0.41.3(nodemailer@9.0.3)
-      next: 16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.63.0)(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
     optionalDependencies:
       nodemailer: 9.0.3
 
-  next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@16.2.12(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.63.0)(@types/node@20.19.43)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.2.12
       '@swc/helpers': 0.5.15
@@ -5985,6 +6007,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.2.12
       '@next/swc-win32-arm64-msvc': 16.2.12
       '@next/swc-win32-x64-msvc': 16.2.12
+      '@playwright/test': 1.63.0
       sharp: 0.35.3(@types/node@20.19.43)
     transitivePeerDependencies:
       - '@babel/core'
@@ -6140,6 +6163,12 @@ snapshots:
       confbox: 0.2.4
       exsolve: 1.1.0
       pathe: 2.0.3
+
+  playwright-core@1.63.0: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
 
   possible-typed-array-names@1.1.0: {}
 
