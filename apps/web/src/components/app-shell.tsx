@@ -7,6 +7,7 @@ export type AppShellSection =
   | "projekte"
   | "termine"
   | "konto"
+  | "favoriten"
   | "admin-dashboard"
   | "admin-nutzer"
   | "admin-projekte"
@@ -14,9 +15,10 @@ export type AppShellSection =
   | "admin-kategorien"
   | "admin-attribute"
   | "admin-statistik"
-  | "admin-demo-daten";
+  | "admin-demo-daten"
+  | "admin-e-mails";
 
-const PERSONAL_SECTIONS: AppShellSection[] = ["dashboard", "projekte", "termine", "konto"];
+const PERSONAL_SECTIONS: AppShellSection[] = ["dashboard", "projekte", "termine", "konto", "favoriten"];
 
 /**
  * Shared shell (persistent sidebar + content area) for every "verwalten"

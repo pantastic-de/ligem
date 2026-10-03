@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { authenticate, signInWithApple, signInWithGoogle, signInWithMicrosoft } from "./actions";
 import { PasswordField } from "@/components/password-field";
+import { safeInternalPath } from "@/lib/return-url";
 
 export const metadata: Metadata = {
   title: "Anmelden",
@@ -21,9 +22,12 @@ const microsoftEnabled = Boolean(
 export default async function AnmeldenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; registriert?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; registriert?: string; ok?: string; weiter?: string }>;
 }) {
-  const { error, registriert, ok } = await searchParams;
+  const { error, registriert, ok, weiter: weiterParam } = await searchParams;
+  // Page to return to after login (e.g. the project whose heart was clicked).
+  const weiter = safeInternalPath(weiterParam, "");
+  const weiterInput = weiter ? <input type="hidden" name="weiter" value={weiter} /> : null;
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-8 sm:px-6 sm:py-16">
@@ -58,6 +62,7 @@ export default async function AnmeldenPage({
       ) : null}
 
       <form action={authenticate} className="mt-8 flex flex-col gap-5">
+        {weiterInput}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="identifier" className="font-medium">
             E-Mail-Adresse oder Benutzername
@@ -94,6 +99,7 @@ export default async function AnmeldenPage({
         <div className="mt-4 flex flex-col gap-3">
           {googleEnabled ? (
             <form action={signInWithGoogle}>
+              {weiterInput}
               <button
                 type="submit"
                 className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
@@ -104,6 +110,7 @@ export default async function AnmeldenPage({
           ) : null}
           {appleEnabled ? (
             <form action={signInWithApple}>
+              {weiterInput}
               <button
                 type="submit"
                 className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
@@ -114,6 +121,7 @@ export default async function AnmeldenPage({
           ) : null}
           {microsoftEnabled ? (
             <form action={signInWithMicrosoft}>
+              {weiterInput}
               <button
                 type="submit"
                 className="min-h-12 w-full rounded-full border border-text/20 font-semibold transition-colors hover:bg-surface"
@@ -127,7 +135,10 @@ export default async function AnmeldenPage({
 
       <p className="mt-6 text-text-muted">
         Noch kein Konto?{" "}
-        <Link href="/registrieren" className="font-medium text-primary">
+        <Link
+          href={weiter ? `/registrieren?weiter=${encodeURIComponent(weiter)}` : "/registrieren"}
+          className="font-medium text-primary"
+        >
           Registrieren
         </Link>
       </p>

@@ -9,6 +9,7 @@ import type { UserRole } from "@/generated/prisma/client";
 import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 import { getClientIp } from "@/lib/ip-lookup";
 import { registerAttempt } from "@/lib/rate-limit";
+import { safeInternalPath, withQueryParam } from "@/lib/return-url";
 
 // Every registration sends a confirmation mail to the entered address, so
 // without a cap the form could be used to mass-create accounts or to flood
@@ -17,24 +18,28 @@ const MAX_REGISTRATIONS_PER_IP = 5;
 const REGISTRATION_WINDOW_MS = 60 * 60_000;
 
 export async function registerUser(formData: FormData): Promise<void> {
+  // Where the visitor wanted to go (e.g. back to a project after clicking its
+  // heart); carried through every redirect so it survives errors and login.
+  const weiter = safeInternalPath(formData.get("weiter"), "");
+  const back = (url: string) => (weiter ? withQueryParam(url, "weiter", weiter) : url);
   const ip = getClientIp(await headers());
   if (!registerAttempt(`registrieren:${ip ?? "unbekannt"}`, MAX_REGISTRATIONS_PER_IP, REGISTRATION_WINDOW_MS)) {
-    redirect("/registrieren?error=zu-viele");
+    redirect(back("/registrieren?error=zu-viele"));
   }
   const name = formData.get("name")?.toString().trim();
   const email = formData.get("email")?.toString().trim().toLowerCase();
   const password = formData.get("password")?.toString() ?? "";
 
   if (!email || !email.includes("@")) {
-    redirect("/registrieren?error=email");
+    redirect(back("/registrieren?error=email"));
   }
   if (password.length < 8) {
-    redirect("/registrieren?error=password");
+    redirect(back("/registrieren?error=password"));
   }
 
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    redirect("/registrieren?error=exists");
+    redirect(back("/registrieren?error=exists"));
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -58,5 +63,5 @@ export async function registerUser(formData: FormData): Promise<void> {
   const token = await createVerificationToken(email);
   await sendVerificationEmail(email, token);
 
-  redirect("/anmelden?registriert=1");
+  redirect(back("/anmelden?registriert=1"));
 }

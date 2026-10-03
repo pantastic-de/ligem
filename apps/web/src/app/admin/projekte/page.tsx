@@ -11,6 +11,7 @@ import { EntityIconBadge } from "@/components/entity-icon-badge";
 import {
   approveListing,
   archiveListing,
+  bulkApproveListings,
   bulkArchiveListings,
   bulkDeleteListings,
   bulkRejectListings,
@@ -255,6 +256,15 @@ export default async function AdminProjektePage({
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              {activeStatus !== "PUBLISHED" ? (
+                <button
+                  type="submit"
+                  formAction={bulkApproveListings}
+                  className="inline-flex min-h-11 items-center rounded-full bg-success px-5 text-sm font-semibold text-white transition-colors hover:opacity-90"
+                >
+                  Ausgewählte freigeben
+                </button>
+              ) : null}
               <button
                 type="submit"
                 formAction={bulkRejectListings}

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
-import { sendMail } from "@/lib/mailer";
+import { sendTemplateMail } from "@/lib/email-template-store";
 import { SITE_URL } from "@/lib/site";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h
@@ -26,15 +26,7 @@ export async function createVerificationToken(email: string): Promise<string> {
 
 export async function sendVerificationEmail(email: string, token: string): Promise<void> {
   const link = `${SITE_URL}/verifizieren?token=${token}&email=${encodeURIComponent(email)}`;
-  await sendMail({
-    to: email,
-    subject: "Bitte bestätige deine E-Mail-Adresse bei LiGem",
-    text:
-      `Willkommen bei LiGem!\n\n` +
-      `Bitte bestätige deine E-Mail-Adresse, indem du diesen Link öffnest:\n${link}\n\n` +
-      `Der Link ist 24 Stunden gültig. Nach der Bestätigung kannst du Kontaktanfragen ohne CAPTCHA senden.\n\n` +
-      `Falls du dich nicht bei LiGem registriert hast, kannst du diese E-Mail ignorieren.`,
-  });
+  await sendTemplateMail("email-bestaetigen", email, { link });
 }
 
 /**

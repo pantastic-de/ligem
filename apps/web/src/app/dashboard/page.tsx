@@ -211,7 +211,7 @@ export default async function DashboardPage() {
           </section>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Link
             href="/projekte/neu"
             className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
@@ -229,6 +229,13 @@ export default async function DashboardPage() {
           <Link href="/mein-konto" className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg">
             <h2 className="font-semibold">Mein Konto</h2>
             <p className="mt-1 text-sm text-text-muted">Profil, Passwort und Mitverwalter:innen verwalten.</p>
+          </Link>
+          <Link
+            href="/mein-konto/favoriten"
+            className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
+          >
+            <h2 className="font-semibold">Meine Favoriten</h2>
+            <p className="mt-1 text-sm text-text-muted">Gemerkte Projekte und Termine, Neuigkeiten und E-Mail-Einstellungen.</p>
           </Link>
         </div>
       </div>

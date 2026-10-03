@@ -12,6 +12,7 @@ import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
+import { FavoriteButton } from "@/components/favorite-button";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -51,6 +52,7 @@ export function EventDetail({
   distanceKm,
   prevItem,
   nextItem,
+  favorite,
 }: {
   event: EventDetailData;
   returnTo: string;
@@ -67,6 +69,8 @@ export function EventDetail({
   // standalone page has no "current search results" to step through.
   prevItem?: { href: string; label: string } | null;
   nextItem?: { href: string; label: string } | null;
+  // Heart next to the title (only for published events).
+  favorite?: { isFavorite: boolean; loggedIn: boolean };
 }) {
   // Structured data only for actually-published events — schema.org/Event
   // is Google's/AI agents' natural fit here (unlike listings, which don't
@@ -191,13 +195,25 @@ export function EventDetail({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-3xl font-bold">{event.title}</h1>
-        {event.attributeOptions.some(({ option }) => option.name === "Online-Veranstaltung") ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-sm font-semibold text-secondary">
-            <Globe className="h-4 w-4" aria-hidden="true" />
-            Online, überregional
-          </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-3xl font-bold">{event.title}</h1>
+          {event.attributeOptions.some(({ option }) => option.name === "Online-Veranstaltung") ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-1 text-sm font-semibold text-secondary">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+              Online, überregional
+            </span>
+          ) : null}
+        </div>
+        {favorite && event.status === "PUBLISHED" ? (
+          <FavoriteButton
+            kind="event"
+            id={event.id}
+            initialFavorite={favorite.isFavorite}
+            loggedIn={favorite.loggedIn}
+            size="lg"
+            className="shrink-0"
+          />
         ) : null}
       </div>
       <div className="mt-3 flex flex-col gap-2 text-text-muted">

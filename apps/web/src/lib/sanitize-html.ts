@@ -44,3 +44,18 @@ export function stripHtml(html: string, maxLength: number): string {
     .trim();
   return text.length > maxLength ? `${text.slice(0, maxLength).trimEnd()}…` : text;
 }
+
+const EMAIL_TAGS = [...ALLOWED_TAGS, "a"];
+
+/**
+ * Admin-edited e-mail bodies (/admin/e-mails): the rich-text tags plus links
+ * (only href, only http(s)/mailto or a {{placeholder}}). Admin-only input,
+ * but it goes out to every recipient, so it's cleaned all the same.
+ */
+export function sanitizeEmailHtml(value: string): string {
+  return DOMPurify.sanitize(value, {
+    ALLOWED_TAGS: EMAIL_TAGS,
+    ALLOWED_ATTR: ["href"],
+    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\{\{\s*[a-z_]+\s*\}\})/i,
+  }).trim();
+}

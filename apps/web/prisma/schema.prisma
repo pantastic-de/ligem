@@ -81,6 +81,10 @@ model User {
   listingViews        ListingView[]
   eventViews          EventView[]
   pageViews           PageView[]
+  favoriteListings    FavoriteListing[]
+  favoriteEvents      FavoriteEvent[]
+  favoriteUpdatesMade FavoriteUpdate[]  @relation("FavoriteUpdateActor")
+  emailTemplatesEdited EmailTemplate[]  @relation("EmailTemplateUpdatedBy")
 }
 
 // Grants a second (or third, ...) user edit rights on a Listing they didn't
@@ -500,6 +504,8 @@ model Listing {
   managers          ListingManager[]
   views             ListingView[]
   dailyViews        ListingViewDaily[]
+  favoritedBy       FavoriteListing[]
+  favoriteUpdates   FavoriteUpdate[]
 
   @@index([status])
   @@index([organizationId])
@@ -688,6 +694,8 @@ model Event {
   reports          Report[]               @relation("ReportOnEvent")
   views            EventView[]
   dailyViews       EventViewDaily[]
+  favoritedBy      FavoriteEvent[]
+  favoriteUpdates  FavoriteUpdate[]
 
   @@index([startAt])
   @@index([status])
@@ -818,4 +826,82 @@ model Report {
   reviewedBy     User?            @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   createdAt      DateTime         @default(now())
+}
+
+// Favoriten: a logged-in user marks listings/events with a heart (see
+// src/lib/favorites.ts). `frequency` only controls e-mail; the header heart
+// shows news regardless. `seenAt` moves when the user opens
+// /mein-konto/favoriten (header count = updates after it), `notifiedAt` when
+// a mail covering this favorite went out (digest = updates after it).
+enum FavoriteFrequency {
+  IMMEDIATE
+  WEEKLY
+  MONTHLY
+  NEVER
+}
+
+model FavoriteListing {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId  String
+  listing    Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  frequency  FavoriteFrequency @default(WEEKLY)
+  createdAt  DateTime          @default(now())
+  seenAt     DateTime          @default(now())
+  notifiedAt DateTime          @default(now())
+
+  @@unique([userId, listingId])
+  @@index([listingId])
+}
+
+model FavoriteEvent {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId    String
+  event      Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  frequency  FavoriteFrequency @default(WEEKLY)
+  createdAt  DateTime          @default(now())
+  seenAt     DateTime          @default(now())
+  notifiedAt DateTime          @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+}
+
+enum FavoriteUpdateKind {
+  NEW_EVENT // a listing published a new event (eventId + listingId set)
+  LISTING_CHANGED // changes to a listing were approved by the moderation
+  EVENT_CHANGED // an event was edited (eventId set, listingId if it has one)
+}
+
+// One row per public change that favoriters should hear about. Relevant to
+// a user when they favor its listing, or its event.
+model FavoriteUpdate {
+  id        String             @id @default(cuid())
+  kind      FavoriteUpdateKind
+  listingId String?
+  listing   Listing?           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  eventId   String?
+  event     Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  // Whoever made the change; never told about their own change.
+  actorId   String?
+  actor     User?              @relation("FavoriteUpdateActor", fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt DateTime           @default(now())
+
+  @@index([listingId, createdAt])
+  @@index([eventId, createdAt])
+}
+
+// Admin-edited e-mail texts (/admin/e-mails). Only templates someone has
+// changed get a row; everything else uses the default from
+// src/lib/email-templates.ts. `key` matches a template key there.
+model EmailTemplate {
+  key         String   @id
+  subject     String
+  body        String // simple, sanitized HTML with {{platzhalter}}
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation("EmailTemplateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 }

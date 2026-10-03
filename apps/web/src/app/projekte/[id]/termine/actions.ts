@@ -11,6 +11,7 @@ import { setEventLocation } from "@/lib/geo";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 import { generateRecurrenceOccurrences, type RecurrenceFrequency } from "@/lib/recurrence";
 import { slugify, generateUniqueSlug } from "@/lib/slug";
+import { recordFavoriteUpdates } from "@/lib/favorites";
 
 function parseRecurrenceFrequency(value: FormDataEntryValue | null): RecurrenceFrequency | null {
   const str = value?.toString();
@@ -202,6 +203,12 @@ export async function createEvent(formData: FormData): Promise<void> {
     createdEvents.map((event) => setEventLocation(event.id, latitude, longitude)),
   );
 
+  const session = await auth();
+  await recordFavoriteUpdates(
+    createdEvents.map((event) => ({ kind: "NEW_EVENT" as const, listingId, eventId: event.id })),
+    session?.user?.id ?? null,
+  );
+
   redirect(`/projekte/${listingId}/termine`);
 }
 
@@ -255,6 +262,9 @@ export async function updateEvent(formData: FormData): Promise<void> {
   ]);
 
   await setEventLocation(eventId, latitude, longitude);
+
+  const session = await auth();
+  await recordFavoriteUpdates([{ kind: "EVENT_CHANGED", listingId, eventId }], session?.user?.id ?? null);
 
   redirect(`/projekte/${listingId}/termine`);
 }

@@ -1,15 +1,17 @@
 import { after } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site";
+import { sendTemplateMail } from "@/lib/email-template-store";
+import type { EmailTemplateKey } from "@/lib/email-templates";
 
 // Moderation mails are transactional (the person is waiting on the outcome),
 // so unlike contact-request mails they don't depend on an opt-in flag.
 // Addresses on reserved TLDs are skipped: generated demo accounts
 // (@ligem-demo.invalid) and the seeded installation admin (admin@ligem.local)
 // can never receive mail, and every attempt would only produce an SMTP reject.
-function isDeliverable(email: string): boolean {
+// Texts live in the editable templates (src/lib/email-templates.ts, /admin/e-mails).
+export function isDeliverable(email: string): boolean {
   return !/\.(invalid|local)$/i.test(email);
 }
 
@@ -17,12 +19,14 @@ function uniqueDeliverable(emails: string[]): string[] {
   return [...new Set(emails.filter(isDeliverable))];
 }
 
+type QueuedMail = { to: string; template: EmailTemplateKey; values: Record<string, string> };
+
 /** Sends after the response, so a slow mail server never delays a redirect. */
-function sendLater(mails: { to: string; subject: string; text: string }[]): void {
+function sendLater(mails: QueuedMail[]): void {
   if (mails.length === 0) return;
   after(async () => {
     for (const mail of mails) {
-      await sendMail(mail);
+      await sendTemplateMail(mail.template, mail.to, mail.values);
     }
   });
 }
@@ -69,20 +73,13 @@ export async function notifyListingSubmitted(listingId: string): Promise<void> {
     where: { roles: { some: { role: "ADMIN" } } },
     select: { email: true },
   });
-  const submitter = listing.createdBy.name ?? listing.createdBy.email;
-  const mails: { to: string; subject: string; text: string }[] = [];
+  const mails: QueuedMail[] = [];
 
   if (isDeliverable(listing.createdBy.email)) {
     mails.push({
       to: listing.createdBy.email,
-      subject: `Danke für euer Projekt „${listing.projectName}“`,
-      text:
-        `Hallo,\n\n` +
-        `schön, dass ihr „${listing.projectName}“ bei LiGem eingetragen habt! ` +
-        `Wir schauen uns den Eintrag kurz an und schalten ihn dann frei. ` +
-        `Sobald er öffentlich sichtbar ist, bekommt ihr eine weitere E-Mail.\n\n` +
-        `Bis dahin könnt ihr ihn jederzeit weiter bearbeiten:\n${SITE_URL}/meine-projekte\n\n` +
-        `Viele Grüße\nEuer LiGem-Team`,
+      template: "projekt-eingereicht",
+      values: { projekt: listing.projectName, link: `${SITE_URL}/meine-projekte` },
     });
   }
 
@@ -90,10 +87,12 @@ export async function notifyListingSubmitted(listingId: string): Promise<void> {
     if (to === listing.createdBy.email) continue;
     mails.push({
       to,
-      subject: `Neues Projekt zur Prüfung: „${listing.projectName}“`,
-      text:
-        `${submitter} hat das Projekt „${listing.projectName}“ eingetragen. ` +
-        `Es wartet auf die Prüfung:\n${SITE_URL}/admin/projekte?status=PENDING_REVIEW`,
+      template: "projekt-eingereicht-admin",
+      values: {
+        projekt: listing.projectName,
+        eingereicht_von: listing.createdBy.name ?? listing.createdBy.email,
+        link: `${SITE_URL}/admin/projekte?status=PENDING_REVIEW`,
+      },
     });
   }
 
@@ -109,40 +108,39 @@ export async function notifyListingApproved(listingId: string, firstPublication:
   const listing = (await getListingRecipients([listingId])).get(listingId);
   if (!listing) return;
 
-  const url = `${SITE_URL}/projekt/${listing.slug}`;
-  const subject = firstPublication
-    ? `„${listing.projectName}“ ist jetzt bei LiGem online`
-    : `Eure Änderungen an „${listing.projectName}“ sind freigegeben`;
-  const text = firstPublication
-    ? `Hallo,\n\ngute Nachrichten: „${listing.projectName}“ ist freigegeben und ab sofort für alle sichtbar:\n${url}\n\n` +
-      `Tipp: Mit Terminen wie Besuchstagen oder Infoabenden lernen Interessierte euch am leichtesten persönlich kennen. ` +
-      `Termine tragt ihr unter „Meine Projekte“ ein.\n\nViele Grüße\nEuer LiGem-Team`
-    : `Hallo,\n\neure Änderungen an „${listing.projectName}“ sind geprüft und jetzt öffentlich sichtbar:\n${url}\n\n` +
-      `Viele Grüße\nEuer LiGem-Team`;
-
-  sendLater(listing.emails.map((to) => ({ to, subject, text })));
+  const values = { projekt: listing.projectName, link: `${SITE_URL}/projekt/${listing.slug}` };
+  const template = firstPublication ? "projekt-online" : "projekt-aenderungen-freigegeben";
+  sendLater(listing.emails.map((to) => ({ to, template, values })));
 }
 
 /**
  * Must be called *before* the listings are deleted (the recipients are read
  * from them); returns a function that schedules the mails once the delete
- * has gone through.
+ * has gone through. Without `deletedByOwner` the mail says the moderation
+ * removed the project; with it, it names the project's own creator, who
+ * also gets the mail as a confirmation.
  */
-export async function prepareListingDeletedNotices(listingIds: string[]): Promise<() => void> {
+export async function prepareListingDeletedNotices(
+  listingIds: string[],
+  deletedByOwner?: string,
+): Promise<() => void> {
   const recipients = await getListingRecipients(listingIds);
   return () => {
     const mails = [...recipients.values()].flatMap((listing) =>
-      listing.emails.map((to) => ({
-        to,
-        subject: `„${listing.projectName}“ wurde von LiGem entfernt`,
-        text:
-          `Hallo,\n\n` +
-          `euer Projekt „${listing.projectName}“ wurde von der LiGem-Moderation gelöscht, ` +
-          `zusammen mit seinen Terminen, Fotos und Videos.\n\n` +
-          `Wenn ihr Fragen dazu habt oder das für ein Versehen haltet, antwortet einfach auf diese E-Mail ` +
-          `oder schreibt uns über die Kontaktdaten im Impressum:\n${SITE_URL}/impressum\n\n` +
-          `Viele Grüße\nEuer LiGem-Team`,
-      })),
+      listing.emails.map(
+        (to): QueuedMail =>
+          deletedByOwner
+            ? {
+                to,
+                template: "projekt-geloescht-inhaber",
+                values: { projekt: listing.projectName, geloescht_von: deletedByOwner, impressum_link: `${SITE_URL}/impressum` },
+              }
+            : {
+                to,
+                template: "projekt-entfernt-moderation",
+                values: { projekt: listing.projectName, impressum_link: `${SITE_URL}/impressum` },
+              },
+      ),
     );
     sendLater(mails);
   };

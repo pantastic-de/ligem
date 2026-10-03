@@ -123,6 +123,14 @@ export function startViewMaintenanceSchedule(): void {
       await runViewMaintenance();
     } catch (err) {
       console.error("[Wartung] fehlgeschlagen", err);
+    }
+    try {
+      // Weekly/monthly favorite mails piggyback on the same daily run.
+      const { runFavoriteDigest } = await import("@/lib/favorites");
+      const sent = await runFavoriteDigest();
+      console.log(`[Wartung] Favoriten-Zusammenfassungen: ${sent} E-Mail(s)`);
+    } catch (err) {
+      console.error("[Wartung] Favoriten-Zusammenfassung fehlgeschlagen", err);
     } finally {
       running = false;
     }

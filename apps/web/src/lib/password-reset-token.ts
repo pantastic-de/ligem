@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 import { prisma } from "@/lib/prisma";
-import { sendMail } from "@/lib/mailer";
+import { sendTemplateMail } from "@/lib/email-template-store";
 import { SITE_URL } from "@/lib/site";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1h
@@ -58,16 +58,7 @@ export async function requestPasswordReset(rawEmail: string): Promise<void> {
   });
 
   const link = `${SITE_URL}/passwort-zuruecksetzen?token=${token}&email=${encodeURIComponent(user.email)}`;
-  await sendMail({
-    to: user.email,
-    subject: "Dein neues Passwort für LiGem",
-    text:
-      `Hallo,\n\n` +
-      `jemand (hoffentlich du) möchte das Passwort für dein LiGem-Konto neu setzen. ` +
-      `Über diesen Link kannst du ein neues Passwort wählen:\n${link}\n\n` +
-      `Der Link ist eine Stunde lang gültig und funktioniert nur einmal.\n\n` +
-      `Falls du das nicht warst, ignoriere diese E-Mail einfach. Dein bisheriges Passwort bleibt dann unverändert.`,
-  });
+  await sendTemplateMail("passwort-zuruecksetzen", user.email, { link });
 }
 
 /** Read-only check so the reset page can show the form or an error up front. */

@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronDown, CircleUserRound, ShieldCheck, LogOut } from "lucide-react";
+import { ChevronDown, CircleUserRound, Heart, ShieldCheck, LogOut } from "lucide-react";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 
@@ -81,6 +81,15 @@ export function AccountMenu({
           >
             <EntityIconBadge tone="projekt" size="nav" />
             Meine Projekte
+          </Link>
+          <Link
+            href="/mein-konto/favoriten"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-error/15 text-error">
+              <Heart className="h-4 w-4" aria-hidden="true" />
+            </span>
+            Meine Favoriten
           </Link>
           {admin ? (
             <Link

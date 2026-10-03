@@ -27,6 +27,7 @@ import { HighlightText } from "@/components/highlight-text";
 import { highlightHtml } from "@/lib/highlight";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
+import { FavoriteButton } from "@/components/favorite-button";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -118,6 +119,7 @@ export function ListingDetail({
   distanceKm,
   prevItem,
   nextItem,
+  favorite,
 }: {
   listing: ListingDetailData;
   upcomingEvents: Event[];
@@ -159,6 +161,8 @@ export function ListingDetail({
   // standalone page has no "current search results" to step through.
   prevItem?: { href: string; label: string } | null;
   nextItem?: { href: string; label: string } | null;
+  // Heart next to the title; omitted for drafts (only published projects can be favorites).
+  favorite?: { isFavorite: boolean; loggedIn: boolean };
 }) {
   const attributesByGroup = new Map<string, { name: string; options: string[] }>();
   for (const { option } of listing.attributeOptions) {
@@ -318,10 +322,22 @@ export function ListingDetail({
         </div>
       ) : null}
 
-      <h1 className="flex items-center gap-3 text-3xl font-bold">
-        <EntityIconBadge tone="projekt" size="xl" />
-        <HighlightText text={listing.projectName} query={searchTerm} />
-      </h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="flex items-center gap-3 text-3xl font-bold">
+          <EntityIconBadge tone="projekt" size="xl" />
+          <HighlightText text={listing.projectName} query={searchTerm} />
+        </h1>
+        {favorite && listing.status === "PUBLISHED" ? (
+          <FavoriteButton
+            kind="listing"
+            id={listing.id}
+            initialFavorite={favorite.isFavorite}
+            loggedIn={favorite.loggedIn}
+            size="lg"
+            className="shrink-0"
+          />
+        ) : null}
+      </div>
       {listing.motto ? (
         <p className="mt-1 text-lg text-text-muted">
           <HighlightText text={listing.motto} query={searchTerm} />

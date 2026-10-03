@@ -6,7 +6,8 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendMail } from "@/lib/mailer";
+import { sendTemplateMail } from "@/lib/email-template-store";
+import { isDeliverable } from "@/lib/listing-notifications";
 import { SITE_URL } from "@/lib/site";
 import { getClientIp } from "@/lib/ip-lookup";
 import { turnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
@@ -62,17 +63,23 @@ async function notifyContactRequest(
     ...new Set(
       [listing.createdBy, ...listing.managers.map((m) => m.user)]
         .filter((u) => u.notifyContactRequestsByEmail)
-        .map((u) => u.email),
+        .map((u) => u.email)
+        .filter(isDeliverable),
     ),
   ];
   if (recipients.length === 0) return;
 
-  const subject = `Neue Kontaktanfrage für „${listing.projectName}"`;
-  const text = `${senderName} (${senderEmail}) hat über LiGem eine Nachricht zu „${listing.projectName}" geschickt:\n\n${message}\n\nDu kannst direkt per E-Mail an ${senderEmail} antworten, oder die Anfrage annehmen/ablehnen unter:\n${SITE_URL}/projekte/${listingId}/anfragen`;
-
+  const values = {
+    projekt: listing.projectName,
+    absender_name: senderName,
+    absender_email: senderEmail,
+    nachricht: message,
+    link: `${SITE_URL}/projekte/${listingId}/anfragen`,
+  };
   after(async () => {
     for (const to of recipients) {
-      await sendMail({ to, subject, text });
+      // Reply-To: a plain "Antworten" reaches the person who asked, not LiGem.
+      await sendTemplateMail("kontaktanfrage", to, values, { replyTo: senderEmail });
     }
   });
 }

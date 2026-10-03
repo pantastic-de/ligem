@@ -51,6 +51,12 @@ export default function DatenschutzPage() {
             Projekt oder eine Veranstaltung anschreibst.
           </li>
           <li>
+            <strong>Favoriten:</strong> welche Projekte und Termine du mit dem
+            Herz gemerkt hast, wie oft du darüber per E-Mail informiert werden
+            möchtest und wann du deine Favoriten-Neuigkeiten zuletzt angesehen
+            hast.
+          </li>
+          <li>
             <strong>Standort- und Suchanfragen:</strong> Ortsnamen/Adressen, die
             du in die Umkreissuche oder das Adressfeld eingibst, sowie die
             daraus berechneten Koordinaten.
@@ -126,6 +132,11 @@ export default function DatenschutzPage() {
           <li>
             <strong>Kontaktanfragen und Terminanmeldungen:</strong> solange
             das betreffende Projekt bzw. der Termin besteht.
+          </li>
+          <li>
+            <strong>Favoriten:</strong> bis du sie entfernst oder dein Konto
+            löschst. Die Liste der Neuigkeiten (z. B. neue Termine eines
+            gemerkten Projekts) löschen wir nach 60 Tagen.
           </li>
           <li>
             <strong>Zugriffsstatistik:</strong> Einzeldaten mit Hostname,

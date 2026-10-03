@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminAction } from "@/lib/authz";
 import { deleteListingsCompletely } from "@/lib/delete-content";
 import { notifyListingApproved, prepareListingDeletedNotices } from "@/lib/listing-notifications";
+import { recordFavoriteUpdates } from "@/lib/favorites";
 
 function redirectBack(formData: FormData): never {
   const status = formData.get("status")?.toString() || "PENDING_REVIEW";
@@ -30,7 +31,10 @@ export async function approveListing(formData: FormData): Promise<void> {
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
-  const before = await prisma.listing.findUnique({ where: { id: listingId }, select: { publishedAt: true } });
+  const before = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { publishedAt: true, createdById: true },
+  });
   await prisma.listing.update({
     where: { id: listingId },
     data: {
@@ -41,6 +45,11 @@ export async function approveListing(formData: FormData): Promise<void> {
     },
   });
   await notifyListingApproved(listingId, !before?.publishedAt);
+  // Approved changes to an already public project are news for its
+  // favoriters (the creator counts as the one who made them).
+  if (before?.publishedAt) {
+    await recordFavoriteUpdates([{ kind: "LISTING_CHANGED", listingId }], before.createdById);
+  }
 
   redirectBack(formData);
 }
@@ -81,6 +90,31 @@ function selectedIds(formData: FormData): string[] {
     .getAll("listingIds")
     .map((v) => v.toString())
     .filter(Boolean);
+}
+
+export async function bulkApproveListings(formData: FormData): Promise<void> {
+  const session = await requireAdminAction();
+  const ids = selectedIds(formData);
+  if (ids.length === 0) redirectBack(formData);
+
+  // Read publishedAt first: it decides per project whether the managers get
+  // the "jetzt online" or the "Änderungen freigegeben" mail.
+  const before = await prisma.listing.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, publishedAt: true, createdById: true },
+  });
+  await prisma.listing.updateMany({
+    where: { id: { in: before.map((l) => l.id) } },
+    data: { status: "PUBLISHED", publishedAt: new Date(), moderatedById: session.user.id, moderationNote: null },
+  });
+  for (const listing of before) {
+    await notifyListingApproved(listing.id, !listing.publishedAt);
+    if (listing.publishedAt) {
+      await recordFavoriteUpdates([{ kind: "LISTING_CHANGED", listingId: listing.id }], listing.createdById);
+    }
+  }
+
+  redirectBack(formData);
 }
 
 export async function bulkRejectListings(formData: FormData): Promise<void> {

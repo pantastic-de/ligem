@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Globe } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { getFavoriteIds } from "@/lib/favorites";
+import { FavoriteButton } from "@/components/favorite-button";
 import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
 import { EventDetail, type EventDetailData } from "@/components/event-detail";
@@ -96,6 +99,8 @@ export async function TerminePageView({
   searchParams: TermineSearchParams;
   selectedEventId?: string;
 }) {
+  const viewerId = (await auth())?.user?.id ?? null;
+  const favoriteIds = await getFavoriteIds(viewerId);
   const artIds = Array.isArray(params.art) ? params.art : params.art ? [params.art] : [];
   const zielgruppeIds = Array.isArray(params.zielgruppe)
     ? params.zielgruppe
@@ -417,6 +422,7 @@ export async function TerminePageView({
                 returnTo={buildTermineHref(params, { slug: selectedEvent.slug })}
                 backHref={buildTermineHref(params, { slug: undefined, angemeldet: undefined })}
                 angemeldetSuccess={Boolean(params.angemeldet)}
+                favorite={{ isFavorite: favoriteIds.eventIds.has(selectedEvent.id), loggedIn: Boolean(viewerId) }}
                 registrationError={typeof params.error === "string" ? params.error : undefined}
                 distanceKm={
                   lat != null && lng != null && selectedEvent.latitude != null && selectedEvent.longitude != null
@@ -461,7 +467,7 @@ export async function TerminePageView({
                       onlineOptionId != null &&
                       event.attributeOptions.some(({ option }) => option.id === onlineOptionId);
                     return (
-                      <li key={event.id} id={`termin-${event.id}`} className="scroll-mt-4">
+                      <li key={event.id} id={`termin-${event.id}`} className="relative scroll-mt-4">
                         <Link
                           href={buildTermineHref(params, { slug: event.slug, angemeldet: undefined })}
                           className={`flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg ${isPast ? "opacity-60" : ""}`}
@@ -474,7 +480,7 @@ export async function TerminePageView({
                               className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
                             />
                           ) : null}
-                          <div className="min-w-0 flex-1 p-4 sm:p-6">
+                          <div className="min-w-0 flex-1 p-4 pr-14 sm:p-6 sm:pr-14">
                             <div className="flex flex-wrap items-center gap-2">
                               <h2 className="flex items-center gap-2 text-lg font-semibold">
                                 <EntityIconBadge tone="termin" size="md" />
@@ -510,6 +516,15 @@ export async function TerminePageView({
                             ) : null}
                           </div>
                         </Link>
+                        {/* Sibling of the card link, not inside it: a button nested in <a> is invalid. */}
+                        <div className="absolute right-3 top-3">
+                          <FavoriteButton
+                            kind="event"
+                            id={event.id}
+                            initialFavorite={favoriteIds.eventIds.has(event.id)}
+                            loggedIn={Boolean(viewerId)}
+                          />
+                        </div>
                       </li>
                     );
                   })}

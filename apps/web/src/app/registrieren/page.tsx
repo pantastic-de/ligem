@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { registerUser } from "./actions";
+import { safeInternalPath } from "@/lib/return-url";
 
 export const metadata: Metadata = {
   title: "Registrieren",
@@ -18,9 +19,10 @@ const errorMessages: Record<string, string> = {
 export default async function RegistrierenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; weiter?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, weiter: weiterParam } = await searchParams;
+  const weiter = safeInternalPath(weiterParam, "");
   const errorMessage = error ? errorMessages[error] : undefined;
 
   return (
@@ -40,6 +42,7 @@ export default async function RegistrierenPage({
       ) : null}
 
       <form action={registerUser} className="mt-8 flex flex-col gap-5">
+        {weiter ? <input type="hidden" name="weiter" value={weiter} /> : null}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="name" className="font-medium">
             Name

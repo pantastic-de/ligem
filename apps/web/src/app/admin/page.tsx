@@ -302,6 +302,13 @@ export default async function AdminPage() {
             <h2 className="font-semibold">Demo-Daten</h2>
             <p className="mt-1 text-sm text-text-muted">Synthetische Projekte und Termine erzeugen oder löschen.</p>
           </Link>
+          <Link
+            href="/admin/e-mails"
+            className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
+          >
+            <h2 className="font-semibold">E-Mail-Texte</h2>
+            <p className="mt-1 text-sm text-text-muted">Alle E-Mails ansehen, Texte anpassen und Testmails senden.</p>
+          </Link>
         </div>
       </div>
     </AppShell>

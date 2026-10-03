@@ -29,6 +29,28 @@ export default function HilfeProjekteFindenPage() {
           aktuell zeigt die Liste alle veröffentlichten Projekte.
         </p>
       </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold">Favoriten merken</h2>
+        <p className="mt-2 text-text-muted">
+          Jedes Projekt und jeder Termin hat ein Herz. Ein Klick darauf merkt ihn
+          dir als Favoriten, ein zweiter Klick nimmt ihn wieder heraus. Dafür
+          brauchst du ein Konto: Ohne Anmeldung zeigt das Herz dir den Weg zur
+          Anmeldung oder Registrierung und bringt dich danach zurück.
+        </p>
+        <p className="mt-4 text-text-muted">
+          Deine Favoriten findest du unter{" "}
+          <Link href="/mein-konto/favoriten" className="text-primary">
+            Meine Favoriten
+          </Link>{" "}
+          (im Menü unter deinem Namen). Trägt ein gemerktes Projekt neue Termine
+          ein, ändert sich ein gemerkter Termin oder wird eine überarbeitete
+          Projektbeschreibung freigegeben, erscheint oben im Menü ein rotes Herz
+          mit der Zahl der Neuigkeiten. Bei jedem Favoriten stellst du ein, ob
+          wir dir dazu sofort, wöchentlich, monatlich oder nie eine E-Mail
+          schreiben.
+        </p>
+      </section>
     </div>
   );
 }

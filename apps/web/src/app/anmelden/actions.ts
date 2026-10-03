@@ -4,30 +4,32 @@ import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 
 import { signIn } from "@/lib/auth";
+import { safeInternalPath, withQueryParam } from "@/lib/return-url";
 
 export async function authenticate(formData: FormData): Promise<void> {
+  const weiter = safeInternalPath(formData.get("weiter"));
   try {
     await signIn("credentials", {
       identifier: formData.get("identifier"),
       password: formData.get("password"),
-      redirectTo: "/",
+      redirectTo: weiter,
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect("/anmelden?error=1");
+      redirect(weiter === "/" ? "/anmelden?error=1" : withQueryParam("/anmelden?error=1", "weiter", weiter));
     }
     throw error;
   }
 }
 
-export async function signInWithGoogle(): Promise<void> {
-  await signIn("google", { redirectTo: "/" });
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  await signIn("google", { redirectTo: safeInternalPath(formData.get("weiter")) });
 }
 
-export async function signInWithApple(): Promise<void> {
-  await signIn("apple", { redirectTo: "/" });
+export async function signInWithApple(formData: FormData): Promise<void> {
+  await signIn("apple", { redirectTo: safeInternalPath(formData.get("weiter")) });
 }
 
-export async function signInWithMicrosoft(): Promise<void> {
-  await signIn("microsoft-entra-id", { redirectTo: "/" });
+export async function signInWithMicrosoft(formData: FormData): Promise<void> {
+  await signIn("microsoft-entra-id", { redirectTo: safeInternalPath(formData.get("weiter")) });
 }

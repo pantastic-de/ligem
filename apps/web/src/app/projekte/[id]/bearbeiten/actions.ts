@@ -155,9 +155,12 @@ export async function deleteOwnListing(formData: FormData): Promise<void> {
     notFound();
   }
 
-  // An admin removing someone else's project tells its managers; an owner
-  // deleting their own project doesn't need a mail about it.
-  const sendNotices = isOwner ? () => {} : await prepareListingDeletedNotices([listingId]);
+  // Every manager hears about it: from an admin as a moderation removal,
+  // from the owner as a plain deletion (the owner gets it as a confirmation).
+  const sendNotices = await prepareListingDeletedNotices(
+    [listingId],
+    isOwner ? (session.user.name ?? session.user.email ?? "Die Projektinhaberin oder der Projektinhaber") : undefined,
+  );
   await deleteListingsCompletely([listingId]);
   sendNotices();
 

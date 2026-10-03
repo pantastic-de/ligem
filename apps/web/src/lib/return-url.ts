@@ -13,3 +13,16 @@ export function withQueryParam(url: string, key: string, value: string): string 
   const separator = base.includes("?") ? "&" : "?";
   return `${base}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${hash}`;
 }
+
+/**
+ * A client-supplied "where to go after login" target, accepted only as a
+ * same-origin path ("/projekte?x=1"); anything else ("//evil.example",
+ * "https://…", "/\\evil") falls back to `fallback`, so the login form can't
+ * be used as an open redirect.
+ */
+export function safeInternalPath(value: unknown, fallback = "/"): string {
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+    return fallback;
+  }
+  return value.length > 1000 ? fallback : value;
+}

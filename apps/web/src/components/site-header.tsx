@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { Heart, Hourglass, LogIn } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
 import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
+import { getPendingReviewIndicator } from "@/lib/pending-review";
+import { FAVORITES_PAGE, getFavoriteNewsCount } from "@/lib/favorites";
 import { HeaderSearchForm } from "@/components/header-search-form";
 import { AccountMenu } from "@/components/account-menu";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
@@ -15,6 +17,8 @@ export async function SiteHeader() {
   const openRequestsCount = session?.user?.id ? await getOpenRequestsCount(session.user.id) : 0;
   const openRequestsHref =
     session?.user?.id && openRequestsCount > 0 ? await getLatestOpenRequestHref(session.user.id) : null;
+  const pendingReview = session?.user?.id ? await getPendingReviewIndicator(session.user.id, admin) : null;
+  const favoriteNewsCount = session?.user?.id ? await getFavoriteNewsCount(session.user.id) : 0;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
 
   async function handleSignOut() {
@@ -71,6 +75,44 @@ export async function SiteHeader() {
               Termine
             </span>
           </Link>
+
+          {pendingReview ? (
+            // Listings waiting for moderation: admins see the whole queue and
+            // land on it, managers see their own listings (see pending-review.ts).
+            <Link
+              href={pendingReview.href}
+              title={pendingReview.label}
+              className="group flex max-w-40 flex-col items-center gap-1 text-center"
+            >
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-error/15 text-error transition-colors group-hover:bg-error/25">
+                <Hourglass className="h-5 w-5" aria-hidden="true" />
+                <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white">
+                  {pendingReview.count}
+                </span>
+              </span>
+              <span className="text-xs font-medium leading-tight text-error">{pendingReview.label}</span>
+            </Link>
+          ) : null}
+
+          {favoriteNewsCount > 0 ? (
+            // News from the user's favorites since they last opened the
+            // favorites page (see src/lib/favorites.ts).
+            <Link
+              href={`${FAVORITES_PAGE}#neuigkeiten`}
+              title="Neuigkeiten bei deinen Favoriten ansehen"
+              className="group flex max-w-40 flex-col items-center gap-1 text-center"
+            >
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-error/15 text-error transition-colors group-hover:bg-error/25">
+                <Heart className="h-5 w-5 fill-error" aria-hidden="true" />
+                <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-semibold text-white">
+                  {favoriteNewsCount}
+                </span>
+              </span>
+              <span className="text-xs font-medium leading-tight text-error">
+                {favoriteNewsCount === 1 ? "1 Neuigkeit" : `${favoriteNewsCount} Neuigkeiten`}
+              </span>
+            </Link>
+          ) : null}
 
           {session?.user ? (
             // "Projekt eintragen"/"Termin eintragen" used to be separate

@@ -16,6 +16,29 @@ const smtpPassword = process.env.SMTP_PASSWORD;
 const smtpFrom = process.env.SMTP_FROM;
 
 const smtpConfigured = Boolean(smtpHost && smtpUser && smtpPassword);
+
+/**
+ * The From header. SMTP_FROM may be a full address ("LiGem <info@ligem.de>"
+ * or "info@ligem.de") or just a display name ("LiGem - Leben in
+ * Gemeinschaft"). A bare name used to go straight into nodemailer, which
+ * then sent no From header and an empty envelope sender (MAIL FROM:<>),
+ * which mail programs show as "MAILER-DAEMON". A name without "@" is now
+ * paired with SMTP_USER's address.
+ */
+export const mailFrom: string | { name: string; address: string } | undefined =
+  smtpFrom && smtpFrom.includes("@")
+    ? smtpFrom
+    : smtpUser
+      ? smtpFrom
+        ? { name: smtpFrom, address: smtpUser }
+        : smtpUser
+      : undefined;
+
+/** Human-readable sender for the admin e-mail page. */
+export function describeMailFrom(): string {
+  if (!mailFrom) return "nicht konfiguriert";
+  return typeof mailFrom === "string" ? mailFrom : `${mailFrom.name} <${mailFrom.address}>`;
+}
 let transportPromise: Promise<Transporter> | null = null;
 
 /**
@@ -56,7 +79,14 @@ function getTransport(): Promise<Transporter> {
  * recordListingViews for the established pattern), so a slow/failed SMTP
  * attempt can't hold up or break the page/action that triggered it.
  */
-export async function sendMail(options: { to: string; subject: string; text: string }): Promise<void> {
+export async function sendMail(options: {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  // Where a reply should go (e.g. the person who sent a contact request).
+  replyTo?: string;
+}): Promise<void> {
   if (!smtpConfigured) {
     console.warn(`E-Mail nicht gesendet (kein SMTP konfiguriert): "${options.subject}" an ${options.to}`);
     return;
@@ -64,10 +94,15 @@ export async function sendMail(options: { to: string; subject: string; text: str
   try {
     const transport = await getTransport();
     await transport.sendMail({
-      from: smtpFrom || smtpUser,
+      from: mailFrom,
+      // Envelope sender stays the authenticated mailbox, so bounces reach it
+      // and the server never sees an empty MAIL FROM.
+      envelope: { from: smtpUser, to: options.to },
       to: options.to,
+      replyTo: options.replyTo,
       subject: options.subject,
       text: options.text,
+      html: options.html,
     });
   } catch (err) {
     console.error("Fehler beim E-Mail-Versand", err);

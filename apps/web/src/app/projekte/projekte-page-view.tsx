@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { auth } from "@/lib/auth";
+import { getFavoriteIds } from "@/lib/favorites";
+import { FavoriteButton } from "@/components/favorite-button";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import type { Event, Prisma } from "@/generated/prisma/client";
@@ -173,6 +175,8 @@ export async function ProjektePageView({
   searchParams: ProjekteSearchParams;
   selectedListingId?: string;
 }) {
+  const viewerId = (await auth())?.user?.id ?? null;
+  const favoriteIds = await getFavoriteIds(viewerId);
   const typId = paramValues(params, "typ")[0];
   const kategorieIds = paramValues(params, "kategorie");
 
@@ -664,6 +668,7 @@ export async function ProjektePageView({
                 kontaktSuccess={Boolean(params.kontakt)}
                 contactFormError={params.error === "captcha" ? "captcha" : undefined}
                 viewerContact={selectedViewerContact}
+                favorite={{ isFavorite: favoriteIds.listingIds.has(selectedListing.id), loggedIn: Boolean(viewerId) }}
                 requireCaptcha={selectedRequireCaptcha}
                 searchTerm={suche || undefined}
                 distanceKm={
@@ -717,7 +722,7 @@ export async function ProjektePageView({
                     const projectType = listing.attributeOptions[0]?.option.name;
                     const thumbnail = listing.media[0];
                     return (
-                      <li key={listing.id}>
+                      <li key={listing.id} className="relative">
                         <Link
                           href={buildProjekteHref(params, { slug: listing.slug, kontakt: undefined })}
                           className="flex h-full overflow-hidden rounded-2xl bg-surface shadow-sm transition-colors hover:bg-bg"
@@ -730,7 +735,7 @@ export async function ProjektePageView({
                               className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
                             />
                           ) : null}
-                          <div className="min-w-0 flex-1 p-4 sm:p-6">
+                          <div className="min-w-0 flex-1 p-4 pr-14 sm:p-6 sm:pr-14">
                             <h2 className="flex items-center gap-2 text-lg font-semibold">
                               <EntityIconBadge tone="projekt" size="md" />
                               <HighlightText text={listing.projectName} query={suche} />
@@ -764,6 +769,15 @@ export async function ProjektePageView({
                             ) : null}
                           </div>
                         </Link>
+                        {/* Sibling of the card link, not inside it: a button nested in <a> is invalid. */}
+                        <div className="absolute right-3 top-3">
+                          <FavoriteButton
+                            kind="listing"
+                            id={listing.id}
+                            initialFavorite={favoriteIds.listingIds.has(listing.id)}
+                            loggedIn={Boolean(viewerId)}
+                          />
+                        </div>
                       </li>
                     );
                   })}
