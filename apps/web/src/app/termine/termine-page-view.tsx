@@ -488,7 +488,7 @@ export async function TerminePageView({
                               // The first cards are on screen right away; the rest load when scrolled to.
                               loading={index < 4 ? "eager" : "lazy"}
                               decoding="async"
-                              className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
+                              className="aspect-[4/3] w-52 shrink-0 self-start rounded-tl-2xl object-cover sm:w-60"
                             />
                           ) : null}
                           <div className="min-w-0 flex-1 p-4 pr-14 sm:p-6 sm:pr-14">
