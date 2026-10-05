@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -24,8 +25,11 @@ const shortDateFormat = new Intl.DateTimeFormat("de-DE", {
   year: "numeric",
 });
 
-const buttonClass =
-  "min-h-9 rounded-full border border-text/20 px-3 text-sm font-medium transition-colors hover:bg-bg";
+function addDays(d: Date, days: number): Date {
+  const copy = new Date(d);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
 
 export function EventDateFilter({
   defaultVon,
@@ -33,7 +37,7 @@ export function EventDateFilter({
   onChange,
   eventDayColors,
   legend,
-  placeholder = "Zeitraum wählen (alle anstehenden Termine)",
+  placeholder = "Alle anstehenden Termine",
   emptyHint = "Alle anstehenden Termine, zum Eingrenzen einen Beginn-Tag anklicken.",
   embedded = false,
 }: {
@@ -103,6 +107,8 @@ export function EventDateFilter({
   // highlight today's cell in the day grid below, independent of whichever
   // day(s) are actually selected.
   const todayKey = toDateKey(new Date());
+  // Shown as the current value while no range is set.
+  const allLabel = placeholder;
 
   const days = useMemo(() => {
     const year = viewMonth.getFullYear();
@@ -148,135 +154,162 @@ export function EventDateFilter({
 
   const rangeSummary = startDate
     ? endDate
-      ? `${shortDateFormat.format(new Date(startDate))} – ${shortDateFormat.format(new Date(endDate))}`
+      ? startDate === endDate
+        ? shortDateFormat.format(new Date(startDate))
+        : `${shortDateFormat.format(new Date(startDate))} bis ${shortDateFormat.format(new Date(endDate))}`
       : `ab ${shortDateFormat.format(new Date(startDate))}`
     : "";
 
+  // Which quick-pick matches the current range, so its pill reads as active.
+  const todayDate = new Date();
+  const activePreset: "7" | "30" | "alle" | null = !startDate
+    ? "alle"
+    : startDate === todayKey && endDate === toDateKey(addDays(todayDate, 7))
+      ? "7"
+      : startDate === todayKey && endDate === toDateKey(addDays(todayDate, 30))
+        ? "30"
+        : null;
+
+  const presets: { id: "7" | "30" | "alle"; label: string; onClick: () => void }[] = [
+    { id: "7", label: "7 Tage", onClick: () => applyPreset(7) },
+    { id: "30", label: "30 Tage", onClick: () => applyPreset(30) },
+    { id: "alle", label: "Alle", onClick: clearRange },
+  ];
+
+  const hint = startDate && !endDate
+    ? "Jetzt das Ende anklicken. Für einen einzelnen Tag denselben Tag noch einmal."
+    : null;
+
   const calendarContent = (
     <>
-        <div className="flex items-center justify-between pr-12">
-          <button
-            type="button"
-            onClick={() =>
-              setViewMonth(
-                new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1),
-              )
-            }
-            className="min-h-9 min-w-9 rounded-full transition-colors hover:bg-bg"
-            aria-label="Vorheriger Monat"
-          >
-            ‹
-          </button>
-          <span className="font-medium capitalize">
-            {viewMonth.toLocaleDateString("de-DE", {
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              setViewMonth(
-                new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1),
-              )
-            }
-            className="min-h-9 min-w-9 rounded-full transition-colors hover:bg-bg"
-            aria-label="Nächster Monat"
-          >
-            ›
-          </button>
-        </div>
+      <div className="flex rounded-full bg-bg p-1" role="group" aria-label="Schnellauswahl Zeitraum">
+        {presets.map((preset) => {
+          const active = activePreset === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={preset.onClick}
+              aria-pressed={active}
+              className={`min-h-10 flex-1 rounded-full px-2 text-sm font-semibold transition-colors ${
+                active ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text"
+              }`}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center text-xs text-text-muted">
-          {WEEKDAYS.map((weekday) => (
-            <div key={weekday}>{weekday}</div>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg hover:text-text"
+          aria-label="Vorheriger Monat"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <span className="text-lg font-bold capitalize">
+          {viewMonth.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}
+        </span>
+        <button
+          type="button"
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg hover:text-text"
+          aria-label="Nächster Monat"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
+
+      <div>
+        <div className="grid grid-cols-7 pb-1 text-center text-xs font-semibold uppercase tracking-wide">
+          {WEEKDAYS.map((weekday, i) => (
+            <div key={weekday} className={i >= 5 ? "text-primary/70" : "text-text-muted"}>
+              {weekday}
+            </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-y-1">
           {days.map((day, i) => {
             if (!day) return <div key={`empty-${i}`} />;
             const key = toDateKey(day);
             const isStart = key === startDate;
             const isEnd = key === endDate;
-            const inRange = Boolean(
-              startDate && endDate && key > startDate && key < endDate,
-            );
+            const hasRange = Boolean(startDate && endDate && startDate !== endDate);
+            const inRange = Boolean(startDate && endDate && key > startDate && key < endDate);
             const dayColors = eventDayColors?.[key] ?? [];
             const selected = isStart || isEnd;
             const isToday = key === todayKey;
+            // A soft band behind the whole range, rounded off at its two ends
+            // and where it wraps into the next week row.
+            const column = i % 7;
+            const band = hasRange && (inRange || isStart || isEnd)
+              ? `bg-primary/12 ${isStart || column === 0 ? "rounded-l-full" : ""} ${isEnd || column === 6 ? "rounded-r-full" : ""}`
+              : "";
             return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => selectDay(day)}
-                aria-pressed={selected}
-                aria-label={
-                  dayColors.length > 0
-                    ? `${dateLabelFormat.format(day)}, ${dayColors.length} Termin${dayColors.length > 1 ? "e" : ""}`
-                    : dateLabelFormat.format(day)
-                }
-                className={[
-                  "flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg text-sm transition-colors hover:bg-bg",
-                  selected ? "bg-primary text-white hover:bg-primary" : "",
-                  inRange && !selected ? "bg-primary/15" : "",
-                  isToday ? "ring-2 ring-inset ring-secondary" : "",
-                ].join(" ")}
-              >
-                <span>{day.getDate()}</span>
-                {dayColors.length > 0 ? (
-                  <span className="flex gap-0.5">
+              <div key={key} className={`flex justify-center ${band}`}>
+                <button
+                  type="button"
+                  onClick={() => selectDay(day)}
+                  aria-pressed={selected}
+                  aria-current={isToday ? "date" : undefined}
+                  aria-label={
+                    dayColors.length > 0
+                      ? `${dateLabelFormat.format(day)}, ${dayColors.length} Terminart${dayColors.length > 1 ? "en" : ""}`
+                      : dateLabelFormat.format(day)
+                  }
+                  className={[
+                    "relative flex h-12 w-12 max-w-full flex-col items-center justify-center rounded-full text-base tabular-nums transition-colors",
+                    selected
+                      ? "bg-primary font-bold text-white shadow-sm"
+                      : isToday
+                        ? "font-bold text-primary ring-1 ring-inset ring-primary/40 hover:bg-primary/10"
+                        : "hover:bg-bg",
+                  ].join(" ")}
+                >
+                  <span className="leading-none">{day.getDate()}</span>
+                  <span className="mt-1 flex h-1.5 gap-0.5" aria-hidden="true">
                     {dayColors.slice(0, 3).map((color, idx) => (
                       <span
                         key={idx}
-                        aria-hidden="true"
                         className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: selected ? "#fff" : color }}
+                        style={{ backgroundColor: selected ? "rgba(255,255,255,0.9)" : color }}
                       />
                     ))}
                   </span>
-                ) : null}
-              </button>
+                </button>
+              </div>
             );
           })}
         </div>
+      </div>
 
-        {legend && legend.length > 0 && eventDayColors && Object.keys(eventDayColors).length > 0 ? (
-          <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-text/10 pt-3 text-xs text-text-muted">
-            {legend.map((entry) => (
-              <span key={entry.name} className="inline-flex items-center gap-1.5">
-                <span
-                  aria-hidden="true"
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                />
-                {entry.name}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
+      {hint ? <p className="text-sm text-text-muted">{hint}</p> : null}
+      {embedded && !hint ? (
         <p className="text-sm text-text-muted">
           {startDate
             ? endDate
               ? `Vom ${dateLabelFormat.format(new Date(startDate))} bis ${dateLabelFormat.format(new Date(endDate))}`
-              : "Beginn gewählt, jetzt das Ende anklicken (für einen einzelnen Tag denselben Tag nochmal anklicken)."
+              : `Ab ${dateLabelFormat.format(new Date(startDate))}`
             : emptyHint}
         </p>
+      ) : null}
 
-        <div className="border-t border-text/10 pt-3">
-          <span className="font-medium">Zeitraum</span>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => applyPreset(7)} className={buttonClass}>
-              Nächste 7 Tage
-            </button>
-            <button type="button" onClick={() => applyPreset(30)} className={buttonClass}>
-              Nächste 30 Tage
-            </button>
-            <button type="button" onClick={clearRange} className={buttonClass}>
-              Alle anstehenden
-            </button>
-          </div>
-        </div>
+      {legend && legend.length > 0 && eventDayColors && Object.keys(eventDayColors).length > 0 ? (
+        <ul className="flex flex-wrap gap-1.5 border-t border-text/10 pt-3" aria-label="Farben der Veranstaltungsarten">
+          {legend.map((entry) => (
+            <li
+              key={entry.name}
+              className="inline-flex items-center gap-1.5 rounded-full bg-bg px-2.5 py-1 text-xs text-text-muted"
+            >
+              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+              {entry.name}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </>
   );
 
@@ -289,27 +322,37 @@ export function EventDateFilter({
         // are the only ones.
         calendarContent
       ) : !expanded ? (
-        <input
-          type="text"
-          readOnly
-          value={rangeSummary}
-          onFocus={() => setExpanded(true)}
-          placeholder={placeholder}
-          className="min-h-11 w-full cursor-pointer rounded-xl border border-text/20 bg-bg px-3 text-sm"
-        />
-      ) : (
-      <div className="relative flex flex-col gap-3 rounded-2xl border border-text/20 bg-surface p-4">
         <button
           type="button"
-          onClick={() => setExpanded(false)}
-          aria-label="Zeitraum-Auswahl schließen"
-          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg"
+          onClick={() => setExpanded(true)}
+          className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-text/15 bg-bg px-4 text-left transition-colors hover:border-primary/40"
         >
-          ✕
+          <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <span className="flex-1">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-text-muted">Zeitraum</span>
+            <span className="block font-semibold">{rangeSummary || allLabel}</span>
+          </span>
+          <ChevronDown className="h-5 w-5 shrink-0 text-text-muted" aria-hidden="true" />
         </button>
-        <span className="pr-8 font-medium">{placeholder}</span>
-        {calendarContent}
-      </div>
+      ) : (
+        <div className="flex flex-col gap-4 rounded-2xl border border-text/10 bg-surface p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-text-muted">Zeitraum</span>
+              <span className="block font-semibold">{rangeSummary || allLabel}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-label="Kalender einklappen"
+              className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg hover:text-text"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+          {calendarContent}
+        </div>
       )}
 
       <input type="hidden" name="von" value={startDate} />

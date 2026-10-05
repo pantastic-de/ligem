@@ -9,7 +9,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
 import { EventDetail, type EventDetailData } from "@/components/event-detail";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
-import { colorForCategory } from "@/lib/category-color";
+import { categoryColorMap, UNCATEGORIZED_COLOR } from "@/lib/category-color";
 import { haversineDistanceKm } from "@/lib/distance";
 import { recordEventViews } from "@/lib/event-views";
 import { visibleResultCount } from "@/lib/result-paging";
@@ -266,15 +266,15 @@ export async function TerminePageView({
     },
   });
 
+  // Same option order as TermineSearchForm's legend, so colors match.
+  const artColors = categoryColorMap(veranstaltungsart?.options.map((o) => o.id) ?? []);
   const eventDayColorSets = new Map<string, Set<string>>();
   for (const event of events) {
     const key = toDateKey(event.startAt);
     const typeOption = event.attributeOptions.find(
       ({ option }) => option.groupId === veranstaltungsart?.id,
     );
-    const color = typeOption
-      ? colorForCategory(typeOption.option.id)
-      : "#6B5C4F";
+    const color = (typeOption && artColors[typeOption.option.id]) || UNCATEGORIZED_COLOR;
     if (!eventDayColorSets.has(key)) eventDayColorSets.set(key, new Set());
     eventDayColorSets.get(key)?.add(color);
   }

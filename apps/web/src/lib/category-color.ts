@@ -1,25 +1,25 @@
-// Deterministic color assignment for categorical (nominal) data — e.g. giving
-// each "Veranstaltungsart" (event type) a stable, visually distinct color for
-// calendar dots, without needing a dedicated color column in the database.
-// Warm-toned but distinguishable from the semantic status colors
-// (success/warning/error) already used elsewhere, so a colored dot never
-// reads as a status.
+// Color assignment for categorical (nominal) data — e.g. giving each
+// "Veranstaltungsart" (event type) its own color for calendar dots, without a
+// dedicated color column in the database. Warm, LiGem-toned, but clearly
+// distinguishable from each other and from the semantic status colors
+// (success/warning/error), so a colored dot never reads as a status.
+//
+// Colors are assigned by position in the (sortOrder-ordered) option list, not
+// by hashing the id: hashing 7 ids into 8 colors collided (Workshop and
+// Fest/Feier both came out plum), which made the dots meaningless.
 const CATEGORY_COLORS = [
-  "#B14F24", // terracotta (primary)
-  "#61703F", // olive (secondary)
-  "#C89B3C", // ocher (accent)
-  "#2F6B6B", // muted teal
-  "#8B4A6B", // muted plum
-  "#4C6B8A", // muted slate blue
-  "#946B3A", // warm sienna
-  "#5C6B3F", // moss
+  "#B7511F", // terracotta (primary)
+  "#5E7645", // olive (secondary)
+  "#D9A23A", // ocher (accent, darkened to stay visible as a small dot)
+  "#2F7A78", // teal
+  "#8B4A6B", // plum
+  "#4C6B8A", // slate blue
+  "#C9706A", // rose
+  "#7A5A3A", // walnut
 ];
 
-export function colorForCategory(id: string): string {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  }
-  const index = Math.abs(hash) % CATEGORY_COLORS.length;
-  return CATEGORY_COLORS[index];
+export const UNCATEGORIZED_COLOR = "#9C8B7A";
+
+export function categoryColorMap(ids: string[]): Record<string, string> {
+  return Object.fromEntries(ids.map((id, i) => [id, CATEGORY_COLORS[i % CATEGORY_COLORS.length]]));
 }

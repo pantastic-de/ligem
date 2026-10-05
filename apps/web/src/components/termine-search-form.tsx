@@ -6,7 +6,7 @@ import { LocationRadiusPicker } from "@/components/location-radius-picker";
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 import { type MapResultItem } from "@/lib/map-result-item";
 import { useAutoSubmitForm } from "@/lib/use-auto-submit-form";
-import { colorForCategory } from "@/lib/category-color";
+import { categoryColorMap } from "@/lib/category-color";
 
 type GroupWithOptions = AttributeGroup & { options: AttributeOption[] };
 
@@ -45,10 +45,11 @@ export function TermineSearchForm({
   selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+  const artColors = categoryColorMap(veranstaltungsart?.options.map((o) => o.id) ?? []);
   const legend =
     veranstaltungsart?.options.map((option) => ({
       name: option.name,
-      color: colorForCategory(option.id),
+      color: artColors[option.id],
     })) ?? [];
 
   return (
@@ -80,6 +81,7 @@ export function TermineSearchForm({
           options={veranstaltungsart.options}
           defaultSelected={defaults.artIds}
           counts={artCounts}
+          colors={artColors}
           onChange={submitNow}
         />
       ) : null}

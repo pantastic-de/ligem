@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useMemo } from "react";
 
 import type {
@@ -95,24 +95,29 @@ export function ProjekteSearchForm({
       </div>
 
       {projektTyp ? (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="typ" className="font-medium">
-            {projektTyp.name}
-          </label>
-          <select
-            id="typ"
-            name="typ"
-            defaultValue={defaults.typId ?? ""}
-            className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
-          >
-            <option value="">Alle</option>
-            {projektTyp.options.map((option) => (
-              <option key={option.id} value={option.id}>
+        // Single choice as radio chips (same look as the filter chips in
+        // MultiSelectDropdown); uncontrolled, so the form's onChange
+        // auto-submit picks changes up like any other input.
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 font-semibold">{projektTyp.name}</legend>
+          <div className="flex flex-wrap gap-2">
+            {[{ id: "", name: "Alle" }, ...projektTyp.options].map((option) => (
+              <label
+                key={option.id || "alle"}
+                className="inline-flex min-h-10 max-w-full cursor-pointer items-center rounded-full border border-text/15 bg-bg px-3.5 py-1 transition-colors hover:border-primary/50 has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-white has-[:checked]:shadow-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-text"
+              >
+                <input
+                  type="radio"
+                  name="typ"
+                  value={option.id}
+                  defaultChecked={(defaults.typId ?? "") === option.id}
+                  className="sr-only"
+                />
                 {option.name}
-              </option>
+              </label>
             ))}
-          </select>
-        </div>
+          </div>
+        </fieldset>
       ) : null}
 
       <LocationRadiusPicker
@@ -142,20 +147,25 @@ export function ProjekteSearchForm({
       */}
       <input type="hidden" name="suche" value={defaults.suche ?? ""} />
 
-      <details id="erweiterte-suche" className="rounded-xl border border-text/20" open={anyAdvancedFilterActive}>
-        <summary className="cursor-pointer select-none px-4 py-3 font-medium">
-          Erweiterte Suche
+      <details id="erweiterte-suche" className="group/adv" open={anyAdvancedFilterActive}>
+        <summary className="flex min-h-12 list-none cursor-pointer select-none items-center gap-3 rounded-2xl bg-bg px-4 py-2 [&::-webkit-details-marker]:hidden">
+          <SlidersHorizontal className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <span className="flex-1 font-semibold">Erweiterte Suche</span>
+          <ChevronDown
+            className="h-5 w-5 shrink-0 text-text-muted transition-transform group-open/adv:rotate-180"
+            aria-hidden="true"
+          />
         </summary>
-        <div className="flex flex-col gap-6 border-t border-text/10 p-4">
-          <details className="group rounded-xl border border-text/20" open={Boolean(defaults.von || defaults.bis)}>
-            <summary className="flex min-h-11 list-none cursor-pointer select-none items-center gap-1.5 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
-              <ChevronRight
-                className="h-4 w-4 shrink-0 text-text-muted transition-transform group-open:rotate-90"
+        <div className="flex flex-col gap-3 pt-3">
+          <details className="group rounded-2xl border border-text/10 bg-surface shadow-sm" open={Boolean(defaults.von || defaults.bis)}>
+            <summary className="flex min-h-12 list-none cursor-pointer select-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+              <span className="flex-1 font-semibold">Suchzeitraum</span>
+              <ChevronDown
+                className="h-5 w-5 shrink-0 text-text-muted transition-transform group-open:rotate-180"
                 aria-hidden="true"
               />
-              Suchzeitraum
             </summary>
-            <div className="border-t border-text/10 p-3">
+            <div className="flex flex-col gap-4 border-t border-text/10 p-3">
               <EventDateFilter
                 defaultVon={defaults.von}
                 defaultBis={defaults.bis}

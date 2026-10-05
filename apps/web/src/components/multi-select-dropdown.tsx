@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, type MouseEvent } from "react";
-import { ChevronRight } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 
 type Option = { id: string; name: string };
 
 /**
  * An option group collapsed behind a native <details>/<summary> disclosure
- * — click the summary row to expand and reveal the checkboxes/radios,
+ * — click the summary row to expand and reveal the options as toggle chips
+ * (each a visually hidden checkbox/radio inside its <label>, so forms,
+ * keyboard and screen readers work exactly like plain inputs; chips wrap
+ * cleanly in the narrow search sidebar where a two-column checkbox grid
+ * overflowed),
  * matching the outer "Erweiterte Suche" <details> one level up in both
  * search forms. Used for every attribute-group field in ProjekteSearchForm/
  * TermineSearchForm (always `multiple`, regardless of the underlying
@@ -34,6 +38,7 @@ export function MultiSelectDropdown({
   defaultSelected,
   multiple = true,
   counts,
+  colors,
   onChange,
 }: {
   label: string;
@@ -53,6 +58,9 @@ export function MultiSelectDropdown({
   // combined with the rest of the currently active filters, not just its
   // raw overall total.
   counts?: Record<string, number>;
+  // Optional color per option id, shown as a dot on its chip — e.g. the
+  // Veranstaltungsart colors that also mark days in the /termine calendar.
+  colors?: Record<string, string>;
   // Called after the "✕" clear-selection button resets this group back to
   // empty — needed because that reset happens via setSelected (a plain
   // React state update), which doesn't fire a native change event on any
@@ -88,56 +96,86 @@ export function MultiSelectDropdown({
     onChange?.();
   }
 
-  const summaryText = multiple
-    ? selected.size > 0
-      ? `${selected.size} ausgewählt`
-      : null
-    : (options.find((o) => selected.has(o.id))?.name ?? null);
+  // Names of the chosen options, so the collapsed row says what is active
+  // ("Workshop, Besuchstag") instead of only how many.
+  const selectedNames = options.filter((o) => selected.has(o.id)).map((o) => o.name);
+  const summaryText =
+    selectedNames.length === 0
+      ? null
+      : selectedNames.length <= 2
+        ? selectedNames.join(", ")
+        : `${selectedNames.slice(0, 2).join(", ")} +${selectedNames.length - 2}`;
 
   return (
-    <details className="group rounded-xl border border-text/20">
-      <summary className="flex min-h-11 list-none cursor-pointer select-none items-center justify-between gap-2 px-4 py-2 font-medium [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-1.5">
-          <ChevronRight
-            className="h-4 w-4 shrink-0 text-text-muted transition-transform group-open:rotate-90"
-            aria-hidden="true"
-          />
-          {label}
+    <details className="group rounded-2xl border border-text/10 bg-surface shadow-sm">
+      <summary className="flex min-h-12 list-none cursor-pointer select-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">{label}</span>
+          {summaryText ? (
+            <span className="block truncate text-sm text-primary">{summaryText}</span>
+          ) : null}
         </span>
         {summaryText ? (
-          <span className="relative mr-2 inline-flex max-w-[65%] items-center rounded-full bg-bg px-2 py-0.5 text-sm font-normal text-text-muted">
-            <span className="mr-[5px] truncate">{summaryText}</span>
-            <button
-              type="button"
-              onClick={clearAll}
-              aria-label={`${label}: Auswahl zurücksetzen`}
-              title="Auswahl zurücksetzen"
-              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-text/60 text-[9px] leading-none text-white shadow-sm transition-colors hover:bg-text"
-            >
-              ✕
-            </button>
-          </span>
+          <button
+            type="button"
+            onClick={clearAll}
+            aria-label={`${label}: Auswahl zurücksetzen`}
+            title="Auswahl zurücksetzen"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-bg hover:text-text"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
         ) : null}
+        <ChevronDown
+          className="h-5 w-5 shrink-0 text-text-muted transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
       </summary>
-      <div className="grid grid-cols-1 gap-2 border-t border-text/10 p-3 sm:grid-cols-2">
+      <div className="flex flex-wrap gap-2 border-t border-text/10 p-3">
         {options.map((option) => {
           const count = counts?.[option.id];
           const isZero = count === 0;
+          const checked = selected.has(option.id);
+          const color = colors?.[option.id];
           return (
             <label
               key={option.id}
-              className={`flex min-h-11 items-center gap-2 text-sm ${isZero ? "text-text-muted/40" : ""}`}
+              className={[
+                "inline-flex min-h-10 max-w-full cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1 text-left transition-colors",
+                "has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-text",
+                checked
+                  ? "border-primary bg-primary text-white shadow-sm"
+                  : `border-text/15 bg-bg hover:border-primary/50 ${isZero ? "text-text-muted/60" : ""}`,
+              ].join(" ")}
             >
               <input
                 type={multiple ? "checkbox" : "radio"}
                 name={name}
                 value={option.id}
-                checked={selected.has(option.id)}
+                checked={checked}
                 onChange={() => toggle(option.id)}
-                className={`h-5 w-5 ${isZero ? "opacity-40" : ""}`}
+                className="sr-only"
               />
-              {option.name}
-              {count != null ? ` (${count})` : ""}
+              {checked ? (
+                <Check className="h-4 w-4 shrink-0" aria-hidden="true" />
+              ) : color ? (
+                <span
+                  aria-hidden="true"
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${isZero ? "opacity-50" : ""}`}
+                  style={{ backgroundColor: color }}
+                />
+              ) : null}
+              <span className="min-w-0 break-words">{option.name}</span>
+              {count != null ? (
+                <span
+                  className={`shrink-0 rounded-full px-1.5 text-xs font-semibold tabular-nums ${
+                    checked ? "bg-white/25 text-white" : "bg-text/8 text-text-muted"
+                  }`}
+                  aria-label={`${count} Treffer`}
+                >
+                  {count}
+                </span>
+              ) : null}
             </label>
           );
         })}
