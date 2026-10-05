@@ -12,6 +12,8 @@ import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { colorForCategory } from "@/lib/category-color";
 import { haversineDistanceKm } from "@/lib/distance";
 import { recordEventViews } from "@/lib/event-views";
+import { visibleResultCount } from "@/lib/result-paging";
+import { LoadMoreLink } from "@/components/load-more-link";
 import { findIdsWithinRadius } from "@/lib/geo";
 
 const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
@@ -33,6 +35,7 @@ export type TermineSearchParams = {
   radius?: string;
   von?: string;
   bis?: string;
+  anzahl?: string;
   angemeldet?: string;
   error?: string;
 };
@@ -64,6 +67,7 @@ function buildTermineHref(
   append("radius", params.radius);
   append("von", params.von);
   append("bis", params.bis);
+  append("anzahl", params.anzahl);
   for (const [key, value] of Object.entries(restOverrides)) {
     if (value === undefined) {
       qs.delete(key);
@@ -367,12 +371,16 @@ export async function TerminePageView({
   // isn't rendered then), otherwise every listed event gets an OVERVIEW
   // view, both carrying the same activeFilters summary this page already
   // built for its own "N Termine gefunden für ..." heading.
+  // Only this many cards are rendered (see src/lib/result-paging.ts); map,
+  // calendar dots and prev/next still use every matching event.
+  const shownCount = visibleResultCount(params.anzahl, events.length);
+  const visibleEvents = events.slice(0, shownCount);
   const filtersSummary = activeFilters.length > 0 ? activeFilters.join(", ") : null;
   if (selectedEvent) {
     await recordEventViews([selectedEvent.id], "DETAIL", filtersSummary);
   } else if (events.length > 0) {
     await recordEventViews(
-      events.map((e) => e.id),
+      visibleEvents.map((e) => e.id),
       "OVERVIEW",
       filtersSummary,
     );
@@ -460,7 +468,7 @@ export async function TerminePageView({
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  {events.map((event) => {
+                  {visibleEvents.map((event, index) => {
                     const thumbnail = event.media[0];
                     const isPast = event.startAt.getTime() < nowMs;
                     const isOnline =
@@ -477,6 +485,9 @@ export async function TerminePageView({
                             <img
                               src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
                               alt=""
+                              // The first cards are on screen right away; the rest load when scrolled to.
+                              loading={index < 4 ? "eager" : "lazy"}
+                              decoding="async"
                               className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
                             />
                           ) : null}
@@ -530,6 +541,14 @@ export async function TerminePageView({
                   })}
                 </ul>
               )}
+              {shownCount < events.length ? (
+                <LoadMoreLink
+                  href={buildTermineHref(params, { anzahl: String(shownCount + 24) }).replace(/#.*$/, "")}
+                  shown={shownCount}
+                  total={events.length}
+                  noun={{ one: "Termin", many: "Termine" }}
+                />
+              ) : null}
             </>
           )}
         </div>

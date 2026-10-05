@@ -14,6 +14,8 @@ import { escapeHtml } from "@/lib/map-result-item";
 import { HighlightText } from "@/components/highlight-text";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { recordListingViews } from "@/lib/listing-views";
+import { visibleResultCount } from "@/lib/result-paging";
+import { LoadMoreLink } from "@/components/load-more-link";
 import { turnstileEnabled } from "@/lib/turnstile";
 import { findIdsWithinRadius } from "@/lib/geo";
 
@@ -422,6 +424,11 @@ export async function ProjektePageView({
     }
   });
 
+  // Only this many cards are rendered (see src/lib/result-paging.ts); map,
+  // facets and prev/next still work on the whole sorted list.
+  const shownCount = visibleResultCount(params.anzahl, sortedListings.length);
+  const visibleListings = sortedListings.slice(0, shownCount);
+
   // Batched (not per-listing) so the map's "business card" popups can each
   // show a mini list of upcoming events without an N+1 query.
   const listingIds = listings.map((l) => l.id);
@@ -600,7 +607,7 @@ export async function ProjektePageView({
     await recordListingViews([selectedListing.id], "DETAIL", searchContext);
   } else if (sortedListings.length > 0) {
     await recordListingViews(
-      sortedListings.map((l) => l.id),
+      visibleListings.map((l) => l.id),
       "OVERVIEW",
       searchContext,
     );
@@ -713,7 +720,7 @@ export async function ProjektePageView({
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  {sortedListings.map((listing) => {
+                  {visibleListings.map((listing, index) => {
                     const location = formatShortLocation(listing);
                     const distanceKm = distanceKmById[listing.id];
                     const locationLine = [location, distanceKm != null ? formatDistanceKm(distanceKm) : null]
@@ -732,6 +739,9 @@ export async function ProjektePageView({
                             <img
                               src={`/api/media/${thumbnail.thumbnailKey ?? thumbnail.storageKey}`}
                               alt=""
+                              // The first cards are on screen right away; the rest load when scrolled to.
+                              loading={index < 4 ? "eager" : "lazy"}
+                              decoding="async"
                               className="aspect-[4/3] w-52 shrink-0 self-start rounded-l-2xl object-cover sm:w-60"
                             />
                           ) : null}
@@ -783,6 +793,14 @@ export async function ProjektePageView({
                   })}
                 </ul>
               )}
+              {shownCount < sortedListings.length ? (
+                <LoadMoreLink
+                  href={buildProjekteHref(params, { anzahl: String(shownCount + 24) }).replace(/#.*$/, "")}
+                  shown={shownCount}
+                  total={sortedListings.length}
+                  noun={{ one: "Projekt", many: "Projekte" }}
+                />
+              ) : null}
             </>
           )}
         </div>

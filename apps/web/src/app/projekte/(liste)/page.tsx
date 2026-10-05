@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProjektePageView, type ProjekteSearchParams } from "./projekte-page-view";
+import { ProjektePageView, type ProjekteSearchParams } from "../projekte-page-view";
 
 // The bare list page (any filters) stays indexable with a self-canonical
 // stripped of every query param — indexing every filter-parameter

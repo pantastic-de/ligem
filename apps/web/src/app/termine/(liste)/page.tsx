@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { TerminePageView, type TermineSearchParams } from "./termine-page-view";
+import { TerminePageView, type TermineSearchParams } from "../termine-page-view";
 
 // The bare list page (any filters) stays indexable with a self-canonical
 // stripped of every query param — indexing every filter-parameter
