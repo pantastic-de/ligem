@@ -8,7 +8,8 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent }
 import { LocateFixed } from "lucide-react";
 import { getLeafletWithCluster } from "@/lib/leaflet-cluster";
 import { escapeHtml, type MapResultItem } from "@/lib/map-result-item";
-import { TILE_URL, TILE_ATTRIBUTION } from "@/lib/map-tiles";
+import { preconnect } from "react-dom";
+import { TILE_ORIGIN, TILE_URL, TILE_ATTRIBUTION } from "@/lib/map-tiles";
 
 const RADIUS_STEPS: (number | null)[] = [1, 5, 10, 20, 50, 75, 100, 150, 200, 300, null];
 
@@ -140,6 +141,11 @@ export function LocationRadiusPicker({
   // search form auto-apply filters without a submit button.
   onChange?: () => void;
 }) {
+  // Emitted into <head> during the server render already, so the TLS
+  // handshake with the tile server is done by the time Leaflet (loaded after
+  // hydration) requests its first tiles. Mobile measurements had a map tile
+  // as the page's largest element (LCP).
+  if (TILE_ORIGIN) preconnect(TILE_ORIGIN);
   const [lat, setLat] = useState<number | null>(
     defaultLat ? Number(defaultLat) : null,
   );

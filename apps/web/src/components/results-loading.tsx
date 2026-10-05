@@ -5,16 +5,22 @@ import { Loader2 } from "lucide-react";
  * /projekte or /termine (e.g. from the homepage buttons), until the server
  * has the results ready. Mirrors the page's own layout (title, sidebar,
  * result cards) so nothing jumps when the real page replaces it.
+ *
+ * A direct page load streams this first too (it's the route's Suspense
+ * fallback), so it is at least a screen tall: otherwise the footer showed up
+ * right under the six placeholder cards and jumped down when the real list
+ * arrived (measured CLS 0.11 on desktop). The column split matches the real
+ * page (lg, not sm) for the same reason.
  */
 export function ResultsLoading({ title, intro, label }: { title: string; intro: string; label: string }) {
   return (
-    <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
+    <div className="mx-auto min-h-screen w-full max-w-[1800px] px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <div className="text-center">
         <h1 className="text-3xl font-bold leading-tight sm:text-5xl">{title}</h1>
         <p className="mt-3 text-text-muted sm:text-lg">{intro}</p>
       </div>
-      <div className="mt-8 flex flex-col gap-8 sm:flex-row sm:items-start sm:gap-10">
-        <div aria-hidden="true" className="h-72 rounded-2xl bg-surface shadow-sm sm:h-[520px] sm:w-2/5 sm:shrink-0 lg:w-[380px]" />
+      <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        <div aria-hidden="true" className="h-72 rounded-2xl bg-surface shadow-sm lg:h-[520px] lg:w-[380px] lg:shrink-0" />
         <div className="min-w-0 flex-1">
           <p role="status" aria-live="polite" className="mb-4 flex items-center gap-3 font-semibold text-primary">
             <Loader2 className="h-6 w-6 motion-safe:animate-spin" aria-hidden="true" />

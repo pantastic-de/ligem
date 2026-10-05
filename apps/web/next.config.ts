@@ -57,7 +57,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      // Files in public/ are served with max-age=0 by default. The logo sits
+      // in every page header; a day keeps a changed logo from being stuck
+      // for long (no content hash in its name).
+      { source: "/logo.svg", headers: [{ key: "Cache-Control", value: "public, max-age=86400" }] },
+    ];
   },
   // Next.js's dev server blocks cross-origin requests to its own internal
   // resources (JS chunks, the HMR websocket, RSC/Server Action requests) by

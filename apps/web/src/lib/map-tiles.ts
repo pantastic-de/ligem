@@ -11,10 +11,18 @@
 // NEXT_PUBLIC_MAPTILER_KEY is set (see CLAUDE.md) — falling back to OSM
 // directly only when no key is configured at all, which is fine for a quick
 // local look but not reliable for anything beyond that.
+//
+// The MapTiler URL names the 256px tile size explicitly: without it the API
+// serves 512px PNG tiles (~130 KB each), which Leaflet squeezed into its
+// 256px grid, making labels half-size and the map the heaviest part of every
+// search page. 256px WebP tiles are ~20 KB; on high-DPI screens Leaflet fills
+// `{r}` with "@2x" (~65 KB, labels at their proper size).
 const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
+export const TILE_ORIGIN = maptilerKey ? "https://api.maptiler.com" : null;
+
 export const TILE_URL = maptilerKey
-  ? `https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=${maptilerKey}`
+  ? `https://api.maptiler.com/maps/streets-v4/256/{z}/{x}/{y}{r}.webp?key=${maptilerKey}`
   : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 export const TILE_ATTRIBUTION = maptilerKey
