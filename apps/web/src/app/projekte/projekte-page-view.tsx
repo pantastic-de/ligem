@@ -10,7 +10,7 @@ import { ProjekteSearchForm } from "@/components/projekte-search-form";
 import { ProjekteSortSelect } from "@/components/projekte-sort-select";
 import { ListingDetail, type ListingDetailData } from "@/components/listing-detail";
 import { formatDistanceKm, haversineDistanceKm } from "@/lib/distance";
-import { escapeHtml } from "@/lib/map-result-item";
+import { SLUG_PLACEHOLDER, type ListingMapPoint } from "@/lib/listing-popup";
 import { HighlightText } from "@/components/highlight-text";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { recordListingViews } from "@/lib/listing-views";
@@ -23,12 +23,7 @@ export type ProjekteSearchParams = Record<string, string | string[] | undefined>
 
 type SortOption = "neueste" | "entfernung" | "name" | "kosten";
 
-const popupCurrency = new Intl.NumberFormat("de-DE", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
-const popupEventDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+const summaryDate = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
 
 function formatShortLocation(listing: {
   city: string | null;
@@ -39,80 +34,6 @@ function formatShortLocation(listing: {
     [listing.city, listing.state].filter(Boolean).join(", ") ||
     listing.regionDescription
   );
-}
-
-/**
- * Small "business card" shown in the map marker's click/tap popup: photo,
- * project name (linked to its detail pane), location, motto, the most
- * important set attributes (Projekt Typ + Kategorien, monthly cost), and a
- * mini list of upcoming events (each linked to its own detail page).
- */
-function buildListingPopupHtml(
-  listing: {
-    projectName: string;
-    motto: string | null;
-    city: string | null;
-    state: string | null;
-    regionDescription: string | null;
-    costMonthly: number | null;
-    categories: { category: { name: string } }[];
-    attributeOptions: { option: { name: string } }[];
-    media: { thumbnailKey: string | null; storageKey: string }[];
-  },
-  href: string,
-  upcomingEvents: { id: string; slug: string; title: string; startAt: Date }[],
-): string {
-  const thumbnail = listing.media[0];
-  const location = formatShortLocation(listing);
-  const projectType = listing.attributeOptions[0]?.option.name;
-  const badges = [projectType, ...listing.categories.map(({ category }) => category.name)].filter(
-    (v): v is string => Boolean(v),
-  );
-
-  const parts: string[] = [`<div style="width:200px">`];
-  if (thumbnail) {
-    parts.push(
-      `<img src="/api/media/${escapeHtml(thumbnail.thumbnailKey ?? thumbnail.storageKey)}" alt="" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />`,
-    );
-  }
-  parts.push(
-    `<a href="${href}" style="font-weight:600;color:#b14f24;text-decoration:none;">${escapeHtml(listing.projectName)}</a>`,
-  );
-  if (location) {
-    parts.push(`<div style="font-size:0.85em;color:#666;margin-top:2px;">${escapeHtml(location)}</div>`);
-  }
-  if (listing.motto) {
-    parts.push(`<div style="font-size:0.85em;font-style:italic;margin-top:4px;">„${escapeHtml(listing.motto)}“</div>`);
-  }
-  if (badges.length > 0) {
-    parts.push(
-      `<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${badges
-        .map(
-          (b) =>
-            `<span style="display:inline-block;padding:2px 8px;border-radius:9999px;background:#eee2d3;font-size:0.75em;">${escapeHtml(b)}</span>`,
-        )
-        .join("")}</div>`,
-    );
-  }
-  if (listing.costMonthly != null) {
-    parts.push(
-      `<div style="font-size:0.85em;margin-top:6px;">${escapeHtml(popupCurrency.format(listing.costMonthly))} mtl.</div>`,
-    );
-  }
-  if (upcomingEvents.length > 0) {
-    parts.push(
-      `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;font-size:0.85em;">` +
-        `<div style="font-weight:600;margin-bottom:2px;">Nächste Termine</div>` +
-        `<ul style="margin:0;padding:0;list-style:none;">${upcomingEvents
-          .map(
-            (e) =>
-              `<li style="margin-top:2px;"><a href="/event/${e.slug}" style="color:#61703f;text-decoration:none;">${escapeHtml(e.title)}</a> <span style="color:#999;">– ${popupEventDate.format(e.startAt)}</span></li>`,
-          )
-          .join("")}</ul></div>`,
-    );
-  }
-  parts.push(`</div>`);
-  return parts.join("");
 }
 
 function paramValues(params: ProjekteSearchParams, key: string): string[] {
@@ -429,46 +350,26 @@ export async function ProjektePageView({
   const shownCount = visibleResultCount(params.anzahl, sortedListings.length);
   const visibleListings = sortedListings.slice(0, shownCount);
 
-  // Batched (not per-listing) so the map's "business card" popups can each
-  // show a mini list of upcoming events without an N+1 query.
-  const listingIds = listings.map((l) => l.id);
-  const upcomingEventsRaw =
-    listingIds.length > 0
-      ? await prisma.event.findMany({
-          where: { listingId: { in: listingIds }, status: "PUBLISHED", startAt: { gte: new Date() } },
-          orderBy: { startAt: "asc" },
-          select: { id: true, slug: true, title: true, startAt: true, listingId: true },
-        })
-      : [];
-  const upcomingEventsByListing: Record<
-    string,
-    { id: string; slug: string; title: string; startAt: Date }[]
-  > = {};
-  for (const event of upcomingEventsRaw) {
-    if (!event.listingId) continue;
-    const forListing = upcomingEventsByListing[event.listingId] ?? [];
-    if (forListing.length < 3) forListing.push(event);
-    upcomingEventsByListing[event.listingId] = forListing;
-  }
-
-  const listingMapItems = listings
+  // Map markers carry only what's needed to place and label them: the popup
+  // ("business card") is fetched when a marker is clicked (see
+  // src/lib/listing-popup.ts), and each href is built on the client from one
+  // shared template instead of repeating the filter query string per point.
+  // With ~1,000 listings the pre-built popups were ~1.7 MB of this page.
+  const listingMapHrefTemplate = buildProjekteHref(params, { slug: SLUG_PLACEHOLDER, kontakt: undefined });
+  const roundCoord = (value: number) => Math.round(value * 1e5) / 1e5;
+  const listingMapPoints: ListingMapPoint[] = listings
     .filter(
       (l): l is typeof l & { latitude: number; longitude: number } =>
         l.latitude != null && l.longitude != null,
     )
-    .map((l) => {
-      const href = buildProjekteHref(params, { slug: l.slug, kontakt: undefined });
-      return {
-        id: l.id,
-        label: l.projectName,
-        sublabel: formatShortLocation(l) ?? undefined,
-        type: l.attributeOptions[0]?.option.name,
-        popupHtml: buildListingPopupHtml(l, href, upcomingEventsByListing[l.id] ?? []),
-        latitude: l.latitude,
-        longitude: l.longitude,
-        href,
-      };
-    });
+    .map((l) => ({
+      id: l.id,
+      slug: l.slug,
+      label: l.projectName,
+      sublabel: formatShortLocation(l) ?? undefined,
+      latitude: roundCoord(l.latitude),
+      longitude: roundCoord(l.longitude),
+    }));
 
   // Selecting a listing (via its own /projekt/<slug> permalink, resolved by
   // the caller into selectedListingId) loads its detail inline in this same
@@ -577,8 +478,8 @@ export async function ProjektePageView({
   }
 
   if (filterStart || filterEnd) {
-    const vonLabel = filterStart ? popupEventDate.format(filterStart) : null;
-    const bisLabel = filterEnd ? popupEventDate.format(filterEnd) : null;
+    const vonLabel = filterStart ? summaryDate.format(filterStart) : null;
+    const bisLabel = filterEnd ? summaryDate.format(filterEnd) : null;
     if (vonLabel && bisLabel) activeFilters.push(`Zeitraum ${vonLabel} bis ${bisLabel}`);
     else if (vonLabel) activeFilters.push(`ab ${vonLabel}`);
     else if (bisLabel) activeFilters.push(`bis ${bisLabel}`);
@@ -646,7 +547,8 @@ export async function ProjektePageView({
               bis,
               suche: suche || undefined,
             }}
-            resultItems={listingMapItems}
+            mapPoints={listingMapPoints}
+            mapHrefTemplate={listingMapHrefTemplate}
             selectedId={selectedId}
           />
         </div>

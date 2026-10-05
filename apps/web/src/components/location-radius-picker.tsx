@@ -108,6 +108,7 @@ export function LocationRadiusPicker({
   defaultLng,
   defaultRadius,
   resultItems,
+  loadPopupHtml,
   resultTone = "projekt",
   selectedId,
   onChange,
@@ -118,6 +119,10 @@ export function LocationRadiusPicker({
   // When provided, search results are rendered as clustered markers in this
   // same map instead of a separate ResultsMap below the form.
   resultItems?: MapResultItem[];
+  // Loads a marker's popup content when it's first opened (e.g. /projekte's
+  // "business card", see src/lib/listing-popup.ts), instead of shipping it
+  // with every point. Results are cached per item id for this page view.
+  loadPopupHtml?: (item: MapResultItem) => Promise<string>;
   // Which entity type resultItems are — picks the Home/CalendarDays marker
   // icon and its primary/secondary color (see createEntityMarkerIcon).
   // Defaults to "projekt" since /projekte was this component's first user;
@@ -215,6 +220,12 @@ export function LocationRadiusPicker({
   // the effect with an unchanged value is always a no-op, no matter how
   // many times (1 or 2) it fires for that same value.
   const lastChangeKey = useRef(`${lat}|${lng}|${radiusValue}`);
+  // Popup HTML already fetched via loadPopupHtml, keyed by item id + href
+  // (the href carries the active filters, so a filter change must not reuse
+  // a popup whose link points at the old search).
+  const popupCacheRef = useRef(new Map<string, string>());
+  // Ids of the results the view was last fitted to, see renderResultsLayer.
+  const lastPointsKeyRef = useRef<string | null>(null);
 
   // Bounds that fit every result marker plus the search origin, extended to
   // always also include the full radius circle when one is active. This is
@@ -308,19 +319,38 @@ export function LocationRadiusPicker({
         // whole popup is one plain clickable link to the item's detail
         // page, with its Projekttyp/Veranstaltungsart shown as a small
         // badge underneath.
-        const popupHtml =
-          item.popupHtml ??
-          `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
+        if (loadPopupHtml) {
+          const cacheKey = `${item.id}|${item.href}`;
+          resultMarker.bindPopup(popupCacheRef.current.get(cacheKey) ?? `<div style="width:200px;color:#666;">Lädt …</div>`, {
+            maxWidth: 260,
+          });
+          resultMarker.on("popupopen", () => {
+            if (popupCacheRef.current.has(cacheKey)) return;
+            void loadPopupHtml(item).then((html) => {
+              popupCacheRef.current.set(cacheKey, html);
+              resultMarker.setPopupContent(html);
+            });
+          });
+        } else {
+          const popupHtml = `<a href="${item.href}" style="display:block;color:inherit;text-decoration:none;">
           <strong style="color:${ENTITY_MARKER_COLORS[resultTone]};">${escapeHtml(item.label)}</strong>
           ${item.type ? `<br><span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:9999px;background:#eee2d3;font-size:0.8em;">${escapeHtml(item.type)}</span>` : ""}
         </a>`;
-        resultMarker.bindPopup(popupHtml, { maxWidth: 260 });
+          resultMarker.bindPopup(popupHtml, { maxWidth: 260 });
+        }
         clusterGroup.addLayer(resultMarker);
       });
       map.addLayer(clusterGroup);
       resultsLayerRef.current = clusterGroup;
     }
-    fitOverviewView(L, map);
+    // Only re-fit when the set of results actually changed: loading the next
+    // batch of cards (infinite scroll, `anzahl`) re-renders the page with the
+    // same points, and re-fitting then would undo the reader's own pan/zoom.
+    const pointsKey = (resultItems ?? []).map((i) => i.id).join(",");
+    if (pointsKey !== lastPointsKeyRef.current) {
+      lastPointsKeyRef.current = pointsKey;
+      fitOverviewView(L, map);
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

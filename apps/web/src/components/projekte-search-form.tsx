@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { useMemo } from "react";
 
 import type {
   AttributeGroup,
@@ -11,6 +12,11 @@ import { LocationRadiusPicker } from "@/components/location-radius-picker";
 import { EventDateFilter } from "@/components/event-date-filter";
 import { MultiSelectDropdown } from "@/components/multi-select-dropdown";
 import { type MapResultItem } from "@/lib/map-result-item";
+import {
+  loadListingPopupHtml,
+  SLUG_PLACEHOLDER,
+  type ListingMapPoint,
+} from "@/lib/listing-popup";
 import { useAutoSubmitForm } from "@/lib/use-auto-submit-form";
 
 type GroupWithOptions = AttributeGroup & { options: AttributeOption[] };
@@ -23,7 +29,8 @@ export function ProjekteSearchForm({
   anyAdvancedFilterActive,
   categoryCounts,
   attrCounts,
-  resultItems,
+  mapPoints,
+  mapHrefTemplate,
   selectedId,
 }: {
   categories: ListingCategory[];
@@ -48,12 +55,30 @@ export function ProjekteSearchForm({
   // facetWhere). Passed straight through to each MultiSelectDropdown.
   categoryCounts: Record<string, number>;
   attrCounts: Record<string, Record<string, number>>;
-  resultItems: MapResultItem[];
+  // Compact map markers plus one href template (see src/lib/listing-popup.ts);
+  // full hrefs are built here, popups are loaded on click.
+  mapPoints: ListingMapPoint[];
+  mapHrefTemplate: string;
   // Id of the listing currently shown in the detail pane, if any — see
   // LocationRadiusPicker's selectedId prop.
   selectedId?: string;
 }) {
   const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+
+  // Memoized on the server props, so the map's [resultItems] effect still
+  // only rebuilds its markers when a navigation delivers new points.
+  const resultItems = useMemo<MapResultItem[]>(
+    () =>
+      mapPoints.map((point) => ({
+        id: point.id,
+        label: point.label,
+        sublabel: point.sublabel,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        href: mapHrefTemplate.replace(SLUG_PLACEHOLDER, encodeURIComponent(point.slug)),
+      })),
+    [mapPoints, mapHrefTemplate],
+  );
 
   return (
     <form
@@ -95,6 +120,7 @@ export function ProjekteSearchForm({
         defaultLng={defaults.lng}
         defaultRadius={defaults.radius}
         resultItems={resultItems}
+        loadPopupHtml={loadListingPopupHtml}
         resultTone="projekt"
         selectedId={selectedId}
         onChange={submitNow}
