@@ -35,7 +35,7 @@ test("01 · Ein Projekt finden und anschreiben", async ({ browser }) => {
   await test.step("4 · das Formular ist vorausgefüllt, ohne CAPTCHA", async () => {
     await expect(mira.locator('input[name="senderName"]')).toHaveValue(NUTZER.suchende.name);
     await expect(mira.locator('input[name="senderEmail"]')).toHaveValue(NUTZER.suchende.email);
-    await expect(mira.locator(".cf-turnstile")).toHaveCount(0);
+    await expect(mira.locator('[data-captcha="turnstile"]')).toHaveCount(0);
   });
 
   await test.step("5 · sie schreibt und sendet", async () => {

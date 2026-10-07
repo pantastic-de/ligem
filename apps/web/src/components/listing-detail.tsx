@@ -30,6 +30,7 @@ import { highlightHtml } from "@/lib/highlight";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { FavoriteButton } from "@/components/favorite-button";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -654,8 +655,7 @@ export function ListingDetail({
             </div>
             {requireCaptcha ? (
               <div className="flex flex-col gap-1.5">
-                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
-                <div className="cf-turnstile" data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} />
+                <TurnstileWidget siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""} />
                 <p className="text-sm text-text-muted">
                   Registrierte und bestätigte Nutzer:innen können Nachrichten ohne
                   CAPTCHA senden,{" "}
