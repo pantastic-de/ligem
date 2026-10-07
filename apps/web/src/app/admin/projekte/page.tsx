@@ -2,9 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdminPage } from "@/lib/authz";
+import { requireModeratorPage } from "@/lib/authz";
 import type { ListingStatus, Prisma } from "@/generated/prisma/client";
 import { AppShell } from "@/components/app-shell";
+import { ModerationSwitch } from "@/components/moderation-switch";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
@@ -72,7 +73,7 @@ export default async function AdminProjektePage({
 }: {
   searchParams: Promise<{ status?: string; suche?: string; pruefung?: string; sortierung?: string }>;
 }) {
-  const session = await requireAdminPage();
+  const session = await requireModeratorPage();
   const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { status, suche, pruefung, sortierung } = await searchParams;
   const activeStatus: ListingStatus = statusTabs.some((t) => t.value === status)
@@ -137,7 +138,8 @@ export default async function AdminProjektePage({
   const demoCount = listings.filter((l) => l.isDemo).length;
 
   return (
-    <AppShell active="admin-projekte" isAdmin displayName={displayName}>
+    <AppShell active="admin-projekte" isAdmin={session.isAdmin} isModerator displayName={displayName}>
+      <ModerationSwitch active="projekte" />
       <h1 className="text-3xl font-bold">Projekte prüfen</h1>
       <p className="mt-2 text-text-muted">
         Neue und geänderte Projekte landen hier zur Prüfung, bevor sie auf{" "}
@@ -279,13 +281,17 @@ export default async function AdminProjektePage({
               >
                 Ausgewählte archivieren
               </button>
-              <ConfirmSubmitButton
-                formAction={bulkDeleteListings}
-                confirmText="Ausgewählte Projekte samt ihren Terminen, Fotos, Videos und Kontaktanfragen unwiderruflich löschen?"
-                className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
-              >
-                Ausgewählte löschen
-              </ConfirmSubmitButton>
+              {/* Deleting can't be undone, so it stays with admins; moderators
+                  reject or archive. */}
+              {session.isAdmin ? (
+                <ConfirmSubmitButton
+                  formAction={bulkDeleteListings}
+                  confirmText="Ausgewählte Projekte samt ihren Terminen, Fotos, Videos und Kontaktanfragen unwiderruflich löschen?"
+                  className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                >
+                  Ausgewählte löschen
+                </ConfirmSubmitButton>
+              ) : null}
             </div>
           </form>
 
@@ -428,16 +434,18 @@ export default async function AdminProjektePage({
                     </form>
                   ) : null}
 
-                  <form action={deleteListing}>
-                    <input type="hidden" name="listingId" value={listing.id} />
-                    {listStateInputs}
-                    <ConfirmSubmitButton
-                      confirmText={deleteConfirmText(listing.projectName, listing._count.events)}
-                      className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
-                    >
-                      Löschen
-                    </ConfirmSubmitButton>
-                  </form>
+                  {session.isAdmin ? (
+                    <form action={deleteListing}>
+                      <input type="hidden" name="listingId" value={listing.id} />
+                      {listStateInputs}
+                      <ConfirmSubmitButton
+                        confirmText={deleteConfirmText(listing.projectName, listing._count.events)}
+                        className="inline-flex min-h-11 items-center rounded-full border border-error/40 px-4 text-sm font-medium text-error transition-colors hover:bg-error/10"
+                      >
+                        Löschen
+                      </ConfirmSubmitButton>
+                    </form>
+                  ) : null}
                 </div>
               </li>
             );

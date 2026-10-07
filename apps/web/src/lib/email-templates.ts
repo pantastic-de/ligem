@@ -18,7 +18,10 @@ export type EmailPlaceholder = {
 // Which notification setting a mail falls under (see /benachrichtigungen).
 // "konto" mails (address confirmation, password reset, data export,
 // account deleted) always go out; the others can be switched off.
-export type EmailCategory = "konto" | "kontaktanfragen" | "projekte" | "favoriten" | "admin" | "fusszeile";
+// "teilnahme" (confirmation of one's own event registration and its
+// cancellation link) always goes out too, like "konto"; "termine" (organizer
+// mails about interest and cancellations) follows its own switch.
+export type EmailCategory = "konto" | "teilnahme" | "termine" | "kontaktanfragen" | "projekte" | "favoriten" | "admin" | "fusszeile";
 
 export type EmailTemplateDefinition = {
   key: string;
@@ -100,12 +103,13 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
     category: "kontaktanfragen",
     label: "Neue Kontaktanfrage",
     trigger: "Wenn jemand über das Kontaktformular eines Projekts schreibt.",
-    recipients: "Projekt-Verwalter:innen, die unter „Mein Konto“ die Weiterleitung eingeschaltet haben. Eine Antwort geht direkt an die anfragende Person.",
+    recipients: "Ersteller:in und Mitverwalter:innen des Projekts (abschaltbar unter „Benachrichtigungen“). Eine Antwort geht direkt an die anfragende Person.",
     placeholders: [
       P.projekt,
       { name: "absender_name", description: "Name der anfragenden Person", example: "Mira Sommer" },
       { name: "absender_email", description: "E-Mail-Adresse der anfragenden Person", example: "mira@example.org" },
       { name: "absender_telefon", description: "Telefonnummer der anfragenden Person, sonst „nicht angegeben“", example: "0151 234 56 78" },
+      { name: "email_hinweis", description: "Ob die E-Mail-Adresse geprüft ist (bestätigtes LiGem-Konto) oder nicht", example: "Hinweis: Diese E-Mail-Adresse wurde nicht überprüft. Sie wurde ohne bestätigtes LiGem-Konto angegeben." },
       { name: "nachricht", description: "Die Nachricht (Zeilenumbrüche bleiben erhalten)", example: "Hallo ihr Lieben,\nwir sind eine Familie mit zwei Kindern und würden euch gern kennenlernen." },
       P.link("Link zu den Kontaktanfragen des Projekts", "https://ligem.de/projekte/abc/anfragen"),
     ],
@@ -115,8 +119,135 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
       "<p>{{absender_name}} ({{absender_email}}) hat über LiGem eine Nachricht zu „{{projekt}}“ geschickt:</p>" +
       "<blockquote>{{nachricht}}</blockquote>" +
       "<p>Telefon: {{absender_telefon}}</p>" +
+      "<p>{{email_hinweis}}</p>" +
       "<p>Du kannst direkt auf diese E-Mail antworten, die Antwort geht an {{absender_name}}. " +
       'Annehmen oder ablehnen kannst du die Anfrage hier:<br><a href="{{link}}">Kontaktanfragen ansehen</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "kontaktanfrage-bestaetigung",
+    category: "teilnahme",
+    label: "Kontaktanfrage: Bestätigung für den Absender",
+    trigger: "Wenn jemand mit bestätigtem LiGem-Konto über das Kontaktformular eines Projekts schreibt.",
+    recipients: "Die Person selbst, an die Adresse ihres Kontos. Ohne bestätigtes Konto wird keine Bestätigung verschickt.",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      P.projekt,
+      { name: "nachricht", description: "Die gesendete Nachricht", example: "Hallo ihr Lieben,\nwir würden euch gern kennenlernen." },
+      { name: "projekt_link", description: "Link zur Projektseite", example: "https://ligem.de/projekt/lowenzahnsiedlung" },
+    ],
+    subject: "Deine Nachricht an „{{projekt}}“",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>deine Nachricht an „{{projekt}}“ ist angekommen und wurde direkt an die Verantwortlichen weitergeleitet:</p>" +
+      "<blockquote>{{nachricht}}</blockquote>" +
+      "<p>Sie melden sich per E-Mail oder telefonisch bei dir. Bis dahin kannst du gern weiter stöbern:<br>" +
+      '<a href="{{projekt_link}}">Zur Projektseite</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "termin-teilnahme-bestaetigung",
+    category: "teilnahme",
+    label: "Termin: Bestätigung für Teilnehmende",
+    trigger: "Wenn sich eine Person mit bestätigtem LiGem-Konto über die Terminseite für einen Termin interessiert.",
+    recipients: "Die Person selbst, an die Adresse ihres Kontos (nur mit bestätigtem Konto). Enthält den Link zum Absagen.",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "termin", description: "Titel des Termins", example: "Besuchstag im Haus an der Iller" },
+      { name: "datum", description: "Datum und Uhrzeit", example: "Samstag, 14. November 2026, 14:00 bis 17:00 Uhr" },
+      { name: "ort", description: "Ort, sonst „Ort siehe Terminseite“", example: "Wurms 2, 87452 Altusried" },
+      { name: "veranstalter", description: "Veranstaltendes Projekt", example: "Haus an der Iller" },
+      { name: "personen", description: "Angegebene Personenzahl", example: "2" },
+      { name: "termin_link", description: "Link zur Terminseite", example: "https://ligem.de/event/besuchstag" },
+      { name: "kalender_link", description: "Link zur Kalenderdatei (.ics)", example: "https://ligem.de/event/besuchstag/ical" },
+      { name: "teilnahme_link", description: "Link zu „Meine Teilnahme“ (Übersicht und Absagen)", example: "https://ligem.de/mein-konto/teilnahme" },
+      { name: "absage_link", description: "Persönlicher Link zum Absagen, ohne Anmeldung nutzbar", example: "https://ligem.de/termin-absagen?t=abc" },
+    ],
+    subject: "Du interessierst dich für „{{termin}}“",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>schön, dass du bei „{{termin}}“ dabei sein möchtest. Wir haben {{veranstalter}} Bescheid gegeben, dass du kommen möchtest.</p>" +
+      "<p><strong>{{termin}}</strong><br>{{datum}}<br>{{ort}}<br>Personen: {{personen}}</p>" +
+      "<p>Alles Weitere, etwa ob noch Plätze frei sind, klärt {{veranstalter}} direkt mit dir.</p>" +
+      '<p><a href="{{termin_link}}">Zur Terminseite</a> · <a href="{{kalender_link}}">In meinen Kalender übernehmen</a></p>' +
+      "<p>Falls etwas dazwischenkommt, ist das überhaupt kein Problem. Wir würden dich nur herzlich bitten, kurz abzusagen, " +
+      "damit {{veranstalter}} Bescheid weiß und den Platz vielleicht jemand anderem anbieten kann. " +
+      'Das geht ganz einfach unter <a href="{{teilnahme_link}}">„Meine Teilnahme“</a>, dort kannst du auch einen kurzen Kommentar hinterlassen.</p>' +
+      '<p>Ohne Anmeldung geht es auch direkt über diesen Link: <a href="{{absage_link}}">Teilnahme absagen</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "termin-absage-bestaetigung",
+    category: "teilnahme",
+    label: "Termin: Bestätigung der Absage für Teilnehmende",
+    trigger: "Wenn eine Person mit bestätigtem LiGem-Konto ihre Teilnahme absagt (über „Meine Teilnahme“ oder den Link aus der Bestätigungsmail).",
+    recipients: "Die Person selbst, an die Adresse ihres Kontos.",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "termin", description: "Titel des Termins", example: "Besuchstag im Haus an der Iller" },
+      { name: "datum", description: "Datum und Uhrzeit", example: "Samstag, 14. November 2026, 14:00 bis 17:00 Uhr" },
+      { name: "veranstalter", description: "Veranstaltendes Projekt", example: "Haus an der Iller" },
+      { name: "kommentar", description: "Kommentar zur Absage, sonst „kein Kommentar“", example: "Leider krank, wir kommen gern zum nächsten Besuchstag." },
+      { name: "termine_link", description: "Link zum Terminkalender", example: "https://ligem.de/termine" },
+    ],
+    subject: "Abgesagt: „{{termin}}“",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>danke, dass du Bescheid gegeben hast. Deine Teilnahme an „{{termin}}“ ({{datum}}) ist abgesagt, und {{veranstalter}} ist informiert.</p>" +
+      "<p>Dein Kommentar: {{kommentar}}</p>" +
+      '<p>Vielleicht passt ja ein anderer Termin: <a href="{{termine_link}}">Zum Terminkalender</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "termin-interesse-veranstalter",
+    category: "termine",
+    label: "Termin: neue Interessensmeldung (an Veranstalter)",
+    trigger: "Wenn jemand über die Terminseite Interesse an einem Termin meldet.",
+    recipients: "Ersteller:in des Termins sowie Ersteller:in und Mitverwalter:innen des Projekts. Eine Antwort geht direkt an die Person.",
+    placeholders: [
+      { name: "termin", description: "Titel des Termins", example: "Besuchstag im Haus an der Iller" },
+      { name: "datum", description: "Datum und Uhrzeit", example: "Samstag, 14. November 2026, 14:00 bis 17:00 Uhr" },
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "email", description: "E-Mail-Adresse der Person", example: "mira@example.org" },
+      { name: "personen", description: "Angegebene Personenzahl", example: "2" },
+      { name: "nachricht", description: "Nachricht der Person, sonst „keine Nachricht“", example: "Wir bringen einen Kuchen mit." },
+      { name: "email_hinweis", description: "Ob die E-Mail-Adresse geprüft ist (bestätigtes LiGem-Konto) oder nicht", example: "Hinweis: Diese E-Mail-Adresse wurde nicht überprüft. Sie wurde ohne bestätigtes LiGem-Konto angegeben." },
+      { name: "gesamt", description: "Personen insgesamt, die bisher Interesse gemeldet haben", example: "7" },
+      { name: "uebersicht_link", description: "Link zur Übersicht aller Anmeldungen", example: "https://ligem.de/mein-konto/anmeldungen" },
+    ],
+    subject: "Neue Interessensmeldung für „{{termin}}“",
+    body:
+      "<p>Hallo,</p>" +
+      "<p>{{name}} ({{email}}) möchte mit {{personen}} Person(en) zu „{{termin}}“ kommen ({{datum}}).</p>" +
+      "<blockquote>{{nachricht}}</blockquote>" +
+      "<p>{{email_hinweis}}</p>" +
+      "<p>Damit haben bisher insgesamt {{gesamt}} Personen Interesse gemeldet. Du kannst direkt auf diese E-Mail antworten, die Antwort geht an {{name}}.</p>" +
+      '<p><a href="{{uebersicht_link}}">Alle Anmeldungen ansehen</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "termin-absage-veranstalter",
+    category: "termine",
+    label: "Termin: Absage (an Veranstalter)",
+    trigger: "Wenn jemand über den Link in der Bestätigungsmail absagt.",
+    recipients: "Ersteller:in des Termins sowie Ersteller:in und Mitverwalter:innen des Projekts.",
+    placeholders: [
+      { name: "termin", description: "Titel des Termins", example: "Besuchstag im Haus an der Iller" },
+      { name: "datum", description: "Datum und Uhrzeit", example: "Samstag, 14. November 2026, 14:00 bis 17:00 Uhr" },
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "email", description: "E-Mail-Adresse der Person", example: "mira@example.org" },
+      { name: "personen", description: "Personenzahl der abgesagten Meldung", example: "2" },
+      { name: "kommentar", description: "Kommentar zur Absage, sonst „kein Kommentar“", example: "Leider krank, wir kommen gern zum nächsten Besuchstag." },
+      { name: "gesamt", description: "Personen insgesamt nach der Absage", example: "5" },
+      { name: "uebersicht_link", description: "Link zur Übersicht aller Anmeldungen", example: "https://ligem.de/mein-konto/anmeldungen" },
+    ],
+    subject: "Absage für „{{termin}}“",
+    body:
+      "<p>Hallo,</p>" +
+      "<p>{{name}} ({{email}}) kann leider nicht zu „{{termin}}“ kommen ({{datum}}) und hat die Teilnahme für {{personen}} Person(en) abgesagt.</p>" +
+      "<blockquote>{{kommentar}}</blockquote>" +
+      "<p>Damit haben jetzt insgesamt {{gesamt}} Personen Interesse gemeldet.</p>" +
+      '<p><a href="{{uebersicht_link}}">Alle Anmeldungen ansehen</a></p>' +
       SIGNATURE,
   },
   {
@@ -279,6 +410,63 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
       "<p>dein Konto bei LiGem ist gelöscht. Das ist mit deinen Inhalten passiert:</p>" +
       "<blockquote>{{zusammenfassung}}</blockquote>" +
       "<p>Danke, dass du dabei warst. Du bist jederzeit wieder willkommen.</p>" +
+      SIGNATURE,
+  },
+  {
+    key: "konto-gesperrt",
+    category: "konto",
+    label: "Konto gesperrt",
+    trigger: "Wenn ein Admin ein Konto unter Admin > Nutzer:innen sperrt.",
+    recipients: "Die Person, deren Konto gesperrt wurde",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "grund", description: "Begründung des Admins (oder „kein Grund angegeben“)", example: "Wiederholt Werbung in Kontaktanfragen" },
+    ],
+    subject: "Dein LiGem-Konto ist gesperrt",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>die LiGem-Moderation hat dein Konto gesperrt. Du kannst dich vorerst nicht mehr anmelden. " +
+      "Deine Projekte und Termine bleiben gespeichert.</p>" +
+      "<p><strong>Begründung:</strong> {{grund}}</p>" +
+      "<p>Wenn du glaubst, dass das ein Irrtum ist, antworte einfach auf diese E-Mail oder schreib an info@ligem.de.</p>" +
+      SIGNATURE,
+  },
+  {
+    key: "konto-entsperrt",
+    category: "konto",
+    label: "Konto entsperrt",
+    trigger: "Wenn ein Admin die Sperre eines Kontos aufhebt.",
+    recipients: "Die Person, deren Konto wieder freigegeben wurde",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      P.link("Link zur Anmeldung", "https://ligem.de/anmelden"),
+    ],
+    subject: "Dein LiGem-Konto ist wieder freigegeben",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>dein Konto bei LiGem ist wieder freigegeben. Du kannst dich ab sofort wieder anmelden:</p>" +
+      '<p><a href="{{link}}">Zur Anmeldung</a></p>' +
+      SIGNATURE,
+  },
+  {
+    key: "konto-geloescht-moderation",
+    category: "konto",
+    label: "Konto von der Moderation gelöscht",
+    trigger: "Wenn ein Admin ein Konto unter Admin > Nutzer:innen löscht.",
+    recipients: "Die Person, deren Konto gelöscht wurde",
+    placeholders: [
+      { name: "name", description: "Name der Person", example: "Mira Sommer" },
+      { name: "grund", description: "Begründung des Admins (oder „kein Grund angegeben“)", example: "Wiederholt Werbung in Kontaktanfragen" },
+      { name: "zusammenfassung", description: "Was mit Projekten, Terminen und Favoriten passiert ist", example: "„Haus am See“: gelöscht\n2 Favoriten gelöscht" },
+    ],
+    subject: "Dein LiGem-Konto wurde gelöscht",
+    body:
+      "<p>Hallo {{name}},</p>" +
+      "<p>die LiGem-Moderation hat dein Konto gelöscht.</p>" +
+      "<p><strong>Begründung:</strong> {{grund}}</p>" +
+      "<p>Das ist mit deinen Inhalten passiert:</p>" +
+      "<blockquote>{{zusammenfassung}}</blockquote>" +
+      "<p>Wenn du glaubst, dass das ein Irrtum ist, antworte einfach auf diese E-Mail oder schreib an info@ligem.de.</p>" +
       SIGNATURE,
   },
   {

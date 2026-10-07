@@ -213,6 +213,7 @@ export default async function TerminBearbeitenPage({
             cost: event.cost,
             maxParticipants: event.maxParticipants,
             registrationRequired: event.registrationRequired,
+            registrationUrl: event.registrationUrl ?? undefined,
             selectedOptionIds: event.attributeOptions.map((a) => a.optionId),
           }}
         />

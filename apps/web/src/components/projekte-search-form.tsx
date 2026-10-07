@@ -26,7 +26,6 @@ export function ProjekteSearchForm({
   projektTyp,
   advancedGroups,
   defaults,
-  anyAdvancedFilterActive,
   categoryCounts,
   attrCounts,
   mapPoints,
@@ -48,7 +47,6 @@ export function ProjekteSearchForm({
     bis?: string;
     suche?: string;
   };
-  anyAdvancedFilterActive: boolean;
   // Faceted result counts for every checkbox in "Erweiterte Suche" — how
   // many results selecting that specific option would produce combined with
   // every other currently active filter (see /projekte/page.tsx's
@@ -147,7 +145,9 @@ export function ProjekteSearchForm({
       */}
       <input type="hidden" name="suche" value={defaults.suche ?? ""} />
 
-      <details id="erweiterte-suche" className="group/adv" open={anyAdvancedFilterActive}>
+      {/* Open on arrival so the filters are visible right away; a place search
+          still folds it away to show the results (location-radius-picker). */}
+      <details id="erweiterte-suche" className="group/adv" open>
         <summary className="flex min-h-12 list-none cursor-pointer select-none items-center gap-3 rounded-2xl bg-bg px-4 py-2 [&::-webkit-details-marker]:hidden">
           <SlidersHorizontal className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <span className="flex-1 font-semibold">Erweiterte Suche</span>

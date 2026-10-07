@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronDown, CircleUserRound, Heart, ShieldCheck, LogOut } from "lucide-react";
+import { ChevronDown, CircleUserRound, Heart, ShieldCheck, LogOut, Users, CalendarCheck } from "lucide-react";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 
@@ -21,12 +21,16 @@ import { EntityIconBadge } from "@/components/entity-icon-badge";
 export function AccountMenu({
   displayName,
   admin,
+  moderator = false,
   openRequestsCount,
   openRequestsHref,
   signOutAction,
 }: {
   displayName: string;
   admin: boolean;
+  // Moderator without admin rights: gets "Moderation" (the review queues)
+  // instead of "Admin".
+  moderator?: boolean;
   // Combined count of pending ContactRequests + not-yet-viewed
   // EventRegistrations across every listing/event this user owns/co-
   // manages (see src/lib/open-requests.ts) — shown as a small red badge
@@ -62,7 +66,7 @@ export function AccountMenu({
         </summary>
         <div
           onClick={close}
-          className="absolute right-0 z-10 mt-1 flex w-48 flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg"
+          className="absolute right-0 z-10 mt-1 flex w-[17rem] flex-col overflow-hidden rounded-xl border border-text/10 bg-surface py-1 shadow-lg"
         >
           <Link
             href="/mein-konto"
@@ -83,6 +87,22 @@ export function AccountMenu({
             Meine Projekte
           </Link>
           <Link
+            href="/meine-termine"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <EntityIconBadge tone="termin" size="nav" />
+            Meine Veranstaltungen
+          </Link>
+          <Link
+            href="/mein-konto/teilnahme"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+              <CalendarCheck className="h-4 w-4" aria-hidden="true" />
+            </span>
+            Meine Teilnahme
+          </Link>
+          <Link
             href="/mein-konto/favoriten"
             className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
           >
@@ -90,6 +110,15 @@ export function AccountMenu({
               <Heart className="h-4 w-4" aria-hidden="true" />
             </span>
             Meine Favoriten
+          </Link>
+          <Link
+            href="/mein-konto/anmeldungen"
+            className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+              <Users className="h-4 w-4" aria-hidden="true" />
+            </span>
+            Anmeldungen zu meinen Terminen
           </Link>
           {admin ? (
             <Link
@@ -102,6 +131,18 @@ export function AccountMenu({
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               </span>
               Admin
+            </Link>
+          ) : moderator ? (
+            <Link
+              href="/admin/projekte"
+              className="flex min-h-11 items-center gap-2.5 px-3 py-2.5 text-sm transition-colors hover:bg-bg"
+            >
+              <span
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${ACTION_TONE_CLASSES.verwaltung}`}
+              >
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              </span>
+              Moderation
             </Link>
           ) : null}
           <form action={signOutAction}>

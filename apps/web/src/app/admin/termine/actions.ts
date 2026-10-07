@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdminAction } from "@/lib/authz";
+import { requireAdminAction, requireModeratorAction } from "@/lib/authz";
 import { deleteEventsCompletely } from "@/lib/delete-content";
 
 function redirectBack(formData: FormData): never {
@@ -20,7 +20,7 @@ function redirectBack(formData: FormData): never {
 }
 
 export async function approveEvent(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  await requireModeratorAction();
   const eventId = formData.get("eventId")?.toString();
   if (!eventId) return;
 
@@ -30,7 +30,7 @@ export async function approveEvent(formData: FormData): Promise<void> {
 }
 
 export async function rejectEvent(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  await requireModeratorAction();
   const eventId = formData.get("eventId")?.toString();
   if (!eventId) return;
 
@@ -40,7 +40,7 @@ export async function rejectEvent(formData: FormData): Promise<void> {
 }
 
 export async function archiveEvent(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  await requireModeratorAction();
   const eventId = formData.get("eventId")?.toString();
   if (!eventId) return;
 
@@ -57,7 +57,7 @@ function selectedIds(formData: FormData): string[] {
 }
 
 export async function bulkRejectEvents(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  await requireModeratorAction();
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 
@@ -67,7 +67,7 @@ export async function bulkRejectEvents(formData: FormData): Promise<void> {
 }
 
 export async function bulkArchiveEvents(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  await requireModeratorAction();
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 

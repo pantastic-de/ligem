@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Globe, MapPin } from "lucide-react";
+import { Globe, MapPin, CalendarCheck, CalendarPlus, Pencil } from "lucide-react";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { submitEventRegistration } from "@/app/termine/actions";
@@ -12,7 +12,9 @@ import { SITE_URL } from "@/lib/site";
 import { stripHtml } from "@/lib/sanitize-html";
 import { PanoramaViewer } from "@/components/panorama-viewer";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
+import { ExternalHomepageLink } from "@/components/external-homepage-link";
 import { FavoriteButton } from "@/components/favorite-button";
+import { SenderConfirmationHint } from "@/components/sender-confirmation-hint";
 
 export type EventDetailData = Prisma.EventGetPayload<{
   include: {
@@ -53,6 +55,8 @@ export function EventDetail({
   prevItem,
   nextItem,
   favorite,
+  editHref,
+  viewerContact,
 }: {
   event: EventDetailData;
   returnTo: string;
@@ -71,6 +75,10 @@ export function EventDetail({
   nextItem?: { href: string; label: string } | null;
   // Heart next to the title (only for published events).
   favorite?: { isFavorite: boolean; loggedIn: boolean };
+  // Edit page of this event; only passed for people allowed to edit it.
+  editHref?: string;
+  // Logged-in viewer: pre-fills name/e-mail and decides the confirmation hint.
+  viewerContact?: { name: string | null; email: string; emailVerified: boolean } | null;
 }) {
   // Structured data only for actually-published events — schema.org/Event
   // is Google's/AI agents' natural fit here (unlike listings, which don't
@@ -184,13 +192,13 @@ export function EventDetail({
 
       {angemeldetSuccess ? (
         <p className="mb-6 rounded-xl bg-success/10 px-4 py-3 text-success">
-          Danke! Deine Anmeldung bzw. Nachricht wurde verschickt.
+          Danke! Deine Nachricht ist beim Veranstalter angekommen.
         </p>
       ) : null}
       {registrationError ? (
         <p className="mb-6 rounded-xl bg-error/10 px-4 py-3 text-error">
           {registrationError === "zu-viele"
-            ? "Von diesem Anschluss kamen gerade sehr viele Anmeldungen. Bitte versuch es in einer Stunde noch einmal."
+            ? "Von diesem Anschluss kamen gerade sehr viele Nachrichten. Bitte versuch es in einer Stunde noch einmal."
             : "Bitte Name und eine gültige E-Mail-Adresse angeben."}
         </p>
       ) : null}
@@ -205,16 +213,33 @@ export function EventDetail({
             </span>
           ) : null}
         </div>
-        {favorite && event.status === "PUBLISHED" ? (
-          <FavoriteButton
-            kind="event"
-            id={event.id}
-            initialFavorite={favorite.isFavorite}
-            loggedIn={favorite.loggedIn}
-            size="lg"
-            className="shrink-0"
-          />
-        ) : null}
+        {/* Next to the heart: add the event to one's own calendar (iCal
+            file, same download as the green badge by the date below). */}
+        <div className="flex shrink-0 items-center gap-2">
+          {editHref ? (
+            <Link href={editHref} title="Termin bearbeiten" aria-label="Termin bearbeiten" className="flex h-11 w-11 items-center justify-center rounded-full bg-surface/95 text-text-muted shadow-sm ring-1 ring-text/10 transition-transform hover:scale-110 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <Pencil className="h-5 w-5" aria-hidden="true" />
+            </Link>
+          ) : null}
+          <a
+            href={`/event/${event.slug}/ical`}
+            download
+            title="In meinen Kalender eintragen (iCal)"
+            aria-label="Termin in den eigenen Kalender eintragen (iCal-Datei)"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface/95 text-secondary shadow-sm ring-1 ring-text/10 transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+          >
+            <CalendarPlus className="h-6 w-6" aria-hidden="true" />
+          </a>
+          {favorite && event.status === "PUBLISHED" ? (
+            <FavoriteButton
+              kind="event"
+              id={event.id}
+              initialFavorite={favorite.isFavorite}
+              loggedIn={favorite.loggedIn}
+              size="lg"
+            />
+          ) : null}
+        </div>
       </div>
       <div className="mt-3 flex flex-col gap-2 text-text-muted">
         <p className="flex items-center gap-2">
@@ -308,23 +333,44 @@ export function EventDetail({
         ) : null}
       </div>
 
-      {event.websiteUrl ? (
-        <p className="mt-4">
-          <a href={event.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
-            Homepage der Veranstaltung
-          </a>
-        </p>
-      ) : null}
+      <ExternalHomepageLink url={event.websiteUrl} label="Homepage der Veranstaltung" />
 
-      <section className="mt-12 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">
-          {event.registrationRequired ? "Anmelden" : "Nachricht an den Veranstalter"}
+      {/* Framed in the Termine green (the project contact form uses the
+          Projekte orange-red) so it reads as a form at a glance. */}
+      <section
+        id="interesse"
+        className="mt-12 scroll-mt-4 rounded-2xl border-2 border-secondary/50 bg-secondary/12 p-4 shadow-sm sm:p-6"
+      >
+        <h2 className="flex items-center gap-3 text-xl font-bold text-secondary">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-white">
+            <CalendarCheck className="h-5 w-5" aria-hidden="true" />
+          </span>
+          {event.registrationRequired ? "Teilnahme-Interesse melden" : "Nachricht an den Veranstalter"}
         </h2>
         <p className="mt-1 text-text-muted">
           {event.registrationRequired
-            ? "Für diese Veranstaltung ist eine Voranmeldung notwendig."
+            ? "Der Veranstalter freut sich über eine kurze Voranmeldung. Hier kannst du unverbindlich mitteilen, dass du gern dabei wärst. Ob noch Plätze frei sind und alles Weitere klärt ihr dann direkt miteinander."
             : "Keine Voranmeldung nötig, du kannst trotzdem eine Nachricht schicken."}
         </p>
+        {/* The organizer's own sign-up page, when they gave one: formal
+            registration happens there; the form below stays for messages. */}
+        {event.registrationUrl ? (
+          <div className="mt-4 rounded-2xl border border-secondary/30 bg-surface p-4">
+            <p className="font-semibold">Anmeldung direkt beim Veranstalter</p>
+            <ExternalHomepageLink url={event.registrationUrl} label="Zur Anmeldeseite" />
+            <p className="mt-3 text-sm text-text-muted">
+              Über das Formular unten kannst du dem Veranstalter zusätzlich eine Nachricht schicken.
+            </p>
+          </div>
+        ) : null}
+        {!viewerContact ? (
+          <div className="mt-4">
+          <SenderConfirmationHint
+            kind="termin"
+            loggedIn={Boolean(viewerContact)}
+          />
+        </div>
+          ) : null}
         <form action={submitEventRegistration} className="mt-4 flex flex-col gap-4">
           <input type="hidden" name="eventId" value={event.id} />
           <input type="hidden" name="returnTo" value={returnTo} />
@@ -337,7 +383,8 @@ export function EventDetail({
               name="name"
               type="text"
               required
-              className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
+              defaultValue={viewerContact?.name ?? undefined}
+              className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -349,13 +396,14 @@ export function EventDetail({
               name="email"
               type="email"
               required
-              className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
+              defaultValue={viewerContact?.email ?? undefined}
+              className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
             />
           </div>
           {event.registrationRequired ? (
             <div className="flex flex-col gap-1.5">
               <label htmlFor="participantCount" className="font-medium">
-                Anzahl Teilnehmer:innen
+                Mit wie vielen Personen möchtest du ungefähr kommen?
               </label>
               <input
                 id="participantCount"
@@ -364,7 +412,7 @@ export function EventDetail({
                 min={1}
                 max={50}
                 defaultValue={1}
-                className="min-h-12 w-32 rounded-xl border border-text/20 bg-bg px-4 text-text"
+                className="w-32 min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
               />
             </div>
           ) : null}
@@ -376,14 +424,14 @@ export function EventDetail({
               id="message"
               name="message"
               rows={3}
-              className="rounded-xl border border-text/20 bg-bg px-4 py-3 text-text"
+              className="rounded-xl border border-secondary/30 bg-surface px-4 py-3 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
             />
           </div>
           <button
             type="submit"
-            className="min-h-12 self-start rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="min-h-12 self-start rounded-full bg-secondary px-6 font-semibold text-white shadow-sm transition-colors hover:bg-secondary-hover"
           >
-            {event.registrationRequired ? "Anmelden" : "Nachricht senden"}
+            {event.registrationRequired ? "Interesse melden" : "Nachricht senden"}
           </button>
         </form>
       </section>

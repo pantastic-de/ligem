@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EventPhotoPicker } from "@/components/event-photo-picker";
 import { EventFormFields } from "@/components/event-form-fields";
 import { createEvent } from "../actions";
 
@@ -73,6 +74,11 @@ export default async function NeuerTerminPage({
           Das Enddatum muss nach dem Beginn liegen.
         </p>
       ) : null}
+      {error === "foto-zu-gross" ? (
+        <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
+          Ein Foto ist größer als 8 MB. Bitte ein kleineres Bild wählen.
+        </p>
+      ) : null}
       {error === "wiederholung" ? (
         <p className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error">
           Bitte bei einer Wiederholung ein gültiges &bdquo;Wiederholen
@@ -106,6 +112,8 @@ export default async function NeuerTerminPage({
             longitude: listing.longitude,
           }}
         />
+
+        <EventPhotoPicker />
 
         <button
           type="submit"

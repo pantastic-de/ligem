@@ -214,6 +214,8 @@ export default async function ProjektBearbeitenPage({
             howWeLive: listing.howWeLive ?? undefined,
             whoWeAreLooking: listing.whoWeAreLooking ?? undefined,
             isTemporary: listing.isTemporary,
+            temporaryFrom: toDateInputValue(listing.temporaryFrom),
+            temporaryUntil: toDateInputValue(listing.temporaryUntil),
             groupSizeCurrent: listing.groupSizeCurrent,
             groupSizePlanned: listing.groupSizePlanned,
             freeSpots: listing.freeSpots,

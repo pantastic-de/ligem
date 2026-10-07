@@ -9,6 +9,9 @@ import { isAdmin } from "@/lib/authz";
 import { getOpenRequestsCount } from "@/lib/open-requests";
 import { AppShell } from "@/components/app-shell";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
+import { DashboardForYou } from "@/components/dashboard-for-you";
+import { ownRegistrationWhere } from "@/app/mein-konto/teilnahme/own-registrations";
+import { INTEREST_ROLES } from "@/lib/user-roles";
 import { getEventViewTotals, getListingViewTotals } from "@/lib/view-stats";
 
 export const metadata: Metadata = {
@@ -24,7 +27,8 @@ const statusLabels: Record<string, string> = {
   ARCHIVED: "Archiviert",
 };
 
-const dateTimeFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" });
+// Event times are wall-clock values in the Date's UTC fields (src/lib/event-time.ts).
+const eventDateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -39,7 +43,8 @@ export default async function DashboardPage() {
     OR: [{ createdById: userId }, { managers: { some: { userId } } }],
   };
 
-  const [listings, upcomingEvents, openRequestsCount] = await Promise.all([
+  const [roleRows, listings, upcomingEvents, openRequestsCount] = await Promise.all([
+    prisma.userRoleAssignment.findMany({ where: { userId }, select: { role: true } }),
     prisma.listing.findMany({
       where: listingWhere,
       orderBy: { createdAt: "desc" },
@@ -59,6 +64,37 @@ export default async function DashboardPage() {
     }),
     getOpenRequestsCount(userId),
   ]);
+
+  // What the person said they want to do (see src/lib/user-roles.ts). People
+  // who only search or inform themselves don't need the project figures;
+  // anyone offering something, already owning a project or who hasn't chosen
+  // anything yet sees them as before.
+  const roles = roleRows.map((r) => r.role);
+  const interests = roles.filter((r) => (INTEREST_ROLES as readonly string[]).includes(r));
+  const seeks = roles.includes("SUCHENDE") || roles.includes("INFORMIEREN");
+  const offers =
+    listings.length > 0 ||
+    interests.length === 0 ||
+    roles.includes("ANBIETER") ||
+    roles.includes("VERANSTALTER") ||
+    roles.includes("ORGANISATION");
+
+  const myNextParticipations = seeks
+    ? await prisma.eventRegistration.findMany({
+        where: {
+          AND: [await ownRegistrationWhere(userId)],
+          cancelledAt: null,
+          event: { startAt: { gte: new Date() } },
+        },
+        orderBy: { event: { startAt: "asc" } },
+        take: 5,
+        select: {
+          id: true,
+          participantCount: true,
+          event: { select: { slug: true, title: true, startAt: true, listing: { select: { projectName: true } } } },
+        },
+      })
+    : [];
 
   const listingIds = listings.map((l) => l.id);
   const eventIdsOfListings =
@@ -102,9 +138,58 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-bold">Willkommen, {displayName}</h1>
-          <p className="mt-1 text-text-muted">Überblick über deine Projekte und Termine.</p>
+          <p className="mt-1 text-text-muted">
+            {offers ? "Überblick über deine Projekte und Termine." : "Schön, dass du da bist."}
+          </p>
         </div>
 
+        <DashboardForYou roles={roles} />
+
+        {seeks ? (
+          <section className="rounded-2xl bg-surface p-4 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Meine nächsten Teilnahmen</h2>
+              <Link href="/mein-konto/teilnahme" className="text-sm font-semibold text-primary hover:underline">
+                Alle ansehen
+              </Link>
+            </div>
+            {myNextParticipations.length === 0 ? (
+              <p className="mt-4 text-sm text-text-muted">
+                Du hast dich noch für keinen Termin gemeldet.{" "}
+                <Link href="/termine" className="text-primary hover:underline">
+                  Termine ansehen
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
+                {myNextParticipations.map((reg) => (
+                  <li key={reg.id}>
+                    <Link
+                      href={`/event/${reg.event.slug}`}
+                      className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 hover:bg-bg/70"
+                    >
+                      <span className="flex min-w-0 items-start gap-2">
+                        <EntityIconBadge tone="termin" size="sm" className="mt-0.5" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{reg.event.title}</span>
+                          <span className="block truncate text-xs text-text-muted">
+                            {reg.event.listing?.projectName ? `${reg.event.listing.projectName} · ` : ""}
+                            {reg.participantCount === 1 ? "1 Person" : `${reg.participantCount} Personen`}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs text-text-muted">{eventDateFormat.format(reg.event.startAt)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
+
+        {offers ? (
+        <>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
@@ -201,7 +286,7 @@ export default async function DashboardPage() {
                         </span>
                       </span>
                       <span className="shrink-0 text-xs text-text-muted">
-                        {dateTimeFormat.format(event.startAt)}
+                        {eventDateFormat.format(event.startAt)}
                       </span>
                     </Link>
                   </li>
@@ -211,7 +296,12 @@ export default async function DashboardPage() {
           </section>
         </div>
 
+        </>
+        ) : null}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {offers ? (
+          <>
           <Link
             href="/projekte/neu"
             className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
@@ -226,10 +316,14 @@ export default async function DashboardPage() {
             <h2 className="font-semibold">Neuer Termin</h2>
             <p className="mt-1 text-sm text-text-muted">Eine Veranstaltung oder einen Besuchstag anlegen.</p>
           </Link>
+          </>
+          ) : null}
           <Link href="/mein-konto" className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg">
             <h2 className="font-semibold">Mein Konto</h2>
             <p className="mt-1 text-sm text-text-muted">Profil, Passwort und Mitverwalter:innen verwalten.</p>
           </Link>
+          {/* Seekers already have "Meine Favoriten" under "Für dich". */}
+          {!roles.includes("SUCHENDE") ? (
           <Link
             href="/mein-konto/favoriten"
             className="rounded-2xl bg-surface p-4 shadow-sm transition-colors hover:bg-bg"
@@ -237,6 +331,7 @@ export default async function DashboardPage() {
             <h2 className="font-semibold">Meine Favoriten</h2>
             <p className="mt-1 text-sm text-text-muted">Gemerkte Projekte und Termine, Neuigkeiten und E-Mail-Einstellungen.</p>
           </Link>
+          ) : null}
         </div>
       </div>
     </AppShell>

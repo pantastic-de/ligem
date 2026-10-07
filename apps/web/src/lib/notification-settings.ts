@@ -10,7 +10,12 @@ export async function unsubscribeAll(userId: string): Promise<void> {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: { notifyContactRequestsByEmail: false, notifyListingStatusByEmail: false, notifyAdminByEmail: false },
+      data: {
+        notifyContactRequestsByEmail: false,
+        notifyListingStatusByEmail: false,
+        notifyAdminByEmail: false,
+        notifyEventRegistrationsByEmail: false,
+      },
     }),
     prisma.favoriteListing.updateMany({ where: { userId }, data: { frequency: "NEVER" } }),
     prisma.favoriteEvent.updateMany({ where: { userId }, data: { frequency: "NEVER" } }),

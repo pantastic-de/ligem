@@ -59,7 +59,7 @@ export function ViewSourceBreakdown({
               <span className="min-w-0 flex-1 truncate">
                 {source.kind === "user" && viewerIsAdmin && source.userId ? (
                   <Link
-                    href={`/admin/nutzer#user-${source.userId}`}
+                    href={`/admin/nutzer/${source.userId}`}
                     className="font-medium text-primary hover:underline"
                   >
                     {source.label}

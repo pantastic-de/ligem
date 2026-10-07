@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 
-import { signIn } from "@/lib/auth";
+import { AccountBlockedError, signIn } from "@/lib/auth";
 import { safeInternalPath, withQueryParam } from "@/lib/return-url";
 
 export async function authenticate(formData: FormData): Promise<void> {
@@ -16,7 +16,9 @@ export async function authenticate(formData: FormData): Promise<void> {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      redirect(weiter === "/" ? "/anmelden?error=1" : withQueryParam("/anmelden?error=1", "weiter", weiter));
+      const code = error instanceof AccountBlockedError || (error as { code?: string }).code === "gesperrt" ? "gesperrt" : "1";
+      const target = `/anmelden?error=${code}`;
+      redirect(weiter === "/" ? target : withQueryParam(target, "weiter", weiter));
     }
     throw error;
   }

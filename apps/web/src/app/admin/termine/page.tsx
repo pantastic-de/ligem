@@ -2,9 +2,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdminPage } from "@/lib/authz";
+import { requireModeratorPage } from "@/lib/authz";
 import type { ListingStatus } from "@/generated/prisma/client";
 import { AppShell } from "@/components/app-shell";
+import { ModerationSwitch } from "@/components/moderation-switch";
 import { BulkSelectControls } from "@/components/bulk-select-controls";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
@@ -44,7 +45,7 @@ export default async function AdminTerminePage({
 }: {
   searchParams: Promise<{ status?: string; suche?: string }>;
 }) {
-  const session = await requireAdminPage();
+  const session = await requireModeratorPage();
   const displayName = session.user.name ?? session.user.email ?? "Konto";
   const { status, suche } = await searchParams;
   // Unlike Listings, Events are created as PUBLISHED directly (no
@@ -80,7 +81,8 @@ export default async function AdminTerminePage({
   const demoCount = events.filter((e) => e.listing?.isDemo).length;
 
   return (
-    <AppShell active="admin-termine" isAdmin displayName={displayName}>
+    <AppShell active="admin-termine" isAdmin={session.isAdmin} isModerator displayName={displayName}>
+      <ModerationSwitch active="termine" />
       <h1 className="text-3xl font-bold">Termine prüfen</h1>
       <p className="mt-2 text-text-muted">
         Termine werden beim Anlegen direkt veröffentlicht. Hier können sie
@@ -171,13 +173,15 @@ export default async function AdminTerminePage({
               >
                 Ausgewählte archivieren
               </button>
-              <ConfirmSubmitButton
-                formAction={bulkDeleteEvents}
-                confirmText="Ausgewählte Termine wirklich unwiderruflich löschen?"
-                className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
-              >
-                Ausgewählte löschen
-              </ConfirmSubmitButton>
+              {session.isAdmin ? (
+                <ConfirmSubmitButton
+                  formAction={bulkDeleteEvents}
+                  confirmText="Ausgewählte Termine wirklich unwiderruflich löschen?"
+                  className="inline-flex min-h-11 items-center rounded-full bg-error px-4 text-sm font-medium text-white transition-colors hover:opacity-90"
+                >
+                  Ausgewählte löschen
+                </ConfirmSubmitButton>
+              ) : null}
             </div>
           </form>
 

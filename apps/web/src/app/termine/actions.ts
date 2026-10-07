@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { getClientIp } from "@/lib/ip-lookup";
 import { registerAttempt } from "@/lib/rate-limit";
 import { withQueryParam } from "@/lib/return-url";
+import { checkSender } from "@/lib/sender-verification";
+import { notifyNewRegistration } from "@/lib/event-registration-mail";
 
 // The form is public (no login, no CAPTCHA), so it gets a per-IP cap and
 // hard limits on every field: otherwise one script could flood an
@@ -72,16 +74,19 @@ export async function submitEventRegistration(formData: FormData): Promise<void>
 
   const session = await auth();
 
-  await prisma.eventRegistration.create({
+  const sender = await checkSender(session?.user?.id, email);
+  const registration = await prisma.eventRegistration.create({
     data: {
       eventId,
       name,
       email,
       message,
       participantCount,
+      emailVerified: sender.emailVerified,
       userId: session?.user?.id ?? null,
     },
   });
+  notifyNewRegistration(registration.id, sender.confirmationTo);
 
   redirect(withQueryParam(returnTo, "angemeldet", "1"));
 }

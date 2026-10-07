@@ -31,6 +31,27 @@ function addDays(d: Date, days: number): Date {
   return copy;
 }
 
+const TONE_CLASSES = {
+  projekt: {
+    filled: "bg-primary text-white shadow-sm",
+    weekend: "text-primary/70",
+    band: "bg-primary/12",
+    endpoint: "bg-primary font-bold text-white shadow-sm",
+    today: "font-bold text-primary ring-1 ring-inset ring-primary/40 hover:bg-primary/10",
+    hoverBorder: "hover:border-primary/40",
+    icon: "text-primary",
+  },
+  termin: {
+    filled: "bg-secondary text-white shadow-sm",
+    weekend: "text-secondary/80",
+    band: "bg-secondary/15",
+    endpoint: "bg-secondary font-bold text-white shadow-sm",
+    today: "font-bold text-secondary ring-1 ring-inset ring-secondary/40 hover:bg-secondary/10",
+    hoverBorder: "hover:border-secondary/40",
+    icon: "text-secondary",
+  },
+} as const;
+
 export function EventDateFilter({
   defaultVon,
   defaultBis,
@@ -40,7 +61,13 @@ export function EventDateFilter({
   placeholder = "Alle anstehenden Termine",
   emptyHint = "Alle anstehenden Termine, zum Eingrenzen einen Beginn-Tag anklicken.",
   embedded = false,
+  startName = "von",
+  endName = "bis",
+  showPresets = true,
+  tone = "projekt",
 }: {
+  // Accent color: Projekte orange-red (Suchzeitraum), Termine green.
+  tone?: "projekt" | "termin";
   defaultVon?: string;
   defaultBis?: string;
   // Called whenever the selected date range changes due to user interaction
@@ -71,7 +98,14 @@ export function EventDateFilter({
   // control. /termine's sidebar usage (not nested in anything) leaves this
   // false and keeps the self-contained boxed behavior.
   embedded?: boolean;
+  // Names of the hidden inputs carrying the range (the search forms use the
+  // von/bis query params; the listing form uses its own field names).
+  startName?: string;
+  endName?: string;
+  // The "7 Tage / 30 Tage / Alle" quick picks only make sense for searching.
+  showPresets?: boolean;
 }) {
+  const c = TONE_CLASSES[tone];
   const [startDate, setStartDate] = useState(defaultVon ?? "");
   const [endDate, setEndDate] = useState(defaultBis ?? "");
   // The calendar starts open by default; the "✕" in its top-right corner
@@ -182,24 +216,26 @@ export function EventDateFilter({
 
   const calendarContent = (
     <>
-      <div className="flex rounded-full bg-bg p-1" role="group" aria-label="Schnellauswahl Zeitraum">
-        {presets.map((preset) => {
-          const active = activePreset === preset.id;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={preset.onClick}
-              aria-pressed={active}
-              className={`min-h-10 flex-1 rounded-full px-2 text-sm font-semibold transition-colors ${
-                active ? "bg-primary text-white shadow-sm" : "text-text-muted hover:text-text"
-              }`}
-            >
-              {preset.label}
-            </button>
-          );
-        })}
-      </div>
+      {showPresets ? (
+        <div className="flex rounded-full bg-bg p-1" role="group" aria-label="Schnellauswahl Zeitraum">
+          {presets.map((preset) => {
+            const active = activePreset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={preset.onClick}
+                aria-pressed={active}
+                className={`min-h-10 flex-1 rounded-full px-2 text-sm font-semibold transition-colors ${
+                  active ? c.filled : "text-text-muted hover:text-text"
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between">
         <button
@@ -226,7 +262,7 @@ export function EventDateFilter({
       <div>
         <div className="grid grid-cols-7 pb-1 text-center text-xs font-semibold uppercase tracking-wide">
           {WEEKDAYS.map((weekday, i) => (
-            <div key={weekday} className={i >= 5 ? "text-primary/70" : "text-text-muted"}>
+            <div key={weekday} className={i >= 5 ? c.weekend : "text-text-muted"}>
               {weekday}
             </div>
           ))}
@@ -246,7 +282,7 @@ export function EventDateFilter({
             // and where it wraps into the next week row.
             const column = i % 7;
             const band = hasRange && (inRange || isStart || isEnd)
-              ? `bg-primary/12 ${isStart || column === 0 ? "rounded-l-full" : ""} ${isEnd || column === 6 ? "rounded-r-full" : ""}`
+              ? `${c.band} ${isStart || column === 0 ? "rounded-l-full" : ""} ${isEnd || column === 6 ? "rounded-r-full" : ""}`
               : "";
             return (
               <div key={key} className={`flex justify-center ${band}`}>
@@ -263,9 +299,9 @@ export function EventDateFilter({
                   className={[
                     "relative flex h-12 w-12 max-w-full flex-col items-center justify-center rounded-full text-base tabular-nums transition-colors",
                     selected
-                      ? "bg-primary font-bold text-white shadow-sm"
+                      ? c.endpoint
                       : isToday
-                        ? "font-bold text-primary ring-1 ring-inset ring-primary/40 hover:bg-primary/10"
+                        ? c.today
                         : "hover:bg-bg",
                   ].join(" ")}
                 >
@@ -325,9 +361,9 @@ export function EventDateFilter({
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-text/15 bg-bg px-4 text-left transition-colors hover:border-primary/40"
+          className={`flex min-h-12 w-full items-center gap-3 rounded-2xl border border-text/15 bg-bg px-4 text-left transition-colors ${c.hoverBorder}`}
         >
-          <CalendarDays className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+          <CalendarDays className={`h-5 w-5 shrink-0 ${c.icon}`} aria-hidden="true" />
           <span className="flex-1">
             <span className="block text-xs font-semibold uppercase tracking-wide text-text-muted">Zeitraum</span>
             <span className="block font-semibold">{rangeSummary || allLabel}</span>
@@ -337,7 +373,7 @@ export function EventDateFilter({
       ) : (
         <div className="flex flex-col gap-4 rounded-2xl border border-text/10 bg-surface p-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <CalendarDays className={`mt-0.5 h-5 w-5 shrink-0 ${c.icon}`} aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <span className="block text-xs font-semibold uppercase tracking-wide text-text-muted">Zeitraum</span>
               <span className="block font-semibold">{rangeSummary || allLabel}</span>
@@ -355,8 +391,8 @@ export function EventDateFilter({
         </div>
       )}
 
-      <input type="hidden" name="von" value={startDate} />
-      <input type="hidden" name="bis" value={endDate} />
+      <input type="hidden" name={startName} value={startDate} />
+      <input type="hidden" name={endName} value={endDate} />
     </div>
   );
 }

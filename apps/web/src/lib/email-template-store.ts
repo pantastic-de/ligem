@@ -77,7 +77,7 @@ export async function sendTemplateMail(
   const user = await prisma.user
     .findFirst({
       where: { email: { equals: to, mode: "insensitive" } },
-      select: { id: true, notifyContactRequestsByEmail: true, notifyListingStatusByEmail: true, notifyAdminByEmail: true },
+      select: { id: true, notifyContactRequestsByEmail: true, notifyListingStatusByEmail: true, notifyAdminByEmail: true, notifyEventRegistrationsByEmail: true },
     })
     .catch(() => null);
 
@@ -85,6 +85,7 @@ export async function sendTemplateMail(
     if (category === "projekte" && !user.notifyListingStatusByEmail) return;
     if (category === "admin" && !user.notifyAdminByEmail) return;
     if (category === "kontaktanfragen" && !user.notifyContactRequestsByEmail) return;
+    if (category === "termine" && !user.notifyEventRegistrationsByEmail) return;
   }
 
   const footerTemplate = await getEmailTemplate("fusszeile");
@@ -98,7 +99,7 @@ export async function sendTemplateMail(
 
   // One-click unsubscribe (RFC 8058) for everything that can be switched off.
   const headers =
-    user && category !== "konto"
+    user && category !== "konto" && category !== "teilnahme"
       ? {
           "List-Unsubscribe": `<${oneClickUnsubscribeUrl(user.id)}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

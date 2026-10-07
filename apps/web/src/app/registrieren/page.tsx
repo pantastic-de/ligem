@@ -2,10 +2,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { registerUser } from "./actions";
 import { safeInternalPath } from "@/lib/return-url";
+import { InterestFieldset } from "@/components/interest-fieldset";
 
 export const metadata: Metadata = {
   title: "Registrieren",
-  description: "Konto bei LiGem erstellen, als Suchende:r, Anbieter:in oder beides.",
+  description: "Konto bei LiGem erstellen: ein gemeinschaftliches Zuhause finden, dich informieren, dein Wohnprojekt vorstellen oder Veranstaltungen anbieten.",
   alternates: { canonical: "/registrieren" },
 };
 
@@ -86,17 +87,7 @@ export default async function RegistrierenPage({
           <span className="text-sm text-text-muted">Mindestens 8 Zeichen.</span>
         </div>
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="font-medium">Ich möchte (optional):</legend>
-          <label className="flex min-h-11 items-center gap-2 text-sm">
-            <input type="checkbox" name="role-suchende" className="h-5 w-5" />
-            eine Wohngemeinschaft finden
-          </label>
-          <label className="flex min-h-11 items-center gap-2 text-sm">
-            <input type="checkbox" name="role-anbieter" className="h-5 w-5" />
-            ein Projekt präsentieren
-          </label>
-        </fieldset>
+        <InterestFieldset hint="Mehreres ist möglich. Danach richtet sich, was dir dein Dashboard zuerst zeigt. Du kannst es jederzeit unter „Mein Konto“ ändern." />
 
         <button
           type="submit"

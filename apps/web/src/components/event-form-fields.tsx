@@ -26,6 +26,7 @@ export type EventFormDefaults = {
   cost?: number | null;
   maxParticipants?: number | null;
   registrationRequired?: boolean;
+  registrationUrl?: string;
   selectedOptionIds?: string[];
 };
 
@@ -199,8 +200,27 @@ export function EventFormFields({
           defaultChecked={defaults.registrationRequired}
           className="h-5 w-5"
         />
-        Voranmeldung notwendig
+        Voranmeldung erwünscht
       </label>
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="registrationUrl" className="font-medium">
+          Anmeldeseite des Veranstalters <span className="font-normal text-text-muted">(optional)</span>
+        </label>
+        <input
+          id="registrationUrl"
+          name="registrationUrl"
+          type="text"
+          inputMode="url"
+          placeholder="https://…"
+          defaultValue={defaults.registrationUrl}
+          className={inputClass}
+        />
+        <p className="text-sm text-text-muted">
+          Falls die verbindliche Anmeldung bei euch selbst läuft, z. B. über ein Formular auf eurer Homepage. Die
+          Terminseite verlinkt dann dorthin.
+        </p>
+      </div>
 
       <EventDescriptionImportField
         defaultWebsiteUrl={defaults.websiteUrl}

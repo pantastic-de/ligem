@@ -40,8 +40,12 @@ export default function HilfeAdminPage() {
         <p className="mt-2 text-text-muted">
           Unter{" "}
           <Link href="/admin/nutzer" className="text-primary">/admin/nutzer</Link>{" "}
-          siehst du alle Konten und kannst Rollen (Suchende, Anbieter,
-          Moderator:in, Admin) per Checkbox zuweisen oder entziehen.
+          siehst du alle Konten mit Suche, Filtern (Rolle, gesperrt, E-Mail nicht bestätigt, nie angemeldet)
+          und Sortierung, dazu oben, wofür sich die Leute angemeldet haben. Ein Klick auf eine Person öffnet
+          ihre Detailseite: Kontodaten, Rollen, eigene Projekte und Termine (übertragen oder löschen),
+          Favoriten, Kontaktanfragen mit Status, Interesse an Veranstaltungen und Absagen. Dort lässt sich das
+          Konto auch sperren (keine Anmeldung mehr, Inhalte bleiben) oder löschen, beides mit einer Begründung,
+          die die Person per E-Mail bekommt.
         </p>
       </section>
 

@@ -96,6 +96,8 @@ export async function updateListing(formData: FormData): Promise<void> {
         whoWeAreLooking: sanitizeRichText(formData.get("whoWeAreLooking")?.toString()),
 
         isTemporary: formData.get("isTemporary") === "on",
+        temporaryFrom: formData.get("isTemporary") === "on" ? parseOptionalDate(formData.get("temporaryFrom")) : null,
+        temporaryUntil: formData.get("isTemporary") === "on" ? parseOptionalDate(formData.get("temporaryUntil")) : null,
 
         searchPeriodStart: parseOptionalDate(formData.get("searchPeriodStart")),
         searchPeriodEnd: parseOptionalDate(formData.get("searchPeriodEnd")),

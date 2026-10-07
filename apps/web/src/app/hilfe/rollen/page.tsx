@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { INTEREST_OPTIONS } from "@/lib/user-roles";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Hilfe: Rollen",
-  description: "Welche Rollen es bei LiGem gibt (Suchende, Anbieter, Moderator:in, Admin) und was sie dürfen.",
+  description: "Was du bei LiGem angeben kannst, was Moderator:innen und Admins dürfen.",
   alternates: { canonical: "/hilfe/rollen" },
 };
 
@@ -20,47 +21,47 @@ export default function HilfeRollenPage() {
       </p>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Suchende</h2>
+        <h2 className="text-lg font-semibold">Was du auf LiGem vorhast</h2>
         <p className="mt-2 text-text-muted">
-          Kann Projekte durchsuchen, Kontakt aufnehmen und (geplant) Suchen
-          speichern.
+          Bei der Registrierung und jederzeit unter{" "}
+          <Link href="/mein-konto#vorhaben" className="text-primary">Mein Konto</Link>{" "}
+          kannst du angeben, was du vorhast. Mehreres ist möglich, nichts davon ist Pflicht:
         </p>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold">Anbieter</h2>
+        <ul className="mt-2 list-disc pl-5 text-text-muted">
+          {INTEREST_OPTIONS.map((o) => (
+            <li key={o.role}>{o.label}</li>
+          ))}
+        </ul>
         <p className="mt-2 text-text-muted">
-          Kann eigene Projekte eintragen, bearbeiten und Termine dafür
-          verwalten.
+          Diese Angaben schalten keine Rechte frei. Jede und jeder kann Projekte durchsuchen, Kontakt aufnehmen,
+          eigene Projekte vorstellen und Termine eintragen. Sie bestimmen nur, was dir dein Dashboard zuerst zeigt.
         </p>
       </section>
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Moderator:in</h2>
         <p className="mt-2 text-text-muted">
-          Für die spätere Moderationsoberfläche vorgesehen (Freigabe/Ablehnung
-          von Einträgen). Aktuell erfolgt die Freigabe noch direkt in der
-          Datenbank durch einen Admin.
+          Prüft neue und geänderte Projekte und kann Projekte und Termine freigeben, ablehnen und archivieren.
+          Moderator:innen bekommen eine E-Mail, wenn ein Projekt auf Prüfung wartet. Endgültig löschen können nur
+          Admins.
         </p>
       </section>
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold">Admin</h2>
         <p className="mt-2 text-text-muted">
-          Hat Zugriff auf den <Link href="/admin" className="text-primary">Admin-Bereich</Link>:
-          Nutzerrollen zuweisen sowie Kategorien und Filterattribute
-          verwalten. Siehe{" "}
+          Darf alles, was Moderator:innen dürfen, und hat dazu den{" "}
+          <Link href="/admin" className="text-primary">Admin-Bereich</Link>: Nutzer:innen verwalten (auch sperren
+          und löschen), Kategorien, Filterattribute, E-Mail-Texte und Statistik. Siehe{" "}
           <Link href="/hilfe/admin" className="text-primary">Für Admins</Link>.
         </p>
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Wer weist Rollen zu?</h2>
+        <h2 className="text-lg font-semibold">Wer vergibt Moderator- und Admin-Rechte?</h2>
         <p className="mt-2 text-text-muted">
-          Suchende/Anbieter kannst du dir bei der Registrierung selbst geben.
-          Moderator:in und Admin werden von einem bestehenden Admin unter{" "}
-          <Link href="/admin/nutzer" className="text-primary">Nutzerverwaltung</Link>{" "}
-          vergeben.
+          Ein bestehender Admin, auf der Detailseite der Person unter{" "}
+          <Link href="/admin/nutzer" className="text-primary">Nutzer:innen</Link>.
         </p>
       </section>
     </div>

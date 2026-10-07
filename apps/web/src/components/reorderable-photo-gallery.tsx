@@ -36,6 +36,19 @@ export function ReorderablePhotoGallery({
   hiddenFields: Record<string, string>;
 }) {
   const [items, setItems] = useState(media);
+  // After an upload or delete the page re-renders with a new `media` list,
+  // but useState only reads its initial value once, so new photos used to
+  // appear only after a reload. Take over the server's list whenever the set
+  // of photos changed; a pure reorder (same photos) keeps the local order,
+  // so a quick second move isn't undone by the first move's refresh.
+  const [lastMedia, setLastMedia] = useState(media);
+  if (media !== lastMedia) {
+    setLastMedia(media);
+    const known = new Set(items.map((m) => m.id));
+    if (media.length !== items.length || media.some((m) => !known.has(m.id))) {
+      setItems(media);
+    }
+  }
   const [, startTransition] = useTransition();
   const dragIndex = useRef<number | null>(null);
 

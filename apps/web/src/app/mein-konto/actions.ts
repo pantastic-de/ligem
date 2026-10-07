@@ -7,6 +7,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 import { notifyDataExportRequested } from "@/lib/data-export";
+import { INTEREST_ROLES, interestRolesFromForm } from "@/lib/user-roles";
 
 export async function updateProfile(formData: FormData): Promise<void> {
   const session = await auth();
@@ -208,4 +209,27 @@ export async function requestDataExport(): Promise<void> {
     await notifyDataExportRequested(session.user.id);
   }
   redirect("/mein-konto?ok=daten-angefragt#meine-daten");
+}
+
+/** "Was ich auf LiGem vorhabe": replaces the self-chosen interest roles, never touches staff roles. */
+export async function updateInterests(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden?weiter=%2Fmein-konto");
+  }
+  const userId = session.user.id;
+  const chosen = interestRolesFromForm(formData);
+  await prisma.$transaction([
+    prisma.userRoleAssignment.deleteMany({
+      where: { userId, role: { in: [...INTEREST_ROLES] }, NOT: { role: { in: chosen } } },
+    }),
+    ...chosen.map((role) =>
+      prisma.userRoleAssignment.upsert({
+        where: { userId_role: { userId, role } },
+        update: {},
+        create: { userId, role },
+      }),
+    ),
+  ]);
+  redirect("/mein-konto?ok=interessen#vorhaben");
 }

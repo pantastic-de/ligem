@@ -47,12 +47,19 @@ model User {
   // deliberately just a single timestamp, not a full login-history log,
   // matching this app's otherwise lightweight trust/safety footprint.
   lastLoginAt   DateTime?
+  // Set by an admin on /admin/nutzer/[id]: the account can't sign in any
+  // more and running sessions end within a minute (see auth.ts's jwt
+  // callback). Content stays as it is. Cleared again by "Entsperren".
+  blockedAt     DateTime?
+  blockedReason String?
   // Opt-in toggle (see /mein-konto) — forwards a copy of every new
   // ContactRequest on any Listing this user owns/co-manages to this User's
   // own real `email`, via SMTP (src/lib/mailer.ts), since otherwise a
   // contact request only ever shows up inside the app itself (the
   // Kontaktanfragen page) with no notification at all.
-  notifyContactRequestsByEmail Boolean @default(false)
+  // Organizer mails about interest in / cancellations of their events.
+  notifyEventRegistrationsByEmail Boolean @default(true)
+  notifyContactRequestsByEmail Boolean @default(true)
   // Mails about the user's own projects (eingereicht, freigegeben, gelöscht,
   // übertragen). Switchable on /benachrichtigungen, also without login via
   // the personal link in every mail (see src/lib/notification-token.ts).
@@ -115,9 +122,16 @@ model ListingManager {
   @@unique([listingId, userId])
 }
 
+// What someone wants to do on LiGem (chosen at registration, editable on
+// /mein-konto) plus the two staff roles. Only MODERATOR (review projects and
+// events) and ADMIN grant rights; the others shape the dashboard and the
+// user statistics on /admin/nutzer.
 enum UserRole {
   SUCHENDE
   ANBIETER
+  INFORMIEREN
+  VERANSTALTER
+  ORGANISATION
   MODERATOR
   ADMIN
 }
@@ -481,6 +495,9 @@ model Listing {
 
   // Availability / temporary offers (Probewohnen, Retreat, Zwischennutzung)
   isTemporary  Boolean   @default(false)
+  // Period of a temporary offer (only set while isTemporary is checked).
+  temporaryFrom  DateTime?
+  temporaryUntil DateTime?
   moveInDate   DateTime?
   minStayDays  Int?
   maxStayDays  Int?
@@ -675,6 +692,9 @@ model Event {
   cost                 Int? // EUR, null = kostenlos/unbekannt
   maxParticipants      Int?
   registrationRequired Boolean @default(false)
+  // Optional link to the organizer's own sign-up page (formal registration
+  // happens there); shown on the event page with a "leaving ligem.de" note.
+  registrationUrl      String?
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -723,8 +743,16 @@ model EventRegistration {
   name             String
   email            String
   participantCount Int      @default(1)
+  // True only for a logged-in sender with a confirmed account address equal
+  // to the typed one; organizers see whether the address was checked.
+  emailVerified    Boolean  @default(false)
   message          String?
   createdAt        DateTime @default(now())
+  // Set when the person cancels via the link in their confirmation mail
+  // (/termin-absagen). The row is kept so the organizer sees the cancellation.
+  cancelledAt      DateTime?
+  // Optional note left when cancelling (shown to the organizer).
+  cancelComment    String?
   // Null until the organizer opens this event's /anmeldungen list (which
   // batch-marks every then-still-null row as viewed) — EventRegistration
   // otherwise has no status/read concept at all (see CLAUDE.md: "no accept/
@@ -769,6 +797,9 @@ model ContactRequest {
   senderEmail String
   // Optional, for people who'd rather be called back.
   senderPhone String?
+  // True only if the sender was logged in with a confirmed account whose
+  // address equals the one typed in; shown to the project as "bestätigt".
+  senderEmailVerified Boolean @default(false)
   message     String
   status      ContactRequestStatus  @default(PENDING)
   createdAt   DateTime              @default(now())

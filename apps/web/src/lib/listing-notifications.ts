@@ -59,7 +59,7 @@ async function getListingRecipients(listingIds: string[]): Promise<Map<string, L
 
 /**
  * A new project was submitted: a receipt to its creator and a heads-up to
- * every admin, so nothing sits in the review queue unnoticed. An admin who
+ * every admin and moderator, so nothing sits in the review queue unnoticed. An admin who
  * submits a project themselves only gets the receipt.
  */
 export async function notifyListingSubmitted(listingId: string): Promise<void> {
@@ -69,8 +69,9 @@ export async function notifyListingSubmitted(listingId: string): Promise<void> {
   });
   if (!listing) return;
 
+  // Everyone who can approve it: admins and moderators.
   const admins = await prisma.user.findMany({
-    where: { roles: { some: { role: "ADMIN" } } },
+    where: { roles: { some: { role: { in: ["ADMIN", "MODERATOR"] } } } },
     select: { email: true },
   });
   const mails: QueuedMail[] = [];

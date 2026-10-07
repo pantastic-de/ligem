@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EmailCheckBadge } from "@/components/email-check-badge";
 
 export const metadata: Metadata = {
   title: "Anmeldungen",
@@ -51,10 +52,10 @@ export default async function AnmeldungenPage({
     data: { viewedAt: new Date() },
   });
 
-  const totalParticipants = event.registrations.reduce(
-    (sum, r) => sum + r.participantCount,
-    0,
-  );
+  // Cancelled registrations stay listed (marked) but don't count.
+  const totalParticipants = event.registrations
+    .filter((r) => !r.cancelledAt)
+    .reduce((sum, r) => sum + r.participantCount, 0);
 
   return (
     <AppShell active="termine" isAdmin={admin} displayName={displayName}>
@@ -69,7 +70,7 @@ export default async function AnmeldungenPage({
         für {event.title}
         {event.maxParticipants
           ? ` · ${totalParticipants} von ${event.maxParticipants} Plätzen belegt`
-          : ` · ${totalParticipants} Teilnehmer:innen angemeldet`}
+          : ` · ${totalParticipants} ${totalParticipants === 1 ? "Person hat" : "Personen haben"} Interesse gemeldet`}
       </p>
 
       {event.registrations.length === 0 ? (
@@ -82,19 +83,36 @@ export default async function AnmeldungenPage({
             <li
               key={registration.id}
               id={`anmeldung-${registration.id}`}
-              className="scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm"
+              className={`scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm ${registration.cancelledAt ? "opacity-60" : ""}`}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-semibold">{registration.name}</span>
+                <span className="font-semibold">
+                  {registration.name}
+                  {registration.cancelledAt ? (
+                    <span className="ml-2 rounded-full bg-error/10 px-2 py-0.5 text-xs font-semibold text-error">
+                      Abgesagt am {dateTimeFormat.format(registration.cancelledAt)}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="text-sm text-text-muted">
                   {dateTimeFormat.format(registration.createdAt)}
                 </span>
               </div>
-              <p className="text-sm text-text-muted">{registration.email}</p>
+              <p className="text-sm">
+                <a href={`mailto:${registration.email}`} className="text-primary hover:underline">
+                  {registration.email}
+                </a>{" "}
+                <EmailCheckBadge verified={registration.emailVerified} />
+              </p>
               <p className="mt-2 text-sm font-medium">
                 {registration.participantCount}{" "}
                 {registration.participantCount === 1 ? "Teilnehmer:in" : "Teilnehmer:innen"}
               </p>
+              {registration.cancelledAt && registration.cancelComment ? (
+                <p className="mt-2 whitespace-pre-line rounded-xl bg-error/5 px-3 py-2 text-sm text-text">
+                  Kommentar zur Absage: „{registration.cancelComment}“
+                </p>
+              ) : null}
               {registration.message ? (
                 <p className="mt-2 whitespace-pre-line text-text-muted">
                   {registration.message}

@@ -17,5 +17,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     mustChangePassword?: boolean;
+    // Last time the jwt callback confirmed the account exists and isn't blocked.
+    checkedAt?: number;
   }
 }

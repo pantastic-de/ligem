@@ -31,6 +31,8 @@ import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { FavoriteButton } from "@/components/favorite-button";
 import { TurnstileWidget } from "@/components/turnstile-widget";
+import { ExternalHomepageLink } from "@/components/external-homepage-link";
+import { SenderConfirmationHint } from "@/components/sender-confirmation-hint";
 
 // One icon per LISTING AttributeGroup (see CLAUDE.md's "Generic filter-
 // attribute system"), keyed by slug — purely decorative next to each
@@ -148,7 +150,7 @@ export function ListingDetail({
   // viewer — reduces friction for exactly the audience this form's CAPTCHA
   // skip already trusts more (see requireCaptcha below), and there's no
   // reason to make them re-type what their account already has on file.
-  viewerContact?: { name: string | null; email: string } | null;
+  viewerContact?: { name: string | null; email: string; emailVerified: boolean } | null;
   // Whether this viewer needs to pass Cloudflare Turnstile to submit the
   // contact form — true for anyone not logged in, or logged in but not yet
   // email-verified (src/lib/verification-token.ts); false for a verified
@@ -372,16 +374,22 @@ export function ListingDetail({
             </Link>
           ) : null}
         </div>
-        {favorite && listing.status === "PUBLISHED" ? (
-          <FavoriteButton
-            kind="listing"
-            id={listing.id}
-            initialFavorite={favorite.isFavorite}
-            loggedIn={favorite.loggedIn}
-            size="lg"
-            className="shrink-0"
-          />
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {canManage ? (
+            <Link href={`/projekte/${listing.id}/bearbeiten`} title="Projekt bearbeiten" aria-label="Projekt bearbeiten" className="flex h-11 w-11 items-center justify-center rounded-full bg-surface/95 text-text-muted shadow-sm ring-1 ring-text/10 transition-transform hover:scale-110 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <Pencil className="h-5 w-5" aria-hidden="true" />
+            </Link>
+          ) : null}
+          {favorite && listing.status === "PUBLISHED" ? (
+            <FavoriteButton
+              kind="listing"
+              id={listing.id}
+              initialFavorite={favorite.isFavorite}
+              loggedIn={favorite.loggedIn}
+              size="lg"
+            />
+          ) : null}
+        </div>
       </div>
       {listing.motto ? (
         <p className="mt-1 text-lg text-text-muted">
@@ -393,6 +401,7 @@ export function ListingDetail({
           <HighlightText text={locationLine} query={searchTerm} />
         </p>
       ) : null}
+      <ExternalHomepageLink url={listing.homepageUrl} label="Homepage des Projekts" />
 
       {panoramaPhoto ? (
         <div className="mt-6 overflow-hidden rounded-2xl">
@@ -409,7 +418,7 @@ export function ListingDetail({
       {listing.categories.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {listing.categories.map(({ category }) => (
-            <span key={category.id} className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium">
+            <span key={category.id} className="rounded-full bg-primary/12 px-3 py-1 text-sm font-medium text-primary">
               {category.name}
             </span>
           ))}
@@ -489,6 +498,19 @@ export function ListingDetail({
         </section>
       ) : null}
 
+      {listing.isTemporary ? (
+        <p className="mt-4 text-text-muted">
+          <span className="font-semibold text-text">Zeitlich begrenztes Angebot</span>
+          {listing.temporaryFrom && listing.temporaryUntil
+            ? `: vom ${dateFormat.format(listing.temporaryFrom)} bis ${dateFormat.format(listing.temporaryUntil)}`
+            : listing.temporaryFrom
+              ? `: ab ${dateFormat.format(listing.temporaryFrom)}`
+              : listing.temporaryUntil
+                ? `: bis ${dateFormat.format(listing.temporaryUntil)}`
+                : ""}
+        </p>
+      ) : null}
+
       {listing.searchPeriodStart || listing.searchPeriodEnd ? (
         <p className="mt-4 text-text-muted">
           Aktueller Suchzeitraum:{" "}
@@ -509,7 +531,7 @@ export function ListingDetail({
                 </h2>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {entry.options.map((name) => (
-                    <span key={name} className="rounded-full bg-secondary/15 px-3 py-1 text-sm font-medium">
+                    <span key={name} className="rounded-full bg-primary/12 px-3 py-1 text-sm font-medium text-primary">
                       {name}
                     </span>
                   ))}
@@ -559,12 +581,12 @@ export function ListingDetail({
       {listing.status === "PUBLISHED" && !canManage ? (
         <section
           id="kontakt"
-          className="mt-12 scroll-mt-4 rounded-2xl border-2 border-secondary/50 bg-secondary/12 p-4 shadow-sm sm:p-6"
+          className="mt-12 scroll-mt-4 rounded-2xl border-2 border-primary/50 bg-primary/12 p-4 shadow-sm sm:p-6"
         >
-          {/* Framed in the Termine green so it reads as a form at a glance,
-              set apart from the descriptive content above. */}
-          <h2 className="flex items-center gap-3 text-xl font-bold text-secondary">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-white">
+          {/* Framed in the Projekte orange-red (the Termine forms use the
+              green) so it reads as a form at a glance. */}
+          <h2 className="flex items-center gap-3 text-xl font-bold text-primary">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
               <MessageCircle className="h-5 w-5" aria-hidden="true" />
             </span>
             Kontakt aufnehmen
@@ -576,7 +598,7 @@ export function ListingDetail({
             Deine Nachricht geht direkt und nur an die Verantwortlichen von „{listing.projectName}“. Name,
             E-Mail-Adresse und auf Wunsch deine Telefonnummer brauchen sie, um dir antworten zu können. Diese
             Angaben werden nicht veröffentlicht und nicht an Dritte weitergegeben.{" "}
-            <Link href="/datenschutz" className="text-secondary underline-offset-2 hover:underline">
+            <Link href="/datenschutz" className="text-primary underline-offset-2 hover:underline">
               Mehr zum Datenschutz
             </Link>
           </p>
@@ -589,6 +611,14 @@ export function ListingDetail({
             <p className="mt-3 rounded-xl bg-error/10 px-4 py-3 text-error">
               Bitte bestätige das CAPTCHA, bevor du die Nachricht sendest.
             </p>
+          ) : null}
+          {!viewerContact ? (
+            <div className="mt-4">
+            <SenderConfirmationHint
+              kind="kontakt"
+              loggedIn={Boolean(viewerContact)}
+            />
+          </div>
           ) : null}
           <form action={submitContactRequest} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="listingId" value={listing.id} />
@@ -603,7 +633,7 @@ export function ListingDetail({
                 type="text"
                 required
                 defaultValue={viewerContact?.name ?? undefined}
-                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                className="min-h-12 rounded-xl border border-primary/30 bg-surface px-4 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -616,7 +646,7 @@ export function ListingDetail({
                 type="email"
                 required
                 defaultValue={viewerContact?.email ?? undefined}
-                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                className="min-h-12 rounded-xl border border-primary/30 bg-surface px-4 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -635,7 +665,7 @@ export function ListingDetail({
                 pattern="[0-9+\(\)\/\-. ]{4,40}"
                 title="Ziffern, Leerzeichen und + ( ) / - ."
                 aria-describedby="senderPhoneHint"
-                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                className="min-h-12 rounded-xl border border-primary/30 bg-surface px-4 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <p id="senderPhoneHint" className="text-sm text-text-muted">
                 Falls du lieber angerufen werden möchtest.
@@ -650,7 +680,7 @@ export function ListingDetail({
                 name="message"
                 rows={4}
                 required
-                className="rounded-xl border border-secondary/30 bg-surface px-4 py-3 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                className="rounded-xl border border-primary/30 bg-surface px-4 py-3 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
             {requireCaptcha ? (
@@ -668,7 +698,7 @@ export function ListingDetail({
             ) : null}
             <button
               type="submit"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-secondary px-6 font-semibold text-white shadow-sm transition-colors hover:bg-secondary-hover"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
             >
               <Send className="h-5 w-5" aria-hidden="true" />
               Nachricht senden

@@ -35,6 +35,8 @@ export function TermineSearchForm({
     radius?: string;
     von?: string;
     bis?: string;
+    sortierung?: string;
+    favoriten?: string;
   };
   resultItems: MapResultItem[];
   // Date (YYYY-MM-DD) -> distinct event-type colors found on that day, for
@@ -72,6 +74,7 @@ export function TermineSearchForm({
         onChange={submitNow}
         eventDayColors={eventDayColors}
         legend={legend}
+        tone="termin"
       />
 
       {veranstaltungsart ? (
@@ -82,6 +85,7 @@ export function TermineSearchForm({
           defaultSelected={defaults.artIds}
           counts={artCounts}
           colors={artColors}
+          tone="termin"
           onChange={submitNow}
         />
       ) : null}
@@ -93,6 +97,7 @@ export function TermineSearchForm({
           options={zielgruppe.options}
           defaultSelected={defaults.zielgruppeIds}
           counts={zielgruppeCounts}
+          tone="termin"
           onChange={submitNow}
         />
       ) : null}
@@ -106,6 +111,11 @@ export function TermineSearchForm({
         selectedId={selectedId}
         onChange={submitNow}
       />
+
+      {/* Chosen above the results (TermineSortSelect); carried along so a
+          sidebar filter change doesn't reset them. */}
+      <input type="hidden" name="sortierung" value={defaults.sortierung ?? ""} />
+      <input type="hidden" name="favoriten" value={defaults.favoriten ?? ""} />
 
       <p aria-live="polite" className="text-sm text-text-muted">
         {isPending ? "Ergebnisse werden aktualisiert…" : ""}

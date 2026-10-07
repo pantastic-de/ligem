@@ -50,6 +50,40 @@ export async function getDeletionOverview(userId: string) {
   return { ownListings, foreignEvents, orphanEvents, managedListings, favoriteCount, organizationCount };
 }
 
+/**
+ * Reads one decision per own project from a deletion form: field
+ * `listing-<id>` = "delete", "manager:<userId>" or "email" (with the address
+ * in `email-<id>`). Used by the self-service page and by admins.
+ */
+export async function parseListingDecisions(
+  formData: FormData,
+  userId: string,
+  ownListings: Awaited<ReturnType<typeof getDeletionOverview>>["ownListings"],
+): Promise<{ decisions: ListingDecision[] } | { error: "auswahl" | "unbekannt" | "selbst"; listingId: string }> {
+  const decisions: ListingDecision[] = [];
+  for (const listing of ownListings) {
+    const choice = formData.get(`listing-${listing.id}`)?.toString();
+    if (choice === "delete") {
+      decisions.push({ listingId: listing.id, action: "delete" });
+    } else if (choice?.startsWith("manager:")) {
+      const toUserId = choice.slice("manager:".length);
+      if (!listing.managers.some((m) => m.user.id === toUserId)) return { error: "auswahl", listingId: listing.id };
+      decisions.push({ listingId: listing.id, action: "transfer", toUserId });
+    } else if (choice === "email") {
+      const email = formData.get(`email-${listing.id}`)?.toString().trim();
+      const target = email
+        ? await prisma.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } })
+        : null;
+      if (!target) return { error: "unbekannt", listingId: listing.id };
+      if (target.id === userId) return { error: "selbst", listingId: listing.id };
+      decisions.push({ listingId: listing.id, action: "transfer", toUserId: target.id });
+    } else {
+      return { error: "auswahl", listingId: listing.id };
+    }
+  }
+  return { decisions };
+}
+
 /** Whether removing this user would leave the site without any admin. */
 export async function isLastAdmin(userId: string): Promise<boolean> {
   const admins = await prisma.userRoleAssignment.findMany({ where: { role: "ADMIN" }, select: { userId: true } });
@@ -61,7 +95,14 @@ export async function isLastAdmin(userId: string): Promise<boolean> {
  * own listing, transfer targets exist and aren't the user). Returns the
  * lines for the confirmation mail.
  */
-export async function deleteAccount(userId: string, decisions: ListingDecision[]): Promise<void> {
+export async function deleteAccount(
+  userId: string,
+  decisions: ListingDecision[],
+  // Set when an admin deletes the account on /admin/nutzer/[id]: project
+  // mails then speak of the moderation, and the person gets the
+  // "konto-geloescht-moderation" mail with the reason instead.
+  byAdmin?: { reason: string },
+): Promise<void> {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, email: true, image: true } });
   const displayName = user.name ?? user.email;
   const overview = await getDeletionOverview(userId);
@@ -90,7 +131,7 @@ export async function deleteAccount(userId: string, decisions: ListingDecision[]
   // 2. Deletions (co-managers are told; the user gets the summary instead).
   const deleteIds = decisions.filter((d) => d.action === "delete").map((d) => d.listingId);
   if (deleteIds.length > 0) {
-    const sendNotices = await prepareListingDeletedNotices(deleteIds, displayName, user.email);
+    const sendNotices = await prepareListingDeletedNotices(deleteIds, byAdmin ? undefined : displayName, user.email);
     await deleteListingsCompletely(deleteIds);
     sendNotices();
     for (const id of deleteIds) summary.push(`„${listingNames.get(id) ?? "Projekt"}“: gelöscht`);
@@ -135,11 +176,16 @@ export async function deleteAccount(userId: string, decisions: ListingDecision[]
 
   after(async () => {
     for (const mail of transferMails) await sendTemplateMail("projekt-uebertragen", mail.to, mail.values);
-    await sendTemplateMail(
-      "konto-geloescht",
-      user.email,
-      { name: displayName, zusammenfassung: summary.length > 0 ? summary.join("\n") : "Es gab keine Projekte, Termine oder Favoriten." },
-      { noFooter: true },
-    );
+    const zusammenfassung = summary.length > 0 ? summary.join("\n") : "Es gab keine Projekte, Termine oder Favoriten.";
+    if (byAdmin) {
+      await sendTemplateMail(
+        "konto-geloescht-moderation",
+        user.email,
+        { name: displayName, grund: byAdmin.reason || "kein Grund angegeben", zusammenfassung },
+        { noFooter: true },
+      );
+    } else {
+      await sendTemplateMail("konto-geloescht", user.email, { name: displayName, zusammenfassung }, { noFooter: true });
+    }
   });
 }

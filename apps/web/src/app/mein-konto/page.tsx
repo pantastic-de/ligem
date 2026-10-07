@@ -6,12 +6,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { InterestFieldset } from "@/components/interest-fieldset";
 import { PasswordField } from "@/components/password-field";
 import { ImageUploadForm } from "@/components/image-upload-form";
 import {
   addListingManager,
   removeListingManager,
   resendVerificationEmail,
+  updateInterests,
   updatePassword,
   updateProfile,
   requestDataExport,
@@ -39,6 +41,7 @@ const okMessages: Record<string, string> = {
   profil: "Persönliche Daten gespeichert.",
   "profil-email-bestaetigen": "Persönliche Daten gespeichert. Bitte bestätige deine neue E-Mail-Adresse, wir haben dir einen Link geschickt.",
   passwort: "Passwort geändert.",
+  interessen: "Gespeichert. Dein Dashboard zeigt jetzt zuerst, was dazu passt.",
   "mitverwalter-hinzugefuegt": "Mitverwalter:in hinzugefügt.",
   "mitverwalter-entfernt": "Mitverwalter:in entfernt.",
   "bestaetigung-gesendet": "Bestätigungs-E-Mail wurde erneut gesendet.",
@@ -60,6 +63,7 @@ export default async function MeinKontoPage({
   const userWithHash = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
+      roles: { select: { role: true } },
       createdListings: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -216,6 +220,23 @@ export default async function MeinKontoPage({
         ) : null}
       </section>
 
+      <section id="vorhaben" className="mt-6 scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Was ich auf LiGem vorhabe</h2>
+        <form action={updateInterests} className="mt-4 flex flex-col gap-4">
+          <InterestFieldset
+            legend="Ich möchte:"
+            hint="Danach richtet sich, was dir dein Dashboard zuerst zeigt. Mehreres ist möglich, nichts davon ist Pflicht."
+            selected={user.roles.map((r) => r.role)}
+          />
+          <button
+            type="submit"
+            className="inline-flex min-h-11 w-fit items-center rounded-full bg-primary px-5 font-semibold text-white transition-colors hover:bg-primary-hover"
+          >
+            Speichern
+          </button>
+        </form>
+      </section>
+
       {hasPassword ? (
         <section id="passwort-aendern" className="mt-6 scroll-mt-4 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Passwort ändern</h2>
@@ -333,9 +354,22 @@ export default async function MeinKontoPage({
       ) : null}
 
       <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Anmeldungen zu meinen Terminen</h2>
+        <p className="mt-2 text-sm text-text-muted">
+          Wer bei den Terminen deiner Projekte dabei sein möchte, auf einen Blick, mit Personenzahl und Absagen.
+        </p>
+        <Link
+          href="/mein-konto/anmeldungen"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full border border-text/20 px-5 font-semibold transition-colors hover:bg-bg"
+        >
+          Anmeldungen ansehen
+        </Link>
+      </section>
+
+      <section className="mt-6 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
         <h2 className="text-lg font-semibold">E-Mail-Benachrichtigungen</h2>
         <p className="mt-2 text-sm text-text-muted">
-          Welche E-Mails du von LiGem bekommst (Projekte, Kontaktanfragen, Favoriten) und wie oft. Dieselbe Seite
+          Welche E-Mails du von LiGem bekommst (Projekte, Termine, Kontaktanfragen, Favoriten) und wie oft. Dieselbe Seite
           erreichst du auch über den Link unten in jeder E-Mail, ohne Anmeldung.
         </p>
         <Link

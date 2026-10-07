@@ -1,5 +1,13 @@
 "use server";
 
+import { normalizeHomepageUrl } from "@/lib/normalize-url";
+import { deleteEventsCompletely } from "@/lib/delete-content";
+import { MAX_IMAGE_SIZE, isPanoramaAspectRatio, processAndStoreImage } from "@/lib/media";
+
+// Upper bound for photos picked while creating an event (more can be added
+// on the edit page). Keeps the request well under the 50 MB Server Action limit
+// together with the client-side total-size check in EventPhotoPicker.
+const MAX_NEW_EVENT_PHOTOS = 12;
 import { notFound, redirect } from "next/navigation";
 
 import { randomUUID } from "node:crypto";
@@ -105,6 +113,16 @@ export async function createEvent(formData: FormData): Promise<void> {
     redirect(`/projekte/${listingId}/termine/neu?error=enddatum`);
   }
 
+  // Photos picked in the create form (EventPhotoPicker). Checked before
+  // anything is created, so a too-large file doesn't leave a half-saved event.
+  const photos = formData
+    .getAll("photos")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, MAX_NEW_EVENT_PHOTOS);
+  if (photos.some((f) => f.size > MAX_IMAGE_SIZE)) {
+    redirect(`/projekte/${listingId}/termine/neu?error=foto-zu-gross`);
+  }
+
   const attributeOptionIds = await collectEventAttributeOptionIds(formData);
   const latitude = parseOptionalFloat(formData.get("latitude"));
   const longitude = parseOptionalFloat(formData.get("longitude"));
@@ -147,10 +165,11 @@ export async function createEvent(formData: FormData): Promise<void> {
     houseNumber: formData.get("houseNumber")?.toString().trim() || null,
     latitude,
     longitude,
-    websiteUrl: formData.get("websiteUrl")?.toString().trim() || null,
+    websiteUrl: normalizeHomepageUrl(formData.get("websiteUrl")?.toString() ?? ""),
     cost: parseOptionalInt(formData.get("cost")),
     maxParticipants: parseOptionalInt(formData.get("maxParticipants")),
     registrationRequired: formData.get("registrationRequired") === "on",
+    registrationUrl: normalizeHomepageUrl(formData.get("registrationUrl")?.toString() ?? ""),
     status: "PUBLISHED" as const,
     recurrenceGroupId,
   };
@@ -203,6 +222,28 @@ export async function createEvent(formData: FormData): Promise<void> {
     createdEvents.map((event) => setEventLocation(event.id, latitude, longitude)),
   );
 
+  // Each photo is processed and stored once; every occurrence of a series
+  // gets its own Media rows pointing at the same files (file deletion is
+  // reference-aware, see src/lib/media-files.ts).
+  let position = 0;
+  for (const photo of photos) {
+    const stored = await processAndStoreImage(photo, `events/${createdEvents[0].id}`);
+    if (!stored) continue;
+    const isPanorama = await isPanoramaAspectRatio(photo);
+    await prisma.media.createMany({
+      data: createdEvents.map((event) => ({
+        eventId: event.id,
+        type: "PHOTO" as const,
+        storageKey: stored.storageKey,
+        thumbnailKey: stored.thumbnailKey,
+        position,
+        uploadedById: userId,
+        isPanorama,
+      })),
+    });
+    position++;
+  }
+
   const session = await auth();
   await recordFavoriteUpdates(
     createdEvents.map((event) => ({ kind: "NEW_EVENT" as const, listingId, eventId: event.id })),
@@ -250,10 +291,11 @@ export async function updateEvent(formData: FormData): Promise<void> {
         houseNumber: formData.get("houseNumber")?.toString().trim() || null,
         latitude,
         longitude,
-        websiteUrl: formData.get("websiteUrl")?.toString().trim() || null,
+        websiteUrl: normalizeHomepageUrl(formData.get("websiteUrl")?.toString() ?? ""),
         cost: parseOptionalInt(formData.get("cost")),
         maxParticipants: parseOptionalInt(formData.get("maxParticipants")),
         registrationRequired: formData.get("registrationRequired") === "on",
+        registrationUrl: normalizeHomepageUrl(formData.get("registrationUrl")?.toString() ?? ""),
         attributeOptions: {
           create: attributeOptionIds.map((optionId) => ({ optionId })),
         },
@@ -275,7 +317,9 @@ export async function deleteEvent(formData: FormData): Promise<void> {
   if (!listingId || !eventId) return;
   await requireEventAccess(eventId);
 
-  await prisma.event.delete({ where: { id: eventId } });
+  // Also removes the stored photo/video files (only those no other event of a
+  // series still uses); a bare event.delete left them behind as orphans.
+  await deleteEventsCompletely([eventId]);
 
   redirect(`/projekte/${listingId}/termine`);
 }

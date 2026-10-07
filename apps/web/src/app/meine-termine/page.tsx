@@ -11,7 +11,7 @@ import { deleteEvent } from "@/app/projekte/[id]/termine/actions";
 import { getEventViewTotals } from "@/lib/view-stats";
 
 export const metadata: Metadata = {
-  title: "Meine Termine",
+  title: "Meine Veranstaltungen",
   robots: { index: false, follow: false },
 };
 
@@ -55,7 +55,7 @@ export default async function MeineTerminePage() {
   return (
     <AppShell active="termine" isAdmin={false} displayName={displayName}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold">Meine Termine</h1>
+        <h1 className="text-3xl font-bold">Meine Veranstaltungen</h1>
         <Link
           href="/termine/neu"
           className="inline-flex min-h-12 items-center rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"

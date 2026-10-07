@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import { AppShell } from "@/components/app-shell";
+import { EmailCheckBadge } from "@/components/email-check-badge";
 import { EntityIconBadge } from "@/components/entity-icon-badge";
 import { acceptContactRequest, declineContactRequest } from "./actions";
 
@@ -92,7 +93,8 @@ export default async function AnfragenPage({
               <p className="text-sm text-text-muted">
                 <a href={`mailto:${request.senderEmail}`} className="text-primary hover:underline">
                   {request.senderEmail}
-                </a>
+                </a>{" "}
+                <EmailCheckBadge verified={request.senderEmailVerified} />
                 {request.senderPhone ? (
                   <>
                     {" · "}

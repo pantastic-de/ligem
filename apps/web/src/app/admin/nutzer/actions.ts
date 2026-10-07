@@ -2,22 +2,29 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminAction } from "@/lib/authz";
 import { deleteEventsCompletely, deleteListingsCompletely } from "@/lib/delete-content";
 import { prepareListingDeletedNotices } from "@/lib/listing-notifications";
 import type { UserRole } from "@/generated/prisma/client";
+import { ALL_ROLES } from "@/lib/user-roles";
+import { sendTemplateMail } from "@/lib/email-template-store";
+import { SITE_URL } from "@/lib/site";
+import { deleteAccount, getDeletionOverview, isLastAdmin, parseListingDecisions } from "@/lib/account-deletion";
 
-const ALL_ROLES: UserRole[] = ["SUCHENDE", "ANBIETER", "MODERATOR", "ADMIN"];
+const detailPath = (userId: string) => `/admin/nutzer/${userId}`;
 
 export async function updateUserRoles(formData: FormData): Promise<void> {
-  await requireAdminAction();
+  const session = await requireAdminAction();
 
   const userId = formData.get("userId")?.toString();
   if (!userId) return;
 
   const selectedRoles = new Set(formData.getAll("roles").map(String));
+  // An admin can't take away their own admin role by accident.
+  if (userId === session.user.id) selectedRoles.add("ADMIN");
 
   await prisma.$transaction(
     ALL_ROLES.map((role) =>
@@ -34,6 +41,8 @@ export async function updateUserRoles(formData: FormData): Promise<void> {
   );
 
   revalidatePath("/admin/nutzer");
+  revalidatePath(detailPath(userId));
+  if (formData.get("back")?.toString() === "detail") redirect(`${detailPath(userId)}?ok=rollen`);
 }
 
 // Excludes the acting admin's own id from a bulk action's target list — you
@@ -141,7 +150,7 @@ function redirectToUserContentResult(formData: FormData, outcome: { ok: string }
   else filterParams.set("inhalteFehler", outcome.error);
 
   revalidatePath("/admin/nutzer");
-  redirect(`/admin/nutzer?${filterParams}${userId ? `#user-${userId}` : ""}`);
+  redirect(userId ? `${detailPath(userId)}?${filterParams}#inhalte` : `/admin/nutzer?${filterParams}`);
 }
 
 function selectedContentIds(formData: FormData): { listingIds: string[]; eventIds: string[] } {
@@ -205,4 +214,77 @@ export async function bulkReassignUserContent(formData: FormData): Promise<void>
   }
 
   redirectToUserContentResult(formData, { ok: "zugeordnet" });
+}
+
+/**
+ * Blocks an account: no more sign-ins, running sessions end within a minute
+ * (see auth.ts). Projects and events stay as they are; the person gets a
+ * mail with the reason.
+ */
+export async function blockUser(formData: FormData): Promise<void> {
+  const session = await requireAdminAction();
+  const userId = formData.get("userId")?.toString();
+  if (!userId) redirect("/admin/nutzer");
+  if (userId === session.user.id) redirect(`${detailPath(userId)}?error=selbst`);
+  const reason = formData.get("reason")?.toString().trim().slice(0, 500) ?? "";
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { blockedAt: new Date(), blockedReason: reason || null },
+    select: { name: true, email: true },
+  });
+  after(() =>
+    sendTemplateMail("konto-gesperrt", user.email, {
+      name: user.name ?? user.email,
+      grund: reason || "kein Grund angegeben",
+    }),
+  );
+
+  revalidatePath("/admin/nutzer");
+  redirect(`${detailPath(userId)}?ok=gesperrt`);
+}
+
+export async function unblockUser(formData: FormData): Promise<void> {
+  await requireAdminAction();
+  const userId = formData.get("userId")?.toString();
+  if (!userId) redirect("/admin/nutzer");
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { blockedAt: null, blockedReason: null },
+    select: { name: true, email: true },
+  });
+  after(() =>
+    sendTemplateMail("konto-entsperrt", user.email, { name: user.name ?? user.email, link: `${SITE_URL}/anmelden` }),
+  );
+
+  revalidatePath("/admin/nutzer");
+  redirect(`${detailPath(userId)}?ok=entsperrt`);
+}
+
+/**
+ * Deletes an account from its detail page, with one decision per own
+ * project (transfer or delete), exactly like the self-service deletion
+ * (src/lib/account-deletion.ts). The person gets a mail with the reason.
+ */
+export async function deleteUserByAdmin(formData: FormData): Promise<void> {
+  const session = await requireAdminAction();
+  const userId = formData.get("userId")?.toString();
+  if (!userId) redirect("/admin/nutzer");
+  const back = `${detailPath(userId)}`;
+  if (userId === session.user.id) redirect(`${back}?error=selbst#loeschen`);
+  if (await isLastAdmin(userId)) redirect(`${back}?error=letzter-admin#loeschen`);
+
+  const overview = await getDeletionOverview(userId);
+  if (overview.organizationCount > 0) redirect(`${back}?error=organisation#loeschen`);
+
+  const parsed = await parseListingDecisions(formData, userId, overview.ownListings);
+  if ("error" in parsed) redirect(`${back}?error=${parsed.error}&projekt=${parsed.listingId}#loeschen`);
+
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, email: true } });
+  const reason = formData.get("reason")?.toString().trim().slice(0, 500) ?? "";
+  await deleteAccount(userId, parsed.decisions, { reason });
+
+  revalidatePath("/admin/nutzer");
+  redirect(`/admin/nutzer?geloescht=${encodeURIComponent(user.name ?? user.email)}`);
 }

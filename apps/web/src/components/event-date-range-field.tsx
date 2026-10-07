@@ -83,11 +83,26 @@ export function EventDateRangeField({
     }
   }
 
+  // Without a second click in the calendar the event ends on its start day,
+  // so the end time is always usable. (It used to stay disabled until an end
+  // day was clicked, which most people creating a one-day event never do, so
+  // their events were saved without any end time.)
+  const effectiveEndDate = endDate || startDate;
   const startDateTime = startDate ? `${startDate}T${startTime}` : "";
-  const endDateTime = endDate ? `${endDate}T${endTime}` : "";
+  const endDateTime = effectiveEndDate ? `${effectiveEndDate}T${endTime}` : "";
   const sameDayInvalidOrder = Boolean(
-    startDate && endDate && startDate === endDate && endTime <= startTime,
+    startDate && effectiveEndDate === startDate && endTime <= startTime,
   );
+
+  // Moving the start past the end on the same day pushes the end along
+  // (keeping a two-hour default), instead of leaving an invalid pair.
+  function changeStartTime(value: string) {
+    setStartTime(value);
+    if (effectiveEndDate === startDate && endTime <= value) {
+      const index = TIME_OPTIONS.indexOf(value);
+      setEndTime(TIME_OPTIONS[Math.min(index + 8, TIME_OPTIONS.length - 1)]);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -170,7 +185,7 @@ export function EventDateRangeField({
           {startDate
             ? endDate
               ? `Vom ${dateLabelFormat.format(new Date(startDate))} bis ${dateLabelFormat.format(new Date(endDate))}`
-              : "Beginn gewählt, jetzt das Ende anklicken (für einen eintägigen Termin denselben Tag nochmal anklicken)."
+              : `Am ${dateLabelFormat.format(new Date(startDate))}. Für einen mehrtägigen Termin zusätzlich den letzten Tag anklicken.`
             : "Bitte zuerst den Beginn-Tag anklicken."}
         </p>
       </div>
@@ -183,7 +198,7 @@ export function EventDateRangeField({
           <select
             id="startTime"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={(e) => changeStartTime(e.target.value)}
             className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
           >
             {TIME_OPTIONS.map((t) => (
@@ -195,13 +210,13 @@ export function EventDateRangeField({
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="endTime" className="font-medium">
-            Ende Uhrzeit
+            Ende Uhrzeit{endDate && endDate !== startDate ? " (letzter Tag)" : ""}
           </label>
           <select
             id="endTime"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            disabled={!endDate}
+            disabled={!startDate}
             className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text disabled:opacity-50"
           >
             {TIME_OPTIONS.map((t) => (
@@ -220,7 +235,7 @@ export function EventDateRangeField({
       ) : null}
 
       <input type="hidden" name="startAt" value={startDateTime} />
-      <input type="hidden" name="endAt" value={endDate ? endDateTime : ""} />
+      <input type="hidden" name="endAt" value={endDateTime} />
     </div>
   );
 }

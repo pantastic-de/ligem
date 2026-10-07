@@ -879,7 +879,9 @@ export function LocationRadiusPicker({
           type="button"
           onClick={searchPlace}
           disabled={busy}
-          className="min-h-11 rounded-full bg-secondary px-4 text-sm font-semibold text-white transition-colors hover:bg-secondary-hover disabled:opacity-60"
+          className={`min-h-11 rounded-full px-4 text-sm font-semibold text-white transition-colors disabled:opacity-60 ${
+            resultTone === "termin" ? "bg-secondary hover:bg-secondary-hover" : "bg-primary hover:bg-primary-hover"
+          }`}
         >
           {busy ? "Suche…" : "Suchen"}
         </button>

@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canManageEvent } from "@/lib/authz";
-import { deleteObject } from "@/lib/storage";
+import { deleteUnusedMediaFiles } from "@/lib/media-files";
 import { storeThumbnailOnly } from "@/lib/media";
 import { fetchVideoLinkThumbnail, normalizeVideoLinkUrl, toEmbeddableUrl } from "@/lib/video-link";
 
@@ -79,12 +79,8 @@ export async function deleteEventMedia(formData: FormData): Promise<void> {
 
   const media = await prisma.media.findUnique({ where: { id: mediaId } });
   if (media && media.eventId === eventId) {
-    if (!media.isVideoLink) {
-      await deleteObject(media.storageKey);
-    }
-    if (media.thumbnailKey) {
-      await deleteObject(media.thumbnailKey);
-    }
+    // Other occurrences of a recurring series may share this photo's files.
+    await deleteUnusedMediaFiles([media.id]);
     await prisma.media.delete({ where: { id: mediaId } });
   }
 

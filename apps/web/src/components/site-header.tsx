@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { FileText, Heart, Hourglass, LogIn } from "lucide-react";
 import { auth, signOut } from "@/lib/auth";
-import { isAdmin } from "@/lib/authz";
+import { isAdmin, isModerator } from "@/lib/authz";
 import { getOpenRequestsCount, getLatestOpenRequestHref } from "@/lib/open-requests";
 import { getPendingReviewIndicator } from "@/lib/pending-review";
 import { FAVORITES_PAGE, getFavoriteNewsCount } from "@/lib/favorites";
@@ -18,7 +18,8 @@ export async function SiteHeader() {
   const openRequestsCount = session?.user?.id ? await getOpenRequestsCount(session.user.id) : 0;
   const openRequestsHref =
     session?.user?.id && openRequestsCount > 0 ? await getLatestOpenRequestHref(session.user.id) : null;
-  const pendingReview = session?.user?.id ? await getPendingReviewIndicator(session.user.id, admin) : null;
+  const moderator = admin || (session?.user?.id ? await isModerator(session.user.id) : false);
+  const pendingReview = session?.user?.id ? await getPendingReviewIndicator(session.user.id, moderator) : null;
   const favoriteNewsCount = session?.user?.id ? await getFavoriteNewsCount(session.user.id) : 0;
   const dataExportCount = admin ? await getPendingDataExportCount() : 0;
   const displayName = session?.user?.name ?? session?.user?.email ?? "Konto";
@@ -149,6 +150,7 @@ export async function SiteHeader() {
             <AccountMenu
               displayName={displayName}
               admin={admin}
+              moderator={moderator}
               openRequestsCount={openRequestsCount}
               openRequestsHref={openRequestsHref}
               signOutAction={handleSignOut}

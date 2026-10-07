@@ -5,7 +5,7 @@ import { BellOff } from "lucide-react";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { isModerator } from "@/lib/authz";
 import { userIdFromNotificationToken } from "@/lib/notification-token";
 import { FREQUENCY_OPTIONS } from "@/lib/favorites";
 import type { FavoriteFrequency } from "@/generated/prisma/client";
@@ -106,11 +106,12 @@ export default async function NotificationSettingsPage({
         email: true,
         name: true,
         notifyContactRequestsByEmail: true,
+        notifyEventRegistrationsByEmail: true,
         notifyListingStatusByEmail: true,
         notifyAdminByEmail: true,
       },
     }),
-    isAdmin(userId),
+    isModerator(userId),
     prisma.favoriteListing.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -178,6 +179,12 @@ export default async function NotificationSettingsPage({
             </span>
           </label>
           <label className="flex min-h-11 items-start gap-3 text-sm">
+            <input type="checkbox" name="termine" value="1" defaultChecked={user.notifyEventRegistrationsByEmail} className="mt-1 h-5 w-5 shrink-0" />
+            <span>
+              <strong>Meine Termine:</strong> jede neue Interessensmeldung und jede Absage zu meinen Terminen
+            </span>
+          </label>
+          <label className="flex min-h-11 items-start gap-3 text-sm">
             <input type="checkbox" name="kontaktanfragen" value="1" defaultChecked={user.notifyContactRequestsByEmail} className="mt-1 h-5 w-5 shrink-0" />
             <span>
               <strong>Kontaktanfragen:</strong> eine Kopie jeder neuen Anfrage an meine Projekte
@@ -187,7 +194,7 @@ export default async function NotificationSettingsPage({
             <label className="flex min-h-11 items-start gap-3 text-sm">
               <input type="checkbox" name="admin" value="1" defaultChecked={user.notifyAdminByEmail} className="mt-1 h-5 w-5 shrink-0" />
               <span>
-                <strong>Als Admin:</strong> neue Projekte zur Prüfung, angefragte Datenauskünfte
+                <strong>Moderation:</strong> neue Projekte zur Prüfung (Admins auch angefragte Datenauskünfte)
               </span>
             </label>
           ) : null}

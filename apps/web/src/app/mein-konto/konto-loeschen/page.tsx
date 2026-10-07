@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/authz";
 import { getDeletionOverview, isLastAdmin } from "@/lib/account-deletion";
 import { AppShell } from "@/components/app-shell";
+import { ListingDecisionFieldset } from "@/components/listing-decision-fieldset";
 import { PasswordField } from "@/components/password-field";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { deleteOwnAccount } from "./actions";
@@ -26,13 +27,6 @@ const errorMessages: Record<string, string> = {
   auswahl: "Bitte wähle für jedes Projekt aus, was damit passieren soll.",
   unbekannt: "Zu dieser E-Mail-Adresse gibt es kein Konto bei LiGem. Die Person muss sich zuerst registrieren.",
   selbst: "Du kannst ein Projekt nicht an dich selbst übertragen.",
-};
-
-const statusLabels: Record<string, string> = {
-  PENDING_REVIEW: "wird geprüft",
-  PUBLISHED: "veröffentlicht",
-  REJECTED: "abgelehnt",
-  ARCHIVED: "archiviert",
 };
 
 export default async function DeleteAccountPage({
@@ -93,40 +87,7 @@ export default async function DeleteAccountPage({
                     id={`projekt-${listing.id}`}
                     className={`scroll-mt-4 rounded-xl border p-4 ${projekt === listing.id ? "border-error" : "border-text/10"}`}
                   >
-                    <fieldset className="flex flex-col gap-2">
-                      <legend className="font-semibold">
-                        {listing.projectName}{" "}
-                        <span className="text-sm font-normal text-text-muted">
-                          ({statusLabels[listing.status] ?? listing.status}, {listing._count.events} Termin(e))
-                        </span>
-                      </legend>
-                      {listing.managers.map(({ user: manager }) => (
-                        <label key={manager.id} className="flex min-h-11 items-center gap-2 text-sm">
-                          <input type="radio" name={`listing-${listing.id}`} value={`manager:${manager.id}`} required className="h-5 w-5" />
-                          An Mitverwalter:in {manager.name ?? manager.email} übertragen
-                        </label>
-                      ))}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="flex min-h-11 items-center gap-2 text-sm">
-                          <input type="radio" name={`listing-${listing.id}`} value="email" required className="h-5 w-5" />
-                          An eine andere Person übertragen:
-                        </label>
-                        <label htmlFor={`email-${listing.id}`} className="sr-only">
-                          E-Mail-Adresse der neuen Inhaberin bzw. des neuen Inhabers
-                        </label>
-                        <input
-                          id={`email-${listing.id}`}
-                          name={`email-${listing.id}`}
-                          type="email"
-                          placeholder="E-Mail-Adresse ihres LiGem-Kontos"
-                          className="min-h-11 min-w-0 flex-1 rounded-xl border border-text/20 bg-bg px-3"
-                        />
-                      </div>
-                      <label className="flex min-h-11 items-center gap-2 text-sm text-error">
-                        <input type="radio" name={`listing-${listing.id}`} value="delete" required className="h-5 w-5" />
-                        Projekt mit allen Terminen löschen
-                      </label>
-                    </fieldset>
+                    <ListingDecisionFieldset listing={listing} />
                   </li>
                 ))}
               </ul>

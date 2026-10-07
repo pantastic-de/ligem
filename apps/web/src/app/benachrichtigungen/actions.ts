@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/authz";
+import { isModerator } from "@/lib/authz";
 import { userIdFromNotificationToken } from "@/lib/notification-token";
 import { unsubscribeAll } from "@/lib/notification-settings";
 import { FREQUENCY_OPTIONS } from "@/lib/favorites";
@@ -30,13 +30,14 @@ function parseFrequency(value: FormDataEntryValue | null): FavoriteFrequency | n
 
 export async function saveNotificationSettings(formData: FormData): Promise<void> {
   const { userId, back } = await resolveUser(formData);
-  const admin = await isAdmin(userId);
+  const admin = await isModerator(userId);
   await prisma.user.update({
     where: { id: userId },
     data: {
       notifyContactRequestsByEmail: formData.get("kontaktanfragen") === "1",
+      notifyEventRegistrationsByEmail: formData.get("termine") === "1",
       notifyListingStatusByEmail: formData.get("projekte") === "1",
-      // Only admins see this switch; leave it alone for everyone else.
+      // Only admins and moderators see this switch; leave it alone for everyone else.
       ...(admin ? { notifyAdminByEmail: formData.get("admin") === "1" } : {}),
     },
   });

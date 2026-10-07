@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-import type { UserRole } from "@/generated/prisma/client";
+import { interestRolesFromForm } from "@/lib/user-roles";
 import { createVerificationToken, sendVerificationEmail } from "@/lib/verification-token";
 import { getClientIp } from "@/lib/ip-lookup";
 import { registerAttempt } from "@/lib/rate-limit";
@@ -43,9 +43,7 @@ export async function registerUser(formData: FormData): Promise<void> {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const roles: UserRole[] = [];
-  if (formData.get("role-anbieter") === "on") roles.push("ANBIETER");
-  if (formData.get("role-suchende") === "on") roles.push("SUCHENDE");
+  const roles = interestRolesFromForm(formData);
 
   await prisma.user.create({
     data: {

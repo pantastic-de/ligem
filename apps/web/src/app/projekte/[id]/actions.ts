@@ -11,6 +11,7 @@ import { isDeliverable } from "@/lib/listing-notifications";
 import { SITE_URL } from "@/lib/site";
 import { getClientIp } from "@/lib/ip-lookup";
 import { turnstileEnabled, verifyTurnstileToken } from "@/lib/turnstile";
+import { checkSender, emailNote, type SenderCheck } from "@/lib/sender-verification";
 import { withQueryParam } from "@/lib/return-url";
 
 // The contact form is rendered both on the standalone /projekt/[slug] page
@@ -46,11 +47,13 @@ async function notifyContactRequest(
   senderEmail: string,
   senderPhone: string | null,
   message: string,
+  sender: SenderCheck,
 ): Promise<void> {
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
     select: {
       projectName: true,
+      slug: true,
       createdBy: { select: { email: true, notifyContactRequestsByEmail: true } },
       managers: { select: { user: { select: { email: true, notifyContactRequestsByEmail: true } } } },
     },
@@ -68,8 +71,6 @@ async function notifyContactRequest(
         .filter(isDeliverable),
     ),
   ];
-  if (recipients.length === 0) return;
-
   const values = {
     projekt: listing.projectName,
     absender_name: senderName,
@@ -77,8 +78,18 @@ async function notifyContactRequest(
     absender_telefon: senderPhone ?? "nicht angegeben",
     nachricht: message,
     link: `${SITE_URL}/projekte/${listingId}/anfragen`,
+    email_hinweis: emailNote(sender.emailVerified),
   };
   after(async () => {
+    // Confirmation to the sender, only to a confirmed account address.
+    if (sender.confirmationTo) {
+      await sendTemplateMail("kontaktanfrage-bestaetigung", sender.confirmationTo, {
+        name: senderName,
+        projekt: listing.projectName,
+        nachricht: message,
+        projekt_link: `${SITE_URL}/projekt/${listing.slug}`,
+      });
+    }
     for (const to of recipients) {
       // Reply-To: a plain "Antworten" reaches the person who asked, not LiGem.
       await sendTemplateMail("kontaktanfrage", to, values, { replyTo: senderEmail });
@@ -137,17 +148,19 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
     redirect(withQueryParam(returnTo, "error", "1"));
   }
 
+  const sender = await checkSender(session?.user?.id, senderEmail);
   await prisma.contactRequest.create({
     data: {
       listingId,
       senderName,
       senderEmail,
       senderPhone,
+      senderEmailVerified: sender.emailVerified,
       message,
       senderUserId: session?.user?.id ?? null,
     },
   });
-  await notifyContactRequest(listingId, senderName, senderEmail, senderPhone, message);
+  await notifyContactRequest(listingId, senderName, senderEmail, senderPhone, message, sender);
 
   redirect(withQueryParam(returnTo, "kontakt", "1"));
 }

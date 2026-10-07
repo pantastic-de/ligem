@@ -1,4 +1,4 @@
-import NextAuth, { type Session } from "next-auth";
+import NextAuth, { CredentialsSignin, type Session } from "next-auth";
 import type { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -23,6 +23,18 @@ const LOGIN_WINDOW_MS = 15 * 60_000;
 // user lookup's — see its use below.
 const DUMMY_BCRYPT_HASH = "$2b$12$db5C4QowAKggBR.hrNqbBenJvSr/ZQHwpES.Ui/YPGeVYt0c3mQSC";
 
+// Thrown by `authorize` for a blocked account (only after the password was
+// right, so it doesn't reveal which addresses exist); /anmelden's action
+// turns the code into its own message.
+export class AccountBlockedError extends CredentialsSignin {
+  code = "gesperrt";
+}
+
+// How often a running session re-checks that its account still exists and
+// isn't blocked (see the jwt callback). One primary-key lookup per minute
+// per session instead of one per request.
+const ACCOUNT_RECHECK_MS = 60_000;
+
 const hasGoogleOAuth = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
 );
@@ -46,10 +58,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/anmelden",
   },
   callbacks: {
-    jwt({ token, user }) {
+    // OAuth sign-ins of blocked accounts end on /anmelden with a message.
+    // (Credentials are refused in `authorize` already.)
+    async signIn({ user }) {
+      const existing = user.id
+        ? await prisma.user.findUnique({ where: { id: user.id }, select: { blockedAt: true } })
+        : user.email
+          ? await prisma.user.findUnique({ where: { email: user.email }, select: { blockedAt: true } })
+          : null;
+      return existing?.blockedAt ? "/anmelden?error=gesperrt" : true;
+    },
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.mustChangePassword = user.mustChangePassword ?? false;
+        token.checkedAt = Date.now();
+        return token;
+      }
+      // Sessions are JWTs, so blocking or deleting an account wouldn't end
+      // a running login on its own. Returning null drops the session cookie.
+      if (typeof token.id === "string" && Date.now() - (token.checkedAt ?? 0) > ACCOUNT_RECHECK_MS) {
+        const account = await prisma.user.findUnique({ where: { id: token.id }, select: { blockedAt: true } });
+        if (!account || account.blockedAt) return null;
+        token.checkedAt = Date.now();
       }
       return token;
     },
@@ -141,6 +172,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
           return null;
+        }
+        if (user.blockedAt) {
+          throw new AccountBlockedError();
         }
 
         resetAttempts(rateLimitKey);

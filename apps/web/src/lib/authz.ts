@@ -11,6 +11,36 @@ export async function isAdmin(userId: string): Promise<boolean> {
   return Boolean(assignment);
 }
 
+/** Admins and moderators: may review, approve, reject and archive projects and events. */
+export async function isModerator(userId: string): Promise<boolean> {
+  const count = await prisma.userRoleAssignment.count({
+    where: { userId, role: { in: ["MODERATOR", "ADMIN"] } },
+  });
+  return count > 0;
+}
+
+/** For the moderation pages (/admin, /admin/projekte, /admin/termine): admins and moderators. */
+export async function requireModeratorPage(): Promise<Session & { isAdmin: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/anmelden");
+  }
+  if (!(await isModerator(session.user.id))) {
+    const { notFound } = await import("next/navigation");
+    notFound();
+  }
+  return Object.assign(session, { isAdmin: await isAdmin(session.user.id) });
+}
+
+/** Server-action counterpart of requireModeratorPage. */
+export async function requireModeratorAction(): Promise<Session> {
+  const session = await auth();
+  if (!session?.user?.id || !(await isModerator(session.user.id))) {
+    redirect("/anmelden");
+  }
+  return session;
+}
+
 /** For admin pages: redirects to /anmelden if logged out, 404s if logged in but not admin. */
 export async function requireAdminPage(): Promise<Session> {
   const session = await auth();

@@ -124,21 +124,52 @@ export function AddressFields({
     return results[0] ?? null;
   }
 
-  async function handlePostalCodeBlur() {
-    if (!postalCode.trim()) return;
+  // Fills city (unless typed by hand), country and state from the postal
+  // code. Runs while typing as soon as the code looks complete (4 digits for
+  // AT/CH, 5 for DE), and again on blur for anything else.
+  const lastLookedUp = useRef(postalCode.trim());
+  const cityTypedByHand = useRef(Boolean(defaults.city));
+  async function lookupPostalCode(code: string) {
+    const trimmed = code.trim();
+    if (!trimmed || trimmed === lastLookedUp.current) return;
+    lastLookedUp.current = trimmed;
     setBusy(true);
     setStatusMessage(null);
     try {
-      const result = await geocode({ postalcode: postalCode, ...(country ? { country } : {}) });
+      // Postal codes are ambiguous across countries (6900 is Bregenz, but
+      // also a town in Hungary), so search only where LiGem's projects are:
+      // the country already filled in first, then by length, 5 digits in
+      // Germany, 4 digits in Austria and then Switzerland.
+      const candidates = [
+        country,
+        ...(/^\d{5}$/.test(trimmed) ? ["Deutschland"] : /^\d{4}$/.test(trimmed) ? ["Österreich", "Schweiz"] : []),
+      ].filter((c, i, all) => c && all.indexOf(c) === i);
+      let result: GeocodeResult | null = null;
+      for (const candidate of candidates) {
+        result = await geocode({ postalcode: trimmed, country: candidate });
+        if (result) break;
+      }
       if (result) {
         if (result.country) setCountry(result.country);
         if (result.state) setState(result.state);
-        if (result.city && !city) setCity(result.city);
+        if (result.city && (!city || !cityTypedByHand.current)) {
+          setCity(result.city);
+          cityTypedByHand.current = false;
+        }
       } else {
-        setStatusMessage("Land/Bundesland zu dieser PLZ nicht gefunden.");
+        setStatusMessage("Zu dieser Postleitzahl wurde nichts gefunden. Bitte Ort, Land und Bundesland selbst eintragen.");
       }
     } finally {
       setBusy(false);
+    }
+  }
+
+  const postalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function changePostalCode(value: string) {
+    setPostalCode(value);
+    if (postalTimer.current) clearTimeout(postalTimer.current);
+    if (/^\d{4,5}$/.test(value.trim())) {
+      postalTimer.current = setTimeout(() => void lookupPostalCode(value), 400);
     }
   }
 
@@ -216,8 +247,10 @@ export function AddressFields({
             name="postalCode"
             type="text"
             value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
-            onBlur={handlePostalCodeBlur}
+            onChange={(e) => changePostalCode(e.target.value)}
+            onBlur={() => void lookupPostalCode(postalCode)}
+            inputMode="numeric"
+            autoComplete="postal-code"
             className={inputClass}
           />
         </div>
@@ -230,7 +263,43 @@ export function AddressFields({
             name="city"
             type="text"
             value={city}
-            onChange={(e) => setCity(e.target.value)}
+            onChange={(e) => {
+              setCity(e.target.value);
+              cityTypedByHand.current = true;
+            }}
+            onBlur={handleLocateAddress}
+            autoComplete="address-level2"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2 flex flex-col gap-1.5">
+          <label htmlFor="street" className="font-medium">
+            Straße
+          </label>
+          <input
+            id="street"
+            name="street"
+            type="text"
+            value={street}
+            onChange={(e) => setStreet(e.target.value)}
+            onBlur={handleLocateAddress}
+            autoComplete="address-line1"
+            className={inputClass}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="houseNumber" className="font-medium">
+            Nr.
+          </label>
+          <input
+            id="houseNumber"
+            name="houseNumber"
+            type="text"
+            value={houseNumber}
+            onChange={(e) => setHouseNumber(e.target.value)}
             onBlur={handleLocateAddress}
             className={inputClass}
           />
@@ -266,40 +335,10 @@ export function AddressFields({
         </div>
       </div>
       <p className="-mt-2 text-sm text-text-muted">
-        Land und Bundesland werden anhand der Postleitzahl vorgeschlagen, bei
+        Ort, Land und Bundesland werden anhand der Postleitzahl ausgefüllt, bei
         Bedarf einfach überschreiben.
       </p>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="col-span-2 flex flex-col gap-1.5">
-          <label htmlFor="street" className="font-medium">
-            Straße
-          </label>
-          <input
-            id="street"
-            name="street"
-            type="text"
-            value={street}
-            onChange={(e) => setStreet(e.target.value)}
-            onBlur={handleLocateAddress}
-            className={inputClass}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="houseNumber" className="font-medium">
-            Nr.
-          </label>
-          <input
-            id="houseNumber"
-            name="houseNumber"
-            type="text"
-            value={houseNumber}
-            onChange={(e) => setHouseNumber(e.target.value)}
-            onBlur={handleLocateAddress}
-            className={inputClass}
-          />
-        </div>
-      </div>
 
       {showRegionDescription ? (
         <div className="flex flex-col gap-1.5">

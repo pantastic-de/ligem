@@ -3,6 +3,7 @@ import type {
   AttributeOption,
   ListingCategory,
 } from "@/generated/prisma/client";
+import { TemporaryOfferField } from "@/components/temporary-offer-field";
 import { AddressFields } from "@/components/address-fields";
 import { RichTextField } from "@/components/rich-text-field";
 import { HomepageImportField } from "@/components/homepage-import-field";
@@ -30,6 +31,8 @@ export type ListingFormDefaults = {
   howWeLive?: string;
   whoWeAreLooking?: string;
   isTemporary?: boolean;
+  temporaryFrom?: string;
+  temporaryUntil?: string;
   groupSizeCurrent?: number | null;
   groupSizePlanned?: number | null;
   freeSpots?: number | null;
@@ -140,15 +143,11 @@ export function ListingFormFields({
           />
         ) : null}
 
-        <label className="flex min-h-11 items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="isTemporary"
-            defaultChecked={defaults.isTemporary}
-            className="h-5 w-5"
-          />
-          Temporäres Angebot (z. B. Probewohnen, Retreat, Zwischennutzung)
-        </label>
+        <TemporaryOfferField
+          defaultChecked={defaults.isTemporary}
+          defaultFrom={defaults.temporaryFrom}
+          defaultUntil={defaults.temporaryUntil}
+        />
       </fieldset>
 
       <fieldset className="flex flex-col gap-6">

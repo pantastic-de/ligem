@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/prisma";
-import { requireAdminAction } from "@/lib/authz";
+import { requireAdminAction, requireModeratorAction } from "@/lib/authz";
 import { deleteListingsCompletely } from "@/lib/delete-content";
 import { notifyListingApproved, prepareListingDeletedNotices } from "@/lib/listing-notifications";
 import { recordFavoriteUpdates } from "@/lib/favorites";
@@ -27,7 +27,7 @@ function redirectBack(formData: FormData): never {
 }
 
 export async function approveListing(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
@@ -55,7 +55,7 @@ export async function approveListing(formData: FormData): Promise<void> {
 }
 
 export async function rejectListing(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
   const note = formData.get("moderationNote")?.toString().trim() || null;
@@ -73,7 +73,7 @@ export async function rejectListing(formData: FormData): Promise<void> {
 }
 
 export async function archiveListing(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const listingId = formData.get("listingId")?.toString();
   if (!listingId) return;
 
@@ -93,7 +93,7 @@ function selectedIds(formData: FormData): string[] {
 }
 
 export async function bulkApproveListings(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 
@@ -118,7 +118,7 @@ export async function bulkApproveListings(formData: FormData): Promise<void> {
 }
 
 export async function bulkRejectListings(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
   const note = formData.get("moderationNote")?.toString().trim() || null;
@@ -132,7 +132,7 @@ export async function bulkRejectListings(formData: FormData): Promise<void> {
 }
 
 export async function bulkArchiveListings(formData: FormData): Promise<void> {
-  const session = await requireAdminAction();
+  const session = await requireModeratorAction();
   const ids = selectedIds(formData);
   if (ids.length === 0) redirectBack(formData);
 

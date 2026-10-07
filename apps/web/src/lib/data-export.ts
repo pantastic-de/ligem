@@ -95,6 +95,7 @@ export async function buildDataExport(userId: string) {
         postalCode: true,
         city: true,
         websiteUrl: true,
+        registrationUrl: true,
         createdAt: true,
         listing: { select: { projectName: true } },
         _count: { select: { registrations: true } },
@@ -116,7 +117,7 @@ export async function buildDataExport(userId: string) {
     prisma.eventRegistration.findMany({
       where: { OR: [{ userId }, { email: { equals: user.email, mode: "insensitive" } }] },
       orderBy: { createdAt: "asc" },
-      select: { name: true, email: true, participantCount: true, message: true, createdAt: true, event: { select: { title: true, startAt: true } } },
+      select: { name: true, email: true, participantCount: true, message: true, createdAt: true, cancelledAt: true, event: { select: { title: true, startAt: true } } },
     }),
     prisma.dataExportRequest.findMany({ where: { userId }, select: { status: true, createdAt: true, decidedAt: true } }),
     prisma.listingView.count({ where: { viewerId: userId } }),

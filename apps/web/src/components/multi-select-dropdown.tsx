@@ -40,7 +40,10 @@ export function MultiSelectDropdown({
   counts,
   colors,
   onChange,
+  tone = "projekt",
 }: {
+  // Color of the chosen chips: Projekte orange-red, Termine green.
+  tone?: "projekt" | "termin";
   label: string;
   name: string;
   options: Option[];
@@ -112,7 +115,7 @@ export function MultiSelectDropdown({
         <span className="min-w-0 flex-1">
           <span className="block font-semibold">{label}</span>
           {summaryText ? (
-            <span className="block truncate text-sm text-primary">{summaryText}</span>
+            <span className={`block truncate text-sm ${tone === "termin" ? "text-secondary" : "text-primary"}`}>{summaryText}</span>
           ) : null}
         </span>
         {summaryText ? (
@@ -144,8 +147,10 @@ export function MultiSelectDropdown({
                 "inline-flex min-h-10 max-w-full cursor-pointer items-center gap-2 rounded-full border px-3.5 py-1 text-left transition-colors",
                 "has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-text",
                 checked
-                  ? "border-primary bg-primary text-white shadow-sm"
-                  : `border-text/15 bg-bg hover:border-primary/50 ${isZero ? "text-text-muted/60" : ""}`,
+                  ? tone === "termin"
+                    ? "border-secondary bg-secondary text-white shadow-sm"
+                    : "border-primary bg-primary text-white shadow-sm"
+                  : `border-text/15 bg-bg ${tone === "termin" ? "hover:border-secondary/50" : "hover:border-primary/50"} ${isZero ? "text-text-muted/60" : ""}`,
               ].join(" ")}
             >
               <input

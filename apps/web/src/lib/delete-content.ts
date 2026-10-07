@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { deleteObject } from "@/lib/storage";
+import { deleteUnusedMediaFiles } from "@/lib/media-files";
 
 /**
  * Removes the stored files behind these Media rows. The rows themselves
@@ -9,14 +9,8 @@ import { deleteObject } from "@/lib/storage";
  * only its thumbnail (if any) is deleted.
  */
 async function deleteMediaFiles(where: { listingId?: { in: string[] }; eventId?: { in: string[] } }) {
-  const media = await prisma.media.findMany({
-    where,
-    select: { storageKey: true, thumbnailKey: true, isVideoLink: true },
-  });
-  for (const item of media) {
-    if (!item.isVideoLink) await deleteObject(item.storageKey);
-    if (item.thumbnailKey) await deleteObject(item.thumbnailKey);
-  }
+  const media = await prisma.media.findMany({ where, select: { id: true } });
+  await deleteUnusedMediaFiles(media.map((m) => m.id));
 }
 
 /** Hard-deletes events including their stored photo/video files. */

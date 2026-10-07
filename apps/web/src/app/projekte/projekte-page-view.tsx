@@ -3,6 +3,8 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getFavoriteIds } from "@/lib/favorites";
 import { FavoriteButton } from "@/components/favorite-button";
+import { CardEditLink } from "@/components/card-edit-link";
+import { editableListingIds } from "@/lib/editable-ids";
 import { prisma } from "@/lib/prisma";
 import { canManageListing, isAdmin } from "@/lib/authz";
 import type { Event, Prisma } from "@/generated/prisma/client";
@@ -219,11 +221,6 @@ export async function ProjektePageView({
       ? sortParam
       : "neueste";
 
-  const anyAdvancedFilterActive =
-    kategorieIds.length > 0 ||
-    advancedGroups.some((g) => paramValues(params, `attr-${g.slug}`).length > 0) ||
-    Boolean(von || bis);
-
   const attrSelected: Record<string, string[]> = groupSelectedIds;
 
   // Facet counts for every checkbox in "Erweiterte Suche" (ListingCategory +
@@ -349,6 +346,7 @@ export async function ProjektePageView({
   // facets and prev/next still work on the whole sorted list.
   const shownCount = visibleResultCount(params.anzahl, sortedListings.length);
   const visibleListings = sortedListings.slice(0, shownCount);
+  const editableIds = await editableListingIds(viewerId, visibleListings.map((l) => l.id));
 
   // Map markers carry only what's needed to place and label them: the popup
   // ("business card") is fetched when a marker is clicked (see
@@ -383,7 +381,7 @@ export async function ProjektePageView({
   let selectedCanManage = false;
   let selectedIsOwner = false;
   let selectedViewerIsAdmin = false;
-  let selectedViewerContact: { name: string | null; email: string } | null = null;
+  let selectedViewerContact: { name: string | null; email: string; emailVerified: boolean } | null = null;
   let selectedRequireCaptcha = false;
 
   if (selectedId) {
@@ -412,7 +410,7 @@ export async function ProjektePageView({
             select: { name: true, email: true, emailVerified: true },
           })
         : null;
-      selectedViewerContact = viewer ? { name: viewer.name, email: viewer.email } : null;
+      selectedViewerContact = viewer ? { name: viewer.name, email: viewer.email, emailVerified: Boolean(viewer.emailVerified) } : null;
       selectedRequireCaptcha = turnstileEnabled && !viewer?.emailVerified;
 
       if (listing.status === "PUBLISHED" || canManage) {
@@ -532,7 +530,6 @@ export async function ProjektePageView({
             categories={categories}
             projektTyp={projektTyp}
             advancedGroups={advancedGroups}
-            anyAdvancedFilterActive={anyAdvancedFilterActive}
             categoryCounts={categoryCounts}
             attrCounts={attrCounts}
             defaults={{
@@ -682,7 +679,10 @@ export async function ProjektePageView({
                           </div>
                         </Link>
                         {/* Sibling of the card link, not inside it: a button nested in <a> is invalid. */}
-                        <div className="absolute right-3 top-3">
+                        <div className="absolute right-3 top-3 flex items-center gap-1.5">
+                          {editableIds.has(listing.id) ? (
+                            <CardEditLink href={`/projekte/${listing.id}/bearbeiten`} label="Projekt bearbeiten" />
+                          ) : null}
                           <FavoriteButton
                             kind="listing"
                             id={listing.id}

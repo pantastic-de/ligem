@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, ShieldCheck } from "lucide-react";
+import { ClipboardCheck, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { ACTION_TONE_CLASSES } from "@/lib/action-color";
 
 export type AppShellSection =
@@ -52,11 +52,15 @@ const PERSONAL_SECTIONS: AppShellSection[] = ["dashboard", "projekte", "termine"
 export function AppShell({
   active,
   isAdmin,
+  isModerator = false,
   displayName,
   children,
 }: {
   active: AppShellSection;
   isAdmin: boolean;
+  // Moderators (not admins) get one entry to the review queues instead of
+  // the Admin-Dashboard, which they can't open.
+  isModerator?: boolean;
   displayName: string;
   children: React.ReactNode;
 }) {
@@ -81,6 +85,14 @@ export function AppShell({
             href="/admin"
             label="Admin-Dashboard"
             icon={ShieldCheck}
+            isActive={isAdminActive}
+            tone="verwaltung"
+          />
+        ) : isModerator ? (
+          <RailLink
+            href="/admin/projekte"
+            label="Moderation"
+            icon={ClipboardCheck}
             isActive={isAdminActive}
             tone="verwaltung"
           />

@@ -57,7 +57,9 @@ export default async function AnmeldenPage({
           role="alert"
           className="mt-6 rounded-xl bg-error/10 px-4 py-3 text-error"
         >
-          E-Mail-Adresse/Benutzername oder Passwort ist falsch.
+          {error === "gesperrt"
+            ? "Dieses Konto ist gesperrt. Wenn du glaubst, dass das ein Irrtum ist, schreib uns bitte an info@ligem.de."
+            : "E-Mail-Adresse/Benutzername oder Passwort ist falsch."}
         </p>
       ) : null}
 

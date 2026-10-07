@@ -2,8 +2,12 @@ import Link from "next/link";
 import { Globe } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
+import { canManageEvent } from "@/lib/authz";
 import { auth } from "@/lib/auth";
 import { getFavoriteIds } from "@/lib/favorites";
+import { CardEditLink } from "@/components/card-edit-link";
+import { TermineSortSelect } from "@/components/termine-sort-select";
+import { editableEventIds } from "@/lib/editable-ids";
 import { FavoriteButton } from "@/components/favorite-button";
 import type { Prisma } from "@/generated/prisma/client";
 import { TermineSearchForm } from "@/components/termine-search-form";
@@ -36,6 +40,8 @@ export type TermineSearchParams = {
   von?: string;
   bis?: string;
   anzahl?: string;
+  sortierung?: string;
+  favoriten?: string;
   angemeldet?: string;
   error?: string;
 };
@@ -68,6 +74,8 @@ function buildTermineHref(
   append("von", params.von);
   append("bis", params.bis);
   append("anzahl", params.anzahl);
+  append("sortierung", params.sortierung);
+  append("favoriten", params.favoriten);
   for (const [key, value] of Object.entries(restOverrides)) {
     if (value === undefined) {
       qs.delete(key);
@@ -252,7 +260,7 @@ export async function TerminePageView({
   const artCounts = veranstaltungsart ? countsFor(artCandidates, veranstaltungsart.options, artIds) : {};
   const zielgruppeCounts = zielgruppe ? countsFor(zielgruppeCandidates, zielgruppe.options, zielgruppeIds) : {};
 
-  const events = await prisma.event.findMany({
+  const fetchedEvents = await prisma.event.findMany({
     where,
     orderBy: { startAt: "asc" },
     include: {
@@ -265,6 +273,20 @@ export async function TerminePageView({
       },
     },
   });
+
+  // "Nur Favoriten" (logged-in only) and the chosen order. Distance needs a
+  // search origin; events without coordinates (e.g. online) go last.
+  const favoritesOnly = params.favoriten === "1" && Boolean(viewerId);
+  const originSet = lat != null && lng != null;
+  const sortBy = params.sortierung === "neueste" || (params.sortierung === "entfernung" && originSet) ? params.sortierung : "datum";
+  const events = (favoritesOnly ? fetchedEvents.filter((e) => favoriteIds.eventIds.has(e.id)) : fetchedEvents).slice();
+  if (sortBy === "neueste") {
+    events.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  } else if (sortBy === "entfernung" && lat != null && lng != null) {
+    const dist = (e: (typeof events)[number]) =>
+      e.latitude != null && e.longitude != null ? haversineDistanceKm(lat, lng, e.latitude, e.longitude) : Number.POSITIVE_INFINITY;
+    events.sort((a, b) => dist(a) - dist(b) || a.startAt.getTime() - b.startAt.getTime());
+  }
 
   // Same option order as TermineSearchForm's legend, so colors match.
   const artColors = categoryColorMap(veranstaltungsart?.options.map((o) => o.id) ?? []);
@@ -319,6 +341,15 @@ export async function TerminePageView({
       selectedEvent = event;
     }
   }
+  const viewer = viewerId
+    ? await prisma.user.findUnique({ where: { id: viewerId }, select: { name: true, email: true, emailVerified: true } })
+    : null;
+  const viewerContact = viewer ? { name: viewer.name, email: viewer.email, emailVerified: Boolean(viewer.emailVerified) } : null;
+  // Pencil next to iCal/heart, only for people allowed to edit this event.
+  const selectedEventEditHref =
+    selectedEvent?.listingId && viewerId && (await canManageEvent(viewerId, selectedEvent))
+      ? `/projekte/${selectedEvent.listingId}/termine/${selectedEvent.id}/bearbeiten`
+      : undefined;
 
   // Previous/next event to step to from the inline detail pane, based on the
   // same chronological order shown in the results list — lets a viewer walk
@@ -359,6 +390,8 @@ export async function TerminePageView({
     activeFilters.push(`Umkreis ${radiusKm} km`);
   }
 
+  if (favoritesOnly) activeFilters.push("deine Favoriten");
+
   const eventLabel = events.length === 1 ? "Termin" : "Termine";
   const resultsSummary =
     activeFilters.length > 0
@@ -375,6 +408,7 @@ export async function TerminePageView({
   // calendar dots and prev/next still use every matching event.
   const shownCount = visibleResultCount(params.anzahl, events.length);
   const visibleEvents = events.slice(0, shownCount);
+  const editableIds = await editableEventIds(viewerId, visibleEvents.map((e) => e.id));
   const filtersSummary = activeFilters.length > 0 ? activeFilters.join(", ") : null;
   if (selectedEvent) {
     await recordEventViews([selectedEvent.id], "DETAIL", filtersSummary);
@@ -418,6 +452,8 @@ export async function TerminePageView({
               radius: params.radius,
               von: params.von,
               bis: params.bis,
+              sortierung: params.sortierung,
+              favoriten: params.favoriten,
             }}
           />
         </div>
@@ -431,6 +467,8 @@ export async function TerminePageView({
                 backHref={buildTermineHref(params, { slug: undefined, angemeldet: undefined })}
                 angemeldetSuccess={Boolean(params.angemeldet)}
                 favorite={{ isFavorite: favoriteIds.eventIds.has(selectedEvent.id), loggedIn: Boolean(viewerId) }}
+                editHref={selectedEventEditHref}
+                viewerContact={viewerContact}
                 registrationError={typeof params.error === "string" ? params.error : undefined}
                 distanceKm={
                   lat != null && lng != null && selectedEvent.latitude != null && selectedEvent.longitude != null
@@ -457,7 +495,12 @@ export async function TerminePageView({
             </div>
           ) : (
             <>
-              <h2 className="mb-4 font-semibold text-text-muted">{resultsSummary}</h2>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-semibold text-text-muted">{resultsSummary}</h2>
+                {fetchedEvents.length > 0 ? (
+                  <TermineSortSelect value={sortBy} originSet={originSet} favoritesOnly={favoritesOnly} loggedIn={Boolean(viewerId)} />
+                ) : null}
+              </div>
               {radiusSearchActive && events.length === 0 ? (
                 <p className="rounded-2xl bg-surface p-4 sm:p-6 text-text-muted">
                   Keine Termine mit Standortdaten in diesem Umkreis gefunden.
@@ -528,7 +571,10 @@ export async function TerminePageView({
                           </div>
                         </Link>
                         {/* Sibling of the card link, not inside it: a button nested in <a> is invalid. */}
-                        <div className="absolute right-3 top-3">
+                        <div className="absolute right-3 top-3 flex items-center gap-1.5">
+                          {editableIds.has(event.id) && event.listingId ? (
+                            <CardEditLink href={`/projekte/${event.listingId}/termine/${event.id}/bearbeiten`} label="Termin bearbeiten" />
+                          ) : null}
                           <FavoriteButton
                             kind="event"
                             id={event.id}

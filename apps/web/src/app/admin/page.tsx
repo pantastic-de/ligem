@@ -103,7 +103,7 @@ export default async function AdminPage() {
       key: `user-${u.id}`,
       timestamp: u.createdAt,
       label: `Neu registriert: ${u.name ?? u.email}`,
-      href: `/admin/nutzer#user-${u.id}`,
+      href: `/admin/nutzer/${u.id}`,
       icon: UserRound,
     })),
   ]
