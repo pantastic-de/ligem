@@ -201,3 +201,39 @@ input[type="range"].ligem-radius-slider::-moz-range-thumb {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
+
+/* Hochzählende Zahl (CountUp, src/components/count-up.tsx), reines CSS:
+   eine registrierte Integer-Property wird von 0 auf --count-target
+   animiert und über einen CSS-Counter angezeigt. Läuft ab dem ersten
+   Bildaufbau, ohne JavaScript und ohne dass vorher die Endzahl aufblitzt.
+   Browser ohne @property springen direkt auf die Endzahl. */
+@property --ligem-count {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.ligem-count-up {
+  --ligem-count: var(--count-target);
+  counter-reset: ligem-count var(--ligem-count);
+  animation: ligem-count-up 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ligem-count-up::after {
+  content: counter(ligem-count);
+}
+
+@keyframes ligem-count-up {
+  from {
+    --ligem-count: 0;
+  }
+  to {
+    --ligem-count: var(--count-target);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ligem-count-up {
+    animation: none;
+  }
+}

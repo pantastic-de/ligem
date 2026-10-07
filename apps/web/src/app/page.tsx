@@ -1,7 +1,5 @@
 import Link from "next/link";
 import {
-  Home as HomeIcon,
-  CalendarDays,
   Search,
   Handshake,
   CalendarCheck,
@@ -11,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { HomepageHeroTiles, type HeroPoolItem } from "@/components/homepage-hero-tiles";
+import { HomeEntryCards } from "@/components/home-entry-cards";
 
 // Hero-Bento-Grid: 3 Projekt- + 1 Terminbild, gezogen aus einem größeren
 // zufälligen Pool (siehe getHeroPools()) statt nur genau 3+1 Kandidaten —
@@ -247,7 +246,7 @@ const schritte = [
 export default async function Home() {
   const now = new Date();
 
-  const [publishedListingsCount, upcomingEventsCount, cityRows, heroPools] =
+  const [publishedListingsCount, upcomingEventsCount, cityRows, heroPools, nextEvent] =
     await Promise.all([
       prisma.listing.count({ where: { status: "PUBLISHED" } }),
       prisma.event.count({
@@ -259,13 +258,12 @@ export default async function Home() {
         distinct: ["city"],
       }),
       getHeroPools(),
+      prisma.event.findFirst({
+        where: { status: "PUBLISHED", startAt: { gte: now } },
+        orderBy: { startAt: "asc" },
+        select: { title: true, startAt: true },
+      }),
     ]);
-
-  const stats = [
-    { value: publishedListingsCount, label: "Wohnprojekte" },
-    { value: upcomingEventsCount, label: "Veranstaltungen" },
-    { value: cityRows.length, label: "Orte" },
-  ].filter((stat) => stat.value > 0);
 
   return (
     <>
@@ -294,79 +292,19 @@ export default async function Home() {
               <span className="text-primary">Gemeinschaft</span> finden
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base text-text-muted sm:text-lg lg:mx-0">
-              WGs, Ökodörfer, Co-Housing, Mehrgenerationenhäuser und mehr:
-              LiGem bringt Wohnprojekte, Suchende und gemeinwohlorientierte
-              Organisationen zusammen – zum Informieren, Vernetzen und
-              Veranstalten. Ohne automatisiertes Matching, immer mit
-              eigenständiger Suche.
+              WGs, Ökodörfer, Co-Housing, Mehrgenerationenhäuser und mehr.
+              Stöbere selbst durch Wohnprojekte und lerne sie bei Besuchstagen
+              persönlich kennen.
             </p>
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Link
-                href="/projekte"
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl bg-primary p-5 text-left text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125"
-                />
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none">
-                  <HomeIcon className="h-6 w-6" aria-hidden="true" />
-                </span>
-                <span>
-                  <span className="block text-lg font-bold">Wohnprojekte entdecken</span>
-                  <span className="mt-1 block text-sm text-white/85">
-                    Alle Wohnprojekte durchsuchen und filtern – nach Ort, Lebensform und mehr, ganz ohne Anmeldung.
-                  </span>
-                </span>
-                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold">
-                  Jetzt durchstöbern
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5 motion-reduce:transition-none"
-                    aria-hidden="true"
-                  />
-                </span>
-              </Link>
-              <Link
-                href="/termine"
-                className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl bg-secondary p-5 text-left text-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 transition-transform duration-300 group-hover:scale-125"
-                />
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none">
-                  <CalendarDays className="h-6 w-6" aria-hidden="true" />
-                </span>
-                <span>
-                  <span className="block text-lg font-bold">Veranstaltungen ansehen</span>
-                  <span className="mt-1 block text-sm text-white/85">
-                    Infotage, Besuchstage und mehr – Gelegenheiten zum persönlichen Kennenlernen.
-                  </span>
-                </span>
-                <span className="mt-1 inline-flex items-center gap-1 text-sm font-semibold">
-                  Termine ansehen
-                  <ArrowRight
-                    className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5 motion-reduce:transition-none"
-                    aria-hidden="true"
-                  />
-                </span>
-              </Link>
-            </div>
-
-            {stats.length > 0 && (
-              <div className="mt-10 flex flex-wrap justify-center gap-x-8 gap-y-3 lg:justify-start">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="text-center lg:text-left">
-                    <div className="text-2xl font-bold text-text sm:text-3xl">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-text-muted">
-                      {stat.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p className="mt-8 font-semibold text-text">Womit möchtest du anfangen?</p>
+            <HomeEntryCards
+              listingPool={heroPools.listingPool}
+              eventPool={heroPools.eventPool}
+              listingCount={publishedListingsCount}
+              cityCount={cityRows.length}
+              eventCount={upcomingEventsCount}
+              nextEvent={nextEvent}
+            />
           </div>
 
           <HomepageHeroTiles
