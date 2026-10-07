@@ -93,6 +93,14 @@ export default async function AnfragenPage({
                 <a href={`mailto:${request.senderEmail}`} className="text-primary hover:underline">
                   {request.senderEmail}
                 </a>
+                {request.senderPhone ? (
+                  <>
+                    {" · "}
+                    <a href={`tel:${request.senderPhone.replace(/[^0-9+]/g, "")}`} className="text-primary hover:underline">
+                      {request.senderPhone}
+                    </a>
+                  </>
+                ) : null}
                 {" · "}
                 {dateTimeFormat.format(request.createdAt)}
               </p>

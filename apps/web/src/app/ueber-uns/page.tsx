@@ -36,9 +36,9 @@ const datenarten = [
   },
   {
     art: "Kontaktanfragen",
-    beispiele: "Name, E-Mail, Nachricht an ein Projekt",
+    beispiele: "Name, E-Mail, Telefonnummer (freiwillig), Nachricht an ein Projekt",
     zweck:
-      "Damit der erste Kontakt zustande kommt. Eure Kontaktdaten sieht das Projekt erst, wenn es eure Anfrage annimmt",
+      "Damit der erste Kontakt zustande kommt. Die Angaben gehen nur an das angefragte Projekt, damit es antworten kann, und werden nirgends veröffentlicht",
   },
   {
     art: "Terminanmeldungen",
@@ -324,7 +324,7 @@ export default function UeberUnsPage() {
             nachdem du dem zugestimmt hast.
           </li>
           <li>Fotos, Standort und Kontaktangaben bleiben nur so lange gespeichert, wie euer Eintrag besteht.</li>
-          <li>Die Kontaktdaten zu einer Anfrage bei einem Wohnprojekt werden erst sichtbar, wenn das Projekt die Anfrage annimmt.</li>
+          <li>Eine Kontaktanfrage geht nur an das angefragte Wohnprojekt. Name, E-Mail-Adresse und Telefonnummer werden nirgends öffentlich angezeigt.</li>
           <li>Es gibt kein automatisches Matching und keinen Empfehlungsalgorithmus. Suche und Filter sind das einzige Werkzeug, um etwas zu finden.</li>
         </ul>
       </section>

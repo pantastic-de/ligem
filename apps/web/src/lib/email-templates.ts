@@ -105,6 +105,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
       P.projekt,
       { name: "absender_name", description: "Name der anfragenden Person", example: "Mira Sommer" },
       { name: "absender_email", description: "E-Mail-Adresse der anfragenden Person", example: "mira@example.org" },
+      { name: "absender_telefon", description: "Telefonnummer der anfragenden Person, sonst „nicht angegeben“", example: "0151 234 56 78" },
       { name: "nachricht", description: "Die Nachricht (Zeilenumbrüche bleiben erhalten)", example: "Hallo ihr Lieben,\nwir sind eine Familie mit zwei Kindern und würden euch gern kennenlernen." },
       P.link("Link zu den Kontaktanfragen des Projekts", "https://ligem.de/projekte/abc/anfragen"),
     ],
@@ -113,6 +114,7 @@ const RAW_TEMPLATES: EmailTemplateDefinition[] = [
       "<p>Hallo,</p>" +
       "<p>{{absender_name}} ({{absender_email}}) hat über LiGem eine Nachricht zu „{{projekt}}“ geschickt:</p>" +
       "<blockquote>{{nachricht}}</blockquote>" +
+      "<p>Telefon: {{absender_telefon}}</p>" +
       "<p>Du kannst direkt auf diese E-Mail antworten, die Antwort geht an {{absender_name}}. " +
       'Annehmen oder ablehnen kannst du die Anfrage hier:<br><a href="{{link}}">Kontaktanfragen ansehen</a></p>' +
       SIGNATURE,

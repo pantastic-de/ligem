@@ -12,6 +12,8 @@ import {
   CalendarDays,
   Pencil,
   Mail,
+  MessageCircle,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 
@@ -69,6 +71,14 @@ const currency = new Intl.NumberFormat("de-DE", {
 });
 
 const dateFormat = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
+// Event times are wall-clock values in the Date's UTC fields (src/lib/event-time.ts).
+const nextEventDateFormat = new Intl.DateTimeFormat("de-DE", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
 const eventDateFormat = new Intl.DateTimeFormat("de-DE", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -132,7 +142,7 @@ export function ListingDetail({
   // See CLAUDE.md's "Kontaktanfragen" — a distinct error from the generic
   // ?error=1 ("bitte alle Felder ausfüllen") specifically for a missing/
   // failed CAPTCHA check.
-  contactFormError?: "captcha";
+  contactFormError?: "captcha" | "telefon";
   // Pre-fills the contact form's Name/E-Mail fields for a logged-in
   // viewer — reduces friction for exactly the audience this form's CAPTCHA
   // skip already trusts more (see requireCaptcha below), and there's no
@@ -323,10 +333,44 @@ export function ListingDetail({
       ) : null}
 
       <div className="flex items-start justify-between gap-3">
-        <h1 className="flex items-center gap-3 text-3xl font-bold">
-          <EntityIconBadge tone="projekt" size="xl" />
-          <HighlightText text={listing.projectName} query={searchTerm} />
-        </h1>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="flex items-center gap-3 text-3xl font-bold">
+            <EntityIconBadge tone="projekt" size="xl" />
+            <HighlightText text={listing.projectName} query={searchTerm} />
+          </h1>
+          {/* Right next to the name: how many upcoming Termine there are (an
+              anchor to the list below), or, with none planned, a pointer to
+              the contact form, so personal contact is one click away. */}
+          {upcomingEvents.length > 0 ? (
+            <a
+              href="#termine"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-secondary/12 py-1 pl-1 pr-4 text-secondary transition-colors hover:bg-secondary/20"
+            >
+              <EntityIconBadge tone="termin" size="lg" />
+              <span className="font-semibold">
+                {upcomingEvents.length === 1 ? "1 Termin" : `${upcomingEvents.length} Termine`}
+              </span>
+              <span className="hidden text-sm text-text-muted sm:inline">
+                nächster: {nextEventDateFormat.format(upcomingEvents[0].startAt)}
+              </span>
+            </a>
+          ) : listing.status === "PUBLISHED" && !canManage ? (
+            <span className="inline-flex flex-wrap items-center gap-x-2 rounded-full bg-text/5 px-4 py-1.5 text-sm text-text-muted">
+              Gerade keine Termine geplant.
+              <a href="#kontakt" className="font-semibold text-primary underline-offset-2 hover:underline">
+                Direkt Kontakt aufnehmen
+              </a>
+            </span>
+          ) : listing.status === "PUBLISHED" && canManage ? (
+            <Link
+              href={`/projekte/${listing.id}/termine/neu`}
+              className="inline-flex items-center gap-x-2 rounded-full bg-text/5 px-4 py-1.5 text-sm text-text-muted transition-colors hover:bg-text/10"
+            >
+              Noch keine Termine.
+              <span className="font-semibold text-primary">Termin eintragen</span>
+            </Link>
+          ) : null}
+        </div>
         {favorite && listing.status === "PUBLISHED" ? (
           <FavoriteButton
             kind="listing"
@@ -476,7 +520,7 @@ export function ListingDetail({
       ) : null}
 
       {upcomingEvents.length > 0 ? (
-        <section className="mt-8">
+        <section id="termine" className="mt-8 scroll-mt-4">
           <h2 className="text-lg font-semibold">Termine</h2>
           <ul className="mt-2 flex flex-col overflow-hidden rounded-2xl border border-secondary/30 bg-surface shadow-sm divide-y divide-secondary/15">
             {upcomingEvents.map((event) => (
@@ -512,12 +556,34 @@ export function ListingDetail({
       ) : null}
 
       {listing.status === "PUBLISHED" && !canManage ? (
-        <section className="mt-12 rounded-2xl bg-surface p-4 sm:p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Kontakt aufnehmen</h2>
-          <p className="mt-1 text-text-muted">
-            Deine Kontaktdaten werden erst geteilt, wenn {listing.createdBy?.name ?? "das Projekt"} deine
-            Anfrage annimmt.
+        <section
+          id="kontakt"
+          className="mt-12 scroll-mt-4 rounded-2xl border-2 border-secondary/50 bg-secondary/12 p-4 shadow-sm sm:p-6"
+        >
+          {/* Framed in the Termine green so it reads as a form at a glance,
+              set apart from the descriptive content above. */}
+          <h2 className="flex items-center gap-3 text-xl font-bold text-secondary">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-white">
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+            </span>
+            Kontakt aufnehmen
+          </h2>
+          {/* Describes what really happens on submit: name, email and message
+              go straight to the project's managers (mail with Reply-To and
+              their Kontaktanfragen page), nowhere public. */}
+          <p className="mt-2 text-text-muted">
+            Deine Nachricht geht direkt und nur an die Verantwortlichen von „{listing.projectName}“. Name,
+            E-Mail-Adresse und auf Wunsch deine Telefonnummer brauchen sie, um dir antworten zu können. Diese
+            Angaben werden nicht veröffentlicht und nicht an Dritte weitergegeben.{" "}
+            <Link href="/datenschutz" className="text-secondary underline-offset-2 hover:underline">
+              Mehr zum Datenschutz
+            </Link>
           </p>
+          {contactFormError === "telefon" ? (
+            <p className="mt-3 rounded-xl bg-error/10 px-4 py-3 text-error">
+              Die Telefonnummer sieht nicht richtig aus. Erlaubt sind Ziffern, Leerzeichen und + ( ) / - .
+            </p>
+          ) : null}
           {contactFormError === "captcha" ? (
             <p className="mt-3 rounded-xl bg-error/10 px-4 py-3 text-error">
               Bitte bestätige das CAPTCHA, bevor du die Nachricht sendest.
@@ -536,7 +602,7 @@ export function ListingDetail({
                 type="text"
                 required
                 defaultValue={viewerContact?.name ?? undefined}
-                className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
+                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -549,8 +615,30 @@ export function ListingDetail({
                 type="email"
                 required
                 defaultValue={viewerContact?.email ?? undefined}
-                className="min-h-12 rounded-xl border border-text/20 bg-bg px-4 text-text"
+                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="senderPhone" className="font-medium">
+                Telefonnummer <span className="font-normal text-text-muted">(optional)</span>
+              </label>
+              <input
+                id="senderPhone"
+                name="senderPhone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                maxLength={40}
+                // Checked in the browser too, so a typo is flagged before
+                // submitting and the typed message isn't lost on the round trip.
+                pattern="[0-9+\(\)\/\-. ]{4,40}"
+                title="Ziffern, Leerzeichen und + ( ) / - ."
+                aria-describedby="senderPhoneHint"
+                className="min-h-12 rounded-xl border border-secondary/30 bg-surface px-4 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
+              />
+              <p id="senderPhoneHint" className="text-sm text-text-muted">
+                Falls du lieber angerufen werden möchtest.
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="message" className="font-medium">
@@ -561,7 +649,7 @@ export function ListingDetail({
                 name="message"
                 rows={4}
                 required
-                className="rounded-xl border border-text/20 bg-bg px-4 py-3 text-text"
+                className="rounded-xl border border-secondary/30 bg-surface px-4 py-3 text-text focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/30"
               />
             </div>
             {requireCaptcha ? (
@@ -580,8 +668,9 @@ export function ListingDetail({
             ) : null}
             <button
               type="submit"
-              className="min-h-12 rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-secondary px-6 font-semibold text-white shadow-sm transition-colors hover:bg-secondary-hover"
             >
+              <Send className="h-5 w-5" aria-hidden="true" />
               Nachricht senden
             </button>
           </form>

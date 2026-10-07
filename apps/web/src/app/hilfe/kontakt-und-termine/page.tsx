@@ -20,13 +20,16 @@ export default function HilfeKontaktUndTerminePage() {
         <h2 className="text-lg font-semibold">Kontakt aufnehmen</h2>
         <p className="mt-2 text-text-muted">
           Auf jeder veröffentlichten Projektseite gibt es ein Kontaktformular
-          (Name, E-Mail-Adresse, Nachricht), auch ohne eigenes Konto nutzbar.
+          (Name, E-Mail-Adresse, auf Wunsch Telefonnummer, Nachricht), auch ohne eigenes Konto nutzbar.
           Es gibt keinen Chat, nur diese eine Nachricht pro Anfrage.
         </p>
         <p className="mt-2 text-text-muted">
-          Wichtig: Die Kontaktdaten des Projekts werden dir nicht sofort
-          angezeigt. Erst wenn die Projekt-Ansprechperson deine Anfrage
-          annimmt, werden Kontaktdaten ausgetauscht.
+          Deine Nachricht geht direkt und nur an die Verantwortlichen des
+          Projekts, zusammen mit deinem Namen, deiner E-Mail-Adresse und, wenn
+          du sie angibst, deiner Telefonnummer. So können sie dir per E-Mail
+          antworten oder dich anrufen. Öffentlich sichtbar sind diese Angaben
+          nirgends, und auch die Kontaktdaten des Projekts stehen nicht offen
+          auf der Seite.
         </p>
       </section>
 

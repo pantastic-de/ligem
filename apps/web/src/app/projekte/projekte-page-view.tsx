@@ -575,7 +575,7 @@ export async function ProjektePageView({
                 returnTo={buildProjekteHref(params, { slug: selectedListing.slug })}
                 backHref={buildProjekteHref(params, { slug: undefined, kontakt: undefined })}
                 kontaktSuccess={Boolean(params.kontakt)}
-                contactFormError={params.error === "captcha" ? "captcha" : undefined}
+                contactFormError={params.error === "captcha" || params.error === "telefon" ? params.error : undefined}
                 viewerContact={selectedViewerContact}
                 favorite={{ isFavorite: favoriteIds.listingIds.has(selectedListing.id), loggedIn: Boolean(viewerId) }}
                 requireCaptcha={selectedRequireCaptcha}

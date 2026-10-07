@@ -111,7 +111,7 @@ export async function buildDataExport(userId: string) {
     prisma.contactRequest.findMany({
       where: { OR: [{ senderUserId: userId }, { senderEmail: { equals: user.email, mode: "insensitive" } }] },
       orderBy: { createdAt: "asc" },
-      select: { senderName: true, senderEmail: true, message: true, status: true, createdAt: true, listing: { select: { projectName: true } } },
+      select: { senderName: true, senderEmail: true, senderPhone: true, message: true, status: true, createdAt: true, listing: { select: { projectName: true } } },
     }),
     prisma.eventRegistration.findMany({
       where: { OR: [{ userId }, { email: { equals: user.email, mode: "insensitive" } }] },

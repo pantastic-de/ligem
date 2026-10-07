@@ -44,6 +44,7 @@ async function notifyContactRequest(
   listingId: string,
   senderName: string,
   senderEmail: string,
+  senderPhone: string | null,
   message: string,
 ): Promise<void> {
   const listing = await prisma.listing.findUnique({
@@ -73,6 +74,7 @@ async function notifyContactRequest(
     projekt: listing.projectName,
     absender_name: senderName,
     absender_email: senderEmail,
+    absender_telefon: senderPhone ?? "nicht angegeben",
     nachricht: message,
     link: `${SITE_URL}/projekte/${listingId}/anfragen`,
   };
@@ -91,6 +93,13 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
   const senderName = formData.get("senderName")?.toString().trim().slice(0, 200);
   const senderEmail = formData.get("senderEmail")?.toString().trim().slice(0, 320);
   const message = formData.get("message")?.toString().trim().slice(0, 5000);
+  // Optional. Kept loose (people write numbers in many formats); only
+  // characters a phone number can contain are accepted.
+  const rawPhone = formData.get("senderPhone")?.toString().trim().slice(0, 40) ?? "";
+  if (rawPhone && !/^[0-9+()\/\-. ]{4,40}$/.test(rawPhone)) {
+    redirect(withQueryParam(sanitizeReturnTo(formData.get("returnTo")?.toString(), `/projekte/${listingId ?? ""}`), "error", "telefon"));
+  }
+  const senderPhone = rawPhone || null;
   const returnTo = sanitizeReturnTo(
     formData.get("returnTo")?.toString(),
     `/projekte/${listingId ?? ""}`,
@@ -133,11 +142,12 @@ export async function submitContactRequest(formData: FormData): Promise<void> {
       listingId,
       senderName,
       senderEmail,
+      senderPhone,
       message,
       senderUserId: session?.user?.id ?? null,
     },
   });
-  await notifyContactRequest(listingId, senderName, senderEmail, message);
+  await notifyContactRequest(listingId, senderName, senderEmail, senderPhone, message);
 
   redirect(withQueryParam(returnTo, "kontakt", "1"));
 }

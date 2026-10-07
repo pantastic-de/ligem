@@ -767,6 +767,8 @@ model ContactRequest {
   senderUser   User?                @relation("ContactRequestSender", fields: [senderUserId], references: [id], onDelete: SetNull)
   senderName  String
   senderEmail String
+  // Optional, for people who'd rather be called back.
+  senderPhone String?
   message     String
   status      ContactRequestStatus  @default(PENDING)
   createdAt   DateTime              @default(now())

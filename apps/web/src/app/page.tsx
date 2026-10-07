@@ -235,7 +235,7 @@ const schritte = [
   {
     icon: Handshake,
     title: "Kontakt aufnehmen",
-    text: "Interesse an einem Projekt? Eine Nachricht schicken – Kontaktdaten werden erst sichtbar, wenn das Projekt zustimmt.",
+    text: "Interesse an einem Projekt? Schick eine Nachricht. Sie geht nur an die Verantwortlichen des Projekts, deine Angaben werden nirgends veröffentlicht.",
   },
   {
     icon: CalendarCheck,
