@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { HomepageHeroTiles, type HeroPoolItem } from "@/components/homepage-hero-tiles";
 import { HomeEntryCards } from "@/components/home-entry-cards";
+import { HomeMeetingBridge } from "@/components/home-meeting-bridge";
 
 // Hero-Bento-Grid: 3 Projekt- + 1 Terminbild, gezogen aus einem größeren
 // zufälligen Pool (siehe getHeroPools()) statt nur genau 3+1 Kandidaten —
@@ -268,7 +269,7 @@ export default async function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden px-4 pb-16 pt-10 sm:px-6 sm:pb-24 sm:pt-16">
+      <section className="relative overflow-hidden px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-10 lg:pt-6">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl sm:h-96 sm:w-96"
@@ -284,19 +285,15 @@ export default async function Home() {
 
         <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-8">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-secondary shadow-sm">
+            <span className="hidden items-center gap-2 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-secondary shadow-sm sm:inline-flex">
               Für alle Formen gemeinschaftlichen Wohnens
             </span>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl">
+            <h1 className="mt-0 text-4xl sm:mt-5 font-bold leading-[1.1] tracking-tight sm:text-6xl">
               Leben in{" "}
-              <span className="text-primary">Gemeinschaft</span> finden
+              <span className="text-primary">Gemeinschaft</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base text-text-muted sm:text-lg lg:mx-0">
-              WGs, Ökodörfer, Co-Housing, Mehrgenerationenhäuser und mehr.
-              Stöbere selbst durch Wohnprojekte und lerne sie bei Besuchstagen
-              persönlich kennen.
-            </p>
-            <p className="mt-8 font-semibold text-text">Womit möchtest du anfangen?</p>
+            <HomeMeetingBridge />
+            <p className="mt-6 font-semibold text-text">Womit möchtest du anfangen?</p>
             <HomeEntryCards
               listingPool={heroPools.listingPool}
               eventPool={heroPools.eventPool}

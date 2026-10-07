@@ -26,12 +26,9 @@ export type HeroPoolItem = {
 };
 
 const HERO_TILE_GRID_CLASS = ["col-span-2", "", "", "col-span-2"];
-const HERO_TILE_VISUAL_CLASS = [
-  "aspect-[4/3] -rotate-1",
-  "aspect-square rotate-2",
-  "aspect-square -rotate-2",
-  "aspect-[16/9] rotate-1",
-];
+// Tiles are deliberately straight: a slight tilt per tile read as crooked
+// rather than playful (feedback), so no rotation here or in the enter animation.
+const HERO_TILE_VISUAL_CLASS = ["aspect-[4/3]", "aspect-square", "aspect-square", "aspect-[16/9]"];
 
 // Consecutive visible changes are spaced a random amount apart within these
 // ranges, rather than a fixed period — reads as less mechanical/repetitive.
@@ -279,8 +276,8 @@ function HeroTile({
           <div
             className={`absolute inset-0 transition-all ease-out motion-reduce:hidden ${
               entering
-                ? "translate-y-0 rotate-0 scale-100 opacity-100"
-                : "translate-y-8 rotate-6 scale-95 opacity-0"
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-8 scale-95 opacity-0"
             }`}
             style={{ transitionDuration: `${ENTER_DURATION_MS}ms` }}
           >
