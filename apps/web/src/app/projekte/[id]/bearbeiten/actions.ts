@@ -68,6 +68,13 @@ export async function updateListing(formData: FormData): Promise<void> {
     formData.getAll(`attr-${group.slug}`).map(String),
   );
 
+  // The map and distances read the plain latitude/longitude columns, radius
+  // search the PostGIS `location` point; both must be written together. This
+  // update used to set only `location`, so a location chosen while editing
+  // (e.g. "Mein Standort" when the street wasn't found) never reached the map.
+  const latitude = parseOptionalFloat(formData.get("latitude"));
+  const longitude = parseOptionalFloat(formData.get("longitude"));
+
   await prisma.$transaction([
     prisma.listingCategoryAssignment.deleteMany({ where: { listingId } }),
     prisma.listingAttributeOption.deleteMany({ where: { listingId } }),
@@ -86,6 +93,8 @@ export async function updateListing(formData: FormData): Promise<void> {
         city: optionalString(formData.get("city")),
         street: optionalString(formData.get("street")),
         houseNumber: optionalString(formData.get("houseNumber")),
+        latitude,
+        longitude,
         regionDescription: optionalString(formData.get("regionDescription")),
 
         contactName: optionalString(formData.get("contactName")),
@@ -121,11 +130,7 @@ export async function updateListing(formData: FormData): Promise<void> {
     }),
   ]);
 
-  await setListingLocation(
-    listingId,
-    parseOptionalFloat(formData.get("latitude")),
-    parseOptionalFloat(formData.get("longitude")),
-  );
+  await setListingLocation(listingId, latitude, longitude);
 
   redirect(`/projekt/${listing.slug}?aktualisiert=1`);
 }
