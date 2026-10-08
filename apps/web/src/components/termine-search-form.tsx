@@ -46,7 +46,7 @@ export function TermineSearchForm({
   // LocationRadiusPicker's selectedId prop.
   selectedId?: string;
 }) {
-  const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+  const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm("/termine");
   const artColors = categoryColorMap(veranstaltungsart?.options.map((o) => o.id) ?? []);
   const legend =
     veranstaltungsart?.options.map((option) => ({

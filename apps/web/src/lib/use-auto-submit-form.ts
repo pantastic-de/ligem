@@ -10,7 +10,13 @@ const DEBOUNCE_MS = 300;
 // custom widgets via an explicit onChange callback) and pushes them into the
 // URL as search params via router.replace, so the server component page
 // re-fetches and re-renders without a full page reload.
-export function useAutoSubmitForm() {
+//
+// `listPath` is the result list the form belongs to (/projekte, /termine).
+// The same sidebar also sits on the detail pages (/projekt/<slug>,
+// /event/<slug>); a filter change there means "search again", so it goes to
+// the list with the new filters instead of keeping the detail open. That
+// step is a push, so the browser's Back button returns to the detail.
+export function useAutoSubmitForm(listPath?: string) {
   const router = useRouter();
   const pathname = usePathname();
   const formRef = useRef<HTMLFormElement>(null);
@@ -26,10 +32,13 @@ export function useAutoSubmitForm() {
       if (str) params.append(key, str);
     }
     const qs = params.toString();
+    const target = listPath ?? pathname;
+    const href = qs ? `${target}?${qs}` : target;
     startTransition(() => {
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      if (target === pathname) router.replace(href, { scroll: false });
+      else router.push(href, { scroll: false });
     });
-  }, [pathname, router]);
+  }, [listPath, pathname, router]);
 
   const handleChange = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

@@ -61,7 +61,7 @@ export function ProjekteSearchForm({
   // LocationRadiusPicker's selectedId prop.
   selectedId?: string;
 }) {
-  const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm();
+  const { formRef, handleChange, submitNow, isPending } = useAutoSubmitForm("/projekte");
 
   // Memoized on the server props, so the map's [resultItems] effect still
   // only rebuilds its markers when a navigation delivers new points.
