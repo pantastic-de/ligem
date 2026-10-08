@@ -1,6 +1,7 @@
 "use server";
 
 import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -131,6 +132,13 @@ export async function updateListing(formData: FormData): Promise<void> {
   ]);
 
   await setListingLocation(listingId, latitude, longitude);
+
+  // The floating "Speichern" next to an edited field (InlineSaveButton)
+  // stays on the edit page: refresh it in place instead of leaving.
+  if (formData.get("nachSpeichern") === "bleiben") {
+    revalidatePath(`/projekte/${listingId}/bearbeiten`);
+    return;
+  }
 
   redirect(`/projekt/${listing.slug}?aktualisiert=1`);
 }

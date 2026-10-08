@@ -12,6 +12,8 @@ import { ReorderablePhotoGallery } from "@/components/reorderable-photo-gallery"
 import { VideoUploadForm } from "@/components/video-upload-form";
 import { ImageUploadForm } from "@/components/image-upload-form";
 import { deleteEvent, updateEvent } from "../../actions";
+import { InlineSaveButton } from "@/components/inline-save-button";
+import { SaveSubmitButton } from "@/components/save-submit-button";
 import { addEventVideoLink, deleteEventMedia, reorderEventMedia } from "../../event-media-actions";
 
 export const metadata: Metadata = {
@@ -192,6 +194,7 @@ export default async function TerminBearbeitenPage({
       <form action={updateEvent} className="mt-10 flex flex-col gap-5">
         <input type="hidden" name="listingId" value={listingId} />
         <input type="hidden" name="eventId" value={event.id} />
+        <InlineSaveButton action={updateEvent} tone="termin" />
         <EventFormFields
           attributeGroups={attributeGroups}
           aiImportEnabled={Boolean(process.env.ANTHROPIC_API_KEY)}
@@ -218,12 +221,7 @@ export default async function TerminBearbeitenPage({
           }}
         />
 
-        <button
-          type="submit"
-          className="min-h-12 rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          Speichern
-        </button>
+        <SaveSubmitButton className="min-h-12 rounded-full bg-secondary px-6 font-semibold text-white transition-colors hover:bg-secondary-hover" />
       </form>
 
       <form action={deleteEvent} className="mt-4">

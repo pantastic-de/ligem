@@ -13,6 +13,8 @@ import { VideoUploadForm } from "@/components/video-upload-form";
 import { ImageUploadForm } from "@/components/image-upload-form";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { deleteOwnListing, updateListing } from "./actions";
+import { InlineSaveButton } from "@/components/inline-save-button";
+import { SaveSubmitButton } from "@/components/save-submit-button";
 import { addListingVideoLink, deleteListingMedia, reorderListingMedia } from "../media-actions";
 
 export const metadata: Metadata = {
@@ -190,6 +192,7 @@ export default async function ProjektBearbeitenPage({
 
       <form action={updateListing} className="mt-10 flex flex-col gap-10">
         <input type="hidden" name="listingId" value={listing.id} />
+        <InlineSaveButton action={updateListing} savedText="Gespeichert, wird erneut geprüft" />
         <ListingFormFields
           categories={categories}
           attributeGroups={attributeGroups}
@@ -230,12 +233,7 @@ export default async function ProjektBearbeitenPage({
           }}
         />
 
-        <button
-          type="submit"
-          className="min-h-12 rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          Speichern
-        </button>
+        <SaveSubmitButton className="min-h-12 rounded-full bg-primary px-6 font-semibold text-white transition-colors hover:bg-primary-hover" />
       </form>
 
       {canDelete ? (

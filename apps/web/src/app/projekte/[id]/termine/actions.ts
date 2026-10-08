@@ -9,6 +9,7 @@ import { MAX_IMAGE_SIZE, isPanoramaAspectRatio, processAndStoreImage } from "@/l
 // together with the client-side total-size check in EventPhotoPicker.
 const MAX_NEW_EVENT_PHOTOS = 12;
 import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 import { randomUUID } from "node:crypto";
 
@@ -305,8 +306,22 @@ export async function updateEvent(formData: FormData): Promise<void> {
 
   await setEventLocation(eventId, latitude, longitude);
 
-  const session = await auth();
-  await recordFavoriteUpdates([{ kind: "EVENT_CHANGED", listingId, eventId }], session?.user?.id ?? null);
+  // Saving field by field (InlineSaveButton) can mean several saves in a
+  // row; favorites get one "Termin geändert" notice per quarter hour, not
+  // one per click.
+  const recentNotice = await prisma.favoriteUpdate.findFirst({
+    where: { kind: "EVENT_CHANGED", eventId, createdAt: { gte: new Date(Date.now() - 15 * 60_000) } },
+    select: { id: true },
+  });
+  if (!recentNotice) {
+    const session = await auth();
+    await recordFavoriteUpdates([{ kind: "EVENT_CHANGED", listingId, eventId }], session?.user?.id ?? null);
+  }
+
+  if (formData.get("nachSpeichern") === "bleiben") {
+    revalidatePath(`/projekte/${listingId}/termine/${eventId}/bearbeiten`);
+    return;
+  }
 
   redirect(`/projekte/${listingId}/termine`);
 }
