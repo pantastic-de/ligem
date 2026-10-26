@@ -17,7 +17,7 @@ services:
       retries: 10
 
   web:
-    image: node:22-bookworm
+    image: node:24-bookworm
     working_dir: /workspace/apps/web
     # `prisma migrate deploy` (applies whatever's pending, no-ops otherwise)
     # and `prisma db seed` (upsert-based — categories/attribute

@@ -22,7 +22,7 @@ The Next.js app has a real domain data model (Prisma schema + migration applied)
 - Monorepo layout: the Next.js app lives in `apps/web`; the repo root only holds Docker/infra config. There is a root `pnpm-workspace.yaml`-style setup but currently a single app package.
 - `docker-compose.yml` at the repo root defines the full dev stack:
   - `postgres` — PostGIS-enabled Postgres (user `c1u3`, db `c1db3` — the actual initialized credentials in the `postgres_data` volume; `DATABASE_URL` must match these, not a nicer-looking placeholder)
-  - `web` — runs the Next.js app itself via `pnpm dev` inside a `node:22-bookworm` container, with `DATABASE_URL`, `MEDIA_DIR`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_MAPTILER_KEY` wired in as env vars
+  - `web` — runs the Next.js app itself via `pnpm dev` inside a `node:24-bookworm` container (Node 24 LTS), with `DATABASE_URL`, `MEDIA_DIR`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_MAPTILER_KEY` wired in as env vars
 - Secrets/config for the compose stack come from a root `.env` (gitignored): `POSTGRES_PASSWORD`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `APPLE_CLIENT_ID`/`APPLE_CLIENT_SECRET`, `MICROSOFT_CLIENT_ID`/`MICROSOFT_CLIENT_SECRET` (all three OAuth providers are optional and independent of each other — each is only registered in `src/lib/auth.ts` when its own pair is set, see Authentication & authorization below), `ANTHROPIC_API_KEY` (optional — gates the "KI-Import" button on listing forms, see "Homepage-Feld & KI-Import" below, as well as its narrower Termin-description counterpart, see "Termin-Formular: Adresse/Homepage-Vorbelegung + eigener KI-Import in die Beschreibung"), `NEXT_PUBLIC_MAPTILER_KEY` (optional but strongly recommended — see "Kartenkacheln" below for why raw OpenStreetMap tiles aren't reliable for this app to depend on directly).
 - `apps/web` is a standard Next.js App Router project (TypeScript, React 19, Tailwind CSS v4, ESLint 9 flat config). Source lives under `apps/web/src/app`. Path alias `@/*` maps to `apps/web/src/*`.
 - **Running commands inside the container vs. on the host is not interchangeable here.** `node_modules` was first installed by the `web` container (pnpm store path `/workspace/.pnpm-store/v11`); running `pnpm` from the host fails with `ERR_PNPM_UNEXPECTED_STORE` because the bind-mounted path resolves differently. Run `pnpm`/`prisma` commands via `docker compose exec web sh -c "cd /workspace/apps/web && <cmd>"` unless you've set up a separate host-side store.
@@ -543,13 +543,19 @@ Common commands:
 pnpm dev             # dev server on 0.0.0.0:3000 (already running via docker compose up)
 pnpm build           # production build
 pnpm lint            # eslint
-pnpm exec tsc --noEmit   # type-check only
+pnpm exec tsc --noEmit   # type-check only (TypeScript 7, see below)
 
 pnpm db:migrate      # prisma migrate dev — create/apply a migration from schema changes
 pnpm db:seed         # prisma db seed — runs prisma/seed.ts (categories, attribute groups, and — outside NODE_ENV=production — a dev admin login)
 pnpm db:studio       # prisma studio — browse the dev database
 pnpm exec prisma generate   # regenerate the client into src/generated/prisma (also runs on postinstall)
 ```
+**TypeScript 6 and 7 side by side** (per Microsoft's TS 7.0 announcement): TypeScript 7 ships no JavaScript compiler API, which typescript-eslint (and so `eslint-config-next`) still needs. `package.json` therefore aliases `"typescript": "npm:@typescript/typescript6"` (the 6.0 API, used by ESLint and by `next build`'s type check) and `"@typescript/native": "npm:typescript@^7"`, which provides the `tsc` command. Overriding typescript-eslint's peer dependency via `pnpm-workspace.yaml` overrides does not work. Drop the alias once typescript-eslint supports TS 7.1+'s new API.
+
+**Don't run `pnpm build` inside the running dev container without cleaning up afterwards**: build and dev server share `apps/web/.next`, and a stale or mixed cache (also after a Next.js version update) makes the dev server send a full-reload HMR message on every page load, so forms (login!) never submit and the story tests fail. Fix: `docker compose stop web && rm -rf apps/web/.next && docker compose start web`.
+
+`src/lib/storage.ts` marks its `MEDIA_DIR` paths with `/* turbopackIgnore: true */` (at `path.resolve` and at each fs call); without them `next build` warned "Dynamic filesystem access causes tracing of the whole project" and traced the whole project into the server output.
+
 Note: `apps/web/.env` holds a host-reachable `DATABASE_URL` (`localhost:5432`) for any tooling invoked from outside Docker; inside the `web` container, `docker-compose.yml`'s `environment:` block (hostname `postgres`) takes precedence over `.env` — both point at the same `c1u3`/`c1db3` database.
 
 ## Story tests ("Geschichten", Playwright)

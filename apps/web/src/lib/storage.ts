@@ -11,7 +11,10 @@ import { randomUUID } from "node:crypto";
 // keep the same shape as the former MinIO object keys
 // (`listings/<id>/<uuid>-display.jpg`, ...), so Media rows needed no change
 // when existing files were copied over (October 2026).
-const MEDIA_ROOT = path.resolve(process.env.MEDIA_DIR ?? "/data/media");
+// The turbopackIgnore comments here and at the fs calls below tell
+// Turbopack's file tracing these paths lie outside the project; without
+// them `next build` traced (and shipped) the whole project as server code.
+const MEDIA_ROOT = path.resolve(/* turbopackIgnore: true */ process.env.MEDIA_DIR ?? "/data/media");
 
 // The file's type comes from its extension: every key this app writes ends
 // in one (see src/lib/media.ts), and an unknown one is served as a plain
@@ -63,7 +66,7 @@ export async function statObject(key: string): Promise<{ size: number } | null> 
   const filePath = filePathFor(key);
   if (!filePath) return null;
   try {
-    const info = await stat(filePath);
+    const info = await stat(/* turbopackIgnore: true */ filePath);
     return info.isFile() ? { size: info.size } : null;
   } catch {
     return null;
@@ -77,7 +80,7 @@ export async function statObject(key: string): Promise<{ size: number } | null> 
 export function getObjectStream(key: string, range?: { start: number; end: number }) {
   const filePath = filePathFor(key);
   if (!filePath) throw new Error(`Ungültiger Speicherschlüssel: ${key}`);
-  return createReadStream(filePath, range ? { start: range.start, end: range.end } : undefined);
+  return createReadStream(/* turbopackIgnore: true */ filePath, range ? { start: range.start, end: range.end } : undefined);
 }
 
 export async function deleteObject(key: string): Promise<void> {
