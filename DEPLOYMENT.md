@@ -62,6 +62,28 @@ level.
      ```
    - `sudo systemctl reload postgresql` to apply.
 
+### Major upgrades (PostgreSQL 16 → 18 on ligem.de, October 2026)
+
+Ubuntu 24.04 itself only ships PostgreSQL 16, so ligem.de uses the official
+PostgreSQL apt repository (PGDG, `/etc/apt/sources.list.d/pgdg.list`, key in
+`/usr/share/postgresql-common/pgdg/`). `/etc/postgresql-common/createcluster.conf`
+has `create_main_cluster = false`, so installing a new major version doesn't
+create an empty cluster that would block the upgrade. Steps used:
+
+1. Backup while the app still runs:
+   `sudo -u postgres pg_dump -Fc -d c1db3 -f /var/backups/ligem/<name>.dump`
+2. `apt-get install -o Dpkg::Options::=--force-confold postgresql-<new> postgresql-<new>-postgis-3`
+   (also bring the old version's PostGIS to the same release and run
+   `ALTER EXTENSION postgis UPDATE` in the old cluster).
+3. Stop the app (`docker compose -f docker-compose.yml -f docker-compose.prod.yml stop web`),
+   then `pg_upgradecluster -v <new> <old> main`. The default dump method
+   rebuilds the database compactly and enables data checksums; it copies
+   `postgresql.conf`/`pg_hba.conf` (Docker bridge addresses included), gives
+   the new cluster port 5432 and leaves the old one stopped on 5433 as a
+   fallback.
+4. Start the app, check it, and only later drop the old cluster
+   (`pg_dropcluster <old> main`) and its packages.
+
 ## 3. Configure secrets
 
 Create a root `.env` (this file is gitignored — never commit it):

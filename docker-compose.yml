@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: imresamu/postgis:17-3.6-bookworm
+    image: imresamu/postgis:18-3.6-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: c1u3
@@ -9,7 +9,11 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18 images keep their data in a version subfolder
+      # (/var/lib/postgresql/18/docker) and expect the volume one level up.
+      # postgres18_data replaced the PostgreSQL 17 volume postgres_data
+      # (October 2026, via pg_dump/pg_restore).
+      - postgres18_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U c1u3 -d c1db3"]
       interval: 5s
@@ -69,5 +73,5 @@ services:
         condition: service_healthy
 
 volumes:
-  postgres_data:
+  postgres18_data:
   media_data:
